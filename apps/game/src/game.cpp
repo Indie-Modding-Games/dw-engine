@@ -25,6 +25,7 @@
 #include <dwe/render/screen_fade.hpp>
 #include <dwe/render/upscale_cache.hpp>
 #include <dwe/rhi/device.hpp>
+#include <dwe/rhi/gpu_diagnosis.hpp>
 #include <dwe/rhi/system_check.hpp>
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/script/script_vm.hpp>
@@ -128,6 +129,43 @@
 
 namespace dwe::app {
 namespace {
+
+// The launcher reads this line from the game's log to tell the player why the graphics failed
+// (docs/architecture/graphics-diagnosis.md).
+void logDiagnosis(std::optional<rhi::StartFailure> failure) {
+  const rhi::SystemFacts facts = rhi::gatherSystemFacts(std::move(failure));
+  core::logInfo("{}{}", rhi::DiagnosisLogPrefix, rhi::diagnosisJson(facts, rhi::diagnose(facts)));
+}
+
+// Why the graphics notice shows: the launcher's first reason, else, in the compatible mode, the
+// game's own diagnosis.
+std::optional<NoticeReason> noticeReason(bool compatible) {
+  // NOLINTNEXTLINE(concurrency-mt-unsafe): read once at start; nothing sets it.
+  if (const char* passed = std::getenv(GraphicsReasonVariable.data()); passed != nullptr) {
+    return parseNoticeReason(passed);
+  }
+  if (!compatible) {
+    return std::nullopt;
+  }
+  const rhi::Diagnosis diagnosis = rhi::diagnose(rhi::gatherSystemFacts());
+  const auto found = std::ranges::find_if(diagnosis.reasons, [](const rhi::Reason& reason) {
+    return reason.severity != rhi::Severity::Info;
+  });
+  if (found == diagnosis.reasons.end()) {
+    return std::nullopt;
+  }
+  return NoticeReason{.code = found->code, .params = found->params};
+}
+
+void showGraphicsNotice(ui::Ui& ui, bool compatible, const std::optional<NoticeReason>& reason) {
+  ui.setSetting(NoticeKindSetting, std::string{compatible ? "compatible" : "software"});
+  ui.setSetting(NoticeReasonSetting, reason ? reason->code : std::string{});
+  for (const std::string_view key : NoticeParams) {
+    ui.setSetting(std::format("software_notice.{}", key),
+                  std::string{reason ? reason->param(key) : std::string_view{}});
+  }
+  ui.show(SoftwareNoticeDocument);
+}
 
 core::Result<game::save::SaveFile> readSaveSlot(const assets::VirtualFileSystem& files,
                                                 const Options& options, game::save::SlotId slot,
@@ -579,6 +617,8 @@ int runGame(const Options& requested) {
       platform::Window::create({.title = "dwe", .width = options.width, .height = options.height});
   if (!window) {
     core::logError("{}", window.error().message);
+    logDiagnosis(rhi::StartFailure{
+        .stage = rhi::StartStage::Window, .result = 0, .message = window.error().message});
     return EXIT_FAILURE;
   }
   Settings settings{.fullscreen = false, .uiScale = 1.0, .vsync = display.vsync};
@@ -589,12 +629,22 @@ int runGame(const Options& requested) {
       core::logWarning("game: {}", changed.error().message);
     }
   }
+  // Kept under the user's data like the settings, so the second start skips most shader builds.
+  std::filesystem::path pipelineCacheFile;
+  if (settingsFile) {
+    if (const auto data =
+            platform::userDataFolder(content::UserDataOrganization, content::UserDataApplication)) {
+      pipelineCacheFile = *data / "cache" / "pipelines.bin";
+    }
+  }
   auto device = rhi::Device::create(*window, {.validation = Validation,
                                               .vsync = display.vsync,
                                               .compatibleMode = options.compatibleMode,
-                                              .forceVulkan13 = options.forceVulkan13});
+                                              .forceVulkan13 = options.forceVulkan13,
+                                              .pipelineCacheFile = pipelineCacheFile});
   if (!device) {
     core::logError("{}", device.error().message);
+    logDiagnosis(rhi::lastStartFailure());
     return GraphicsStartExitCode;
   }
   core::logInfo("game: validation layer {}, vsync {}",
@@ -684,6 +734,26 @@ int runGame(const Options& requested) {
                   "automatic quality {}",
                   gpu.name, threads, level, startGraphics.renderScale, startGraphics.frameLimit,
                   startGraphics.autoQuality ? "on" : "off");
+  }
+  // A weak graphics card (integrated, or on the compatible Vulkan 1.2 path) starts the options the
+  // player has not chosen from the balanced preset and lets the automatic quality step them down
+  // when frames are slow; a strong card starts as always.
+  const bool compatiblePath = (*device)->vulkanPath() == rhi::VulkanPath::Compatible12;
+  const bool weakGpu = !softwareMode && autotest == nullptr && !options.lowPerformance &&
+                       (gpu.kind == rhi::GpuKind::Integrated || compatiblePath);
+  std::optional<SlowFrameWatch> weakGpuWatch;
+  std::string autoReason = softwareMode ? "software" : "";
+  if (weakGpu) {
+    automaticKnobs = unchosenKnobs(userSettings);
+    automaticKnobs.reset(knobIndex(GraphicsKnob::FrameLimit));
+    automaticKnobs.reset(knobIndex(GraphicsKnob::Weather));
+    startGraphics = withPreset(startGraphics, GraphicsPreset::Balanced, automaticKnobs);
+    startGraphics.autoQuality = userSettings.autoQuality.value_or(true);
+    weakGpuWatch.emplace();
+    autoReason = compatiblePath ? "compatible" : "integrated";
+    core::logInfo("game: weak graphics card {} ({}): the options not chosen start balanced, "
+                  "automatic quality {}",
+                  gpu.name, autoReason, startGraphics.autoQuality ? "on" : "off");
   }
   if (options.lowPerformance) {
     const GraphicsOptions kept = startGraphics;
@@ -873,11 +943,25 @@ int runGame(const Options& requested) {
   MinimapChanger minimapChanger{userSettings, settingsFile};
   GraphicsChanger graphics{userSettings, settingsFile, startGraphics};
   graphics.setAutomatic(automaticKnobs);
-  (*ui)->setSetting(SoftwareModeSetting, softwareMode);
-  double softwareNoticeLeft = softwareMode ? SoftwareNoticeSeconds : 0.0;
-  if (softwareMode) {
-    (*ui)->show(SoftwareNoticeDocument);
+  if (weakGpu) {
+    graphics.setAutomaticPreset(GraphicsPreset::Balanced);
   }
+  (*ui)->setSetting(GraphicsModeSetting,
+                    std::string{gpu.kind == rhi::GpuKind::Software ? "processor"
+                                : compatiblePath                   ? "compatible"
+                                                                   : "card"});
+  (*ui)->setSetting(GraphicsGpuSetting, gpu.name);
+  (*ui)->setSetting(GraphicsAutoReasonSetting, autoReason);
+  (*ui)->setSetting(SoftwareModeSetting, softwareMode);
+  const bool compatibleNotice = !softwareMode && autotest == nullptr &&
+                                (*device)->vulkanPath() == rhi::VulkanPath::Compatible12;
+  double softwareNoticeLeft = softwareMode || compatibleNotice ? SoftwareNoticeSeconds : 0.0;
+  if (softwareMode || compatibleNotice) {
+    showGraphicsNotice(**ui, compatibleNotice, noticeReason(compatibleNotice));
+  }
+  // The pipelines built while the first field loads are kept even if the game does not close
+  // normally.
+  double pipelineCacheSaveLeft = 15.0;
   FrameLimiter frameLimiter;
   double limiterWaited = 0.0;
   // The title's pictures, smoothed with the texture filter «upscaled», keep what the upscaler made
@@ -1671,6 +1755,9 @@ int runGame(const Options& requested) {
   while (running) {
     if ((*device)->lost()) {
       core::logError("game: the GPU stopped responding (device lost); closing without saving");
+      logDiagnosis(rhi::StartFailure{.stage = rhi::StartStage::Running,
+                                     .result = VK_ERROR_DEVICE_LOST,
+                                     .message = "device lost while playing"});
       exitCode = DeviceLostExitCode;
       return exitCode;
     }
@@ -3180,6 +3267,12 @@ int runGame(const Options& requested) {
             showingMovie ? 1.0F : static_cast<float>(graphics.options().renderScale) / 100.0F,
     });
     phases.mark(FramePhases::Render, platform->nowSeconds());
+    if (pipelineCacheSaveLeft > 0.0) {
+      pipelineCacheSaveLeft -= std::clamp(frameSeconds, 0.0, MaxFrameSeconds);
+      if (pipelineCacheSaveLeft <= 0.0) {
+        (*device)->savePipelineCache();
+      }
+    }
     if (softwareNoticeLeft > 0.0 && !showingMovie) {
       softwareNoticeLeft -= std::clamp(frameSeconds, 0.0, MaxFrameSeconds);
       if (softwareNoticeLeft <= 0.0) {
@@ -3203,6 +3296,20 @@ int runGame(const Options& requested) {
       }
     } else if (qualityTuner) {
       qualityTuner->pause();
+    }
+    if (weakGpuWatch && graphics.options().autoQuality && graphics.automaticPreset() && drawn &&
+        !showingMovie && flow.playing() != nullptr && !loadAfterIndicator) {
+      if (const auto lighter = lighterPreset(*graphics.automaticPreset());
+          lighter && weakGpuWatch->frame(frameSeconds - limiterWaited)) {
+        graphics.setAutomaticPreset(*lighter);
+        graphics.applyAutomatic(withPreset(graphics.options(), *lighter, graphics.automatic()),
+                                **ui);
+        (*ui)->setSetting(GraphicsAutoReasonSetting, std::string{"slow"});
+        core::logInfo("game: slow frames on {}: automatic quality {}", gpu.name,
+                      graphicsPresetName(*lighter));
+      }
+    } else if (weakGpuWatch) {
+      weakGpuWatch->pause();
     }
     if (loadAfterIndicator) {
       loadingIndicatorSeconds += std::max(0.0, frameSeconds);

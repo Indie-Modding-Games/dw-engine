@@ -32,7 +32,7 @@ puede arreglar; «Vulkan demasiado antiguo» o «faltan funciones» bajan cuando
 | `window-failed` | La ventana o su superficie no se abrió | ajustes | Cerrar programas a pantalla completa; en Linux sin `DISPLAY`/`WAYLAND_DISPLAY`, abrir desde el escritorio. El launcher no baja a un modo más lento por esto |
 | `remote-session` | Escritorio remoto | ajustes | Jugar frente al equipo; herramientas de streaming de juegos |
 | `implicit-layers` | Vulkan falló y hay una capa de overlay conocida | ajustes | Cerrar los programas nombrados (OBS, Overwolf, RivaTuner, Bandicam, ReShade, MangoHud, Epic, Steam, gráficos conmutables de AMD, GamePP, WeGame) y actualizarlos |
-| `basic-display-adapter` | Adaptador de pantalla básico de Microsoft o sin controlador del fabricante | controlador | Instalar el controlador, reiniciar |
+| `basic-display-adapter` | Adaptador de pantalla básico de Windows o sin controlador del fabricante | controlador | Instalar el controlador, reiniciar |
 | `dedicated-gpu-unused` | La tarjeta dedicada de un portátil no tiene Vulkan o no es la elegida | controlador | Windows: Configuración › Sistema › Pantalla › Gráficos (`ms-settings:display-advancedgraphics`), panel NVIDIA/AMD, controlador. Linux: controlador, `prime-run` / `DRI_PRIME=1` |
 | `driver-too-old` | Controlador anterior al primero con Vulkan 1.3 (tabla), en una familia que puede | controlador | Instalar esa versión o más nueva |
 | `no-vendor-driver` | Adaptador sin controlador Vulkan (Linux: `nouveau`, ninguno) | controlador | Instalar el controlador |

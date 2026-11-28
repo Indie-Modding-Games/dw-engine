@@ -329,6 +329,27 @@ bool GraphicsChanger::handle(const ui::UiCommand& command, ui::Ui& ui) {
       release(GraphicsKnob::FrameLimit);
       save();
     }
+  } else if (command.name == GraphicsPresetSetting) {
+    const std::string* name = std::get_if<std::string>(&command.value);
+    if (const auto preset = name == nullptr ? std::nullopt : parseGraphicsPreset(*name)) {
+      GraphicsKnobs knobs;
+      for (const GraphicsKnob knob :
+           {GraphicsKnob::Shadows, GraphicsKnob::EnhancedLighting, GraphicsKnob::VividColors,
+            GraphicsKnob::SceneryQuality, GraphicsKnob::Antialiasing, GraphicsKnob::TextureFilter,
+            GraphicsKnob::RenderScale}) {
+        knobs.set(knobIndex(knob));
+        release(knob);
+      }
+      options_ = withPreset(options_, *preset, knobs);
+      settings_->shadows = std::string{shadowModeName(options_.shadows)};
+      settings_->enhancedLighting = options_.enhancedLighting;
+      settings_->vividColors = options_.vividColors;
+      settings_->sceneryQuality = std::string{sceneryQualityName(options_.sceneryQuality)};
+      settings_->antialiasing = options_.antialiasing;
+      settings_->textureFilter = std::string{textureFilterName(options_.textureFilter)};
+      settings_->renderScale = renderScaleName(options_.renderScale);
+      save();
+    }
   } else if (command.name == AutoQualitySetting) {
     if (const bool* on = std::get_if<bool>(&command.value)) {
       options_.autoQuality = *on;
@@ -352,8 +373,120 @@ void GraphicsChanger::publish(ui::Ui& ui) const {
   ui.setSetting(RenderScaleSetting, renderScaleName(options_.renderScale));
   ui.setSetting(FrameLimitSetting, frameLimitName(options_.frameLimit));
   ui.setSetting(AutoQualitySetting, options_.autoQuality);
+  const std::optional<GraphicsPreset> preset = presetOf(options_);
+  ui.setSetting(GraphicsPresetSetting,
+                std::string{preset ? graphicsPresetName(*preset) : std::string_view{"custom"}});
   // The skins' pictures that may be smoothed (the title's) go through the models' upscaler with it.
   ui.setSmoothPictures(options_.textureFilter == TextureFilter::Upscaled);
+}
+
+std::optional<GraphicsPreset> parseGraphicsPreset(std::string_view name) {
+  if (name == "performance") {
+    return GraphicsPreset::Performance;
+  }
+  if (name == "balanced") {
+    return GraphicsPreset::Balanced;
+  }
+  if (name == "quality") {
+    return GraphicsPreset::Quality;
+  }
+  return std::nullopt;
+}
+
+std::string_view graphicsPresetName(GraphicsPreset preset) {
+  switch (preset) {
+  case GraphicsPreset::Performance:
+    return "performance";
+  case GraphicsPreset::Balanced:
+    return "balanced";
+  case GraphicsPreset::Quality:
+    return "quality";
+  }
+  return "quality";
+}
+
+std::optional<GraphicsPreset> lighterPreset(GraphicsPreset preset) {
+  switch (preset) {
+  case GraphicsPreset::Quality:
+    return GraphicsPreset::Balanced;
+  case GraphicsPreset::Balanced:
+    return GraphicsPreset::Performance;
+  case GraphicsPreset::Performance:
+    return std::nullopt;
+  }
+  return std::nullopt;
+}
+
+namespace {
+
+GraphicsOptions presetLook(GraphicsPreset preset) {
+  switch (preset) {
+  case GraphicsPreset::Performance:
+    return GraphicsOptions{.shadows = ShadowMode::Off,
+                           .enhancedLighting = false,
+                           .vividColors = false,
+                           .sceneryQuality = SceneryQuality::Smooth,
+                           .antialiasing = false,
+                           .textureFilter = TextureFilter::Nearest,
+                           .renderScale = 75,
+                           .frameLimit = 0,
+                           .autoQuality = false};
+  case GraphicsPreset::Balanced:
+    return GraphicsOptions{.shadows = ShadowMode::Round,
+                           .enhancedLighting = true,
+                           .vividColors = true,
+                           .sceneryQuality = SceneryQuality::Smooth,
+                           .antialiasing = false,
+                           .textureFilter = TextureFilter::Smooth,
+                           .renderScale = 100,
+                           .frameLimit = 0,
+                           .autoQuality = false};
+  case GraphicsPreset::Quality:
+    break;
+  }
+  return GraphicsOptions{};
+}
+
+} // namespace
+
+GraphicsOptions withPreset(GraphicsOptions options, GraphicsPreset preset, GraphicsKnobs knobs) {
+  const GraphicsOptions look = presetLook(preset);
+  const auto on = [&knobs](GraphicsKnob knob) { return knobs.test(knobIndex(knob)); };
+  if (on(GraphicsKnob::Shadows)) {
+    options.shadows = look.shadows;
+  }
+  if (on(GraphicsKnob::EnhancedLighting)) {
+    options.enhancedLighting = look.enhancedLighting;
+  }
+  if (on(GraphicsKnob::VividColors)) {
+    options.vividColors = look.vividColors;
+  }
+  if (on(GraphicsKnob::SceneryQuality)) {
+    options.sceneryQuality = look.sceneryQuality;
+  }
+  if (on(GraphicsKnob::Antialiasing)) {
+    options.antialiasing = look.antialiasing;
+  }
+  if (on(GraphicsKnob::TextureFilter)) {
+    options.textureFilter = look.textureFilter;
+  }
+  if (on(GraphicsKnob::RenderScale)) {
+    options.renderScale = look.renderScale;
+  }
+  return options;
+}
+
+std::optional<GraphicsPreset> presetOf(const GraphicsOptions& options) {
+  for (const GraphicsPreset preset :
+       {GraphicsPreset::Quality, GraphicsPreset::Balanced, GraphicsPreset::Performance}) {
+    GraphicsOptions look = presetLook(preset);
+    look.frameLimit = options.frameLimit;
+    look.autoQuality = options.autoQuality;
+    if (look == options) {
+      return preset;
+    }
+  }
+  return std::nullopt;
 }
 
 void GraphicsChanger::applyAutomatic(const GraphicsOptions& tuned, ui::Ui& ui) {

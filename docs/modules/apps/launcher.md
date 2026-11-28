@@ -313,6 +313,13 @@ integrated, short of memory or not the laptop's dedicated one gets a "Your graph
 once per card. The probe's line `diagnosis=<json>` and the game's log line `dwe-diagnosis 1 <json>` carry it;
 `DWE_GRAPHICS_REASON` passes the first reason to the game's own notice.
 
+**Weak or old cards.** With a graphics card the game needs Vulkan 1.3, or Vulkan 1.2 with dynamic rendering and
+synchronization2 (the compatible mode, most drivers from 2020 on). An integrated card or one in the compatible mode
+starts on the Balanced preset with automatic quality on, and steps down to Performance by itself when frames stay
+slow; Options › Graphics shows the mode, the card and why the level was picked
+([software mode](../../architecture/software-mode.md#weak-graphics-cards-and-presets)). A strong card starts as
+before. Without a card, the minimum is a 64-bit processor with 4 threads at 3 GHz and AVX2 and 4 GB of memory.
+
 **`dwe-game --check-system`** (`packages/engine/rhi/include/dwe/rhi/system_check.hpp`) creates a Vulkan instance and picks a
 GPU with the same version (1.3) and the same features as `Device::create` (`renderer_requirements.hpp`), with no window,
 no content and without creating the device; it takes less than a second with a normal driver. It writes to standard

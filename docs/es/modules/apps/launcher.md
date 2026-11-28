@@ -318,6 +318,14 @@ dedicada del portátil recibe una vez por tarjeta el aviso «Tu tarjeta gráfica
 línea `diagnosis=<json>` de la sonda y la línea `dwe-diagnosis 1 <json>` del registro del juego; `DWE_GRAPHICS_REASON`
 pasa la primera razón al aviso del propio juego.
 
+**Tarjetas débiles o antiguas.** Con tarjeta gráfica el juego necesita Vulkan 1.3, o Vulkan 1.2 con dynamic rendering
+y synchronization2 (el modo compatible, casi todos los controladores desde 2020). Una tarjeta integrada o en modo
+compatible arranca con el ajuste Equilibrado y la calidad automática encendida, y baja sola a Rendimiento cuando los
+fotogramas siguen lentos; Opciones › Gráficos muestra el modo, la tarjeta y por qué se eligió el nivel
+([modo software](../../architecture/software-mode.md#tarjetas-graficas-poco-potentes-y-ajustes-graficos)). Una
+tarjeta potente arranca como antes. Sin tarjeta, el mínimo es un procesador de 64 bits con 4 hilos a 3 GHz y AVX2 y
+4 GB de memoria.
+
 **`dwe-game --check-system`** (`packages/engine/rhi/include/dwe/rhi/system_check.hpp`) crea una instancia de Vulkan y elige
 GPU con la misma versión (1.3) y las mismas funciones que `Device::create` (`renderer_requirements.hpp`), sin ventana,
 sin contenido y sin crear el dispositivo; tarda menos de un segundo con un controlador normal. Escribe en la salida

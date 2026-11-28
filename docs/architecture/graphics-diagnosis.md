@@ -32,7 +32,7 @@ Blockers come first, then warnings, then information. Within each, the one the p
 | `window-failed` | The window or its surface did not open | settings | Close full-screen programs; on Linux without `DISPLAY`/`WAYLAND_DISPLAY`, start from the desktop. The launcher does not step down to a slower mode for it |
 | `remote-session` | Remote desktop (`SM_REMOTESESSION`, RDP/remote adapters) | settings | Play at the computer; game streaming tools |
 | `implicit-layers` | Vulkan failed and a known overlay layer is installed | settings | Close the named programs (OBS, Overwolf, RivaTuner, Bandicam, ReShade, MangoHud, Epic, Steam, AMD switchable graphics, GamePP, WeGame), update them |
-| `basic-display-adapter` | Microsoft Basic Display Adapter or no vendor driver on Windows | driver | Install the maker's driver, restart |
+| `basic-display-adapter` | Windows' basic display adapter or no vendor driver | driver | Install the maker's driver, restart |
 | `dedicated-gpu-unused` | A laptop's dedicated card has no Vulkan device or is not the one picked | driver | Windows: Settings › System › Display › Graphics (`ms-settings:display-advancedgraphics`), NVIDIA/AMD panel, driver. Linux: driver, `prime-run` / `DRI_PRIME=1` |
 | `driver-too-old` | Driver older than the first with Vulkan 1.3 (table below), on a family that can run it | driver | Install the named version or newer |
 | `no-vendor-driver` | An adapter with no Vulkan driver (Linux: `nouveau`, no driver) | driver | Install the driver |
