@@ -9,7 +9,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <vector>
 
+#include "coop_machine_spot.hpp"
 #include "coop_snapshot.hpp"
 #include "coop_world.hpp"
 #include "packages/game/coop/tests/support/coop_pair.hpp"
@@ -201,6 +203,60 @@ TEST_CASE("co-op training: a guest's course shows on the host where and as the g
   (void)session.host.tick(session.field, 1, std::nullopt, Millis{250});
   CHECK_FALSE(session.field.scriptedClipOf(entity));
   CHECK_FALSE(session.field.scriptedClipOf(*session.field.playerEntity(coop::GuestPlayerId)));
+}
+
+TEST_CASE("co-op training: a second partner on the same machine is drawn beside the first (T8)") {
+  HostSession session;
+  // The host's own partner trains on the equipment.
+  const glm::vec3 equipment{600.0F, 0.0F, 300.0F};
+  session.field.holdForScript(true);
+  session.field.placeByScript(session.field.partnerEntity(), equipment);
+  session.field.animateByScript(session.field.partnerEntity(), 41);
+  // The guest's game runs the same course on its own copy of the map: the same spot.
+  coop::PlayerState state{
+      .player = coop::GuestPlayerId,
+      .sequence = 3,
+      .epoch = session.placed.epoch,
+      .mapId = "room",
+      .x = session.placed.x,
+      .y = 0,
+      .z = session.placed.z,
+      .partner = coop::HeldPartner{.x = 600, .z = 300, .action = coop::ActionClip{.clip = 41}}};
+  session.host.receive(coop::GuestPlayerId, state, Millis{50});
+  (void)session.host.tick(session.field, 1, std::nullopt, Millis{200});
+  session.field.tick(1.0F / 60.0F);
+  const auto partner = session.field.partner(coop::GuestPlayerId);
+  REQUIRE(partner);
+  const float apart = glm::distance(partner->position, equipment);
+  CHECK(apart >= MachineSpotStep - 1.0F);
+  CHECK(apart <= MachineSpotStep + 1.0F);
+
+  // Off its clip, the guest's partner stands where its game has it, as before.
+  state.sequence = 4;
+  state.partner->action.reset();
+  session.host.receive(coop::GuestPlayerId, state, Millis{100});
+  (void)session.host.tick(session.field, 1, std::nullopt, Millis{400});
+  session.field.tick(1.0F / 60.0F);
+  const auto following = session.field.partner(coop::GuestPlayerId);
+  REQUIRE(following);
+  CHECK(glm::distance(following->position, equipment) < 1.0F);
+}
+
+TEST_CASE("co-op training: the spot beside a used machine is free, to either side") {
+  const glm::vec3 machine{0.0F, 0.0F, 0.0F};
+  const std::vector<glm::vec3> none;
+  CHECK(machineSpotBeside(machine, 0.0F, none) == machine);
+  // Facing +z, the first spot is one step to +x, the second one step to -x.
+  const std::vector<glm::vec3> one{machine};
+  const glm::vec3 first = machineSpotBeside(machine, 0.0F, one);
+  CHECK(std::abs(first.x - MachineSpotStep) < 0.01F);
+  CHECK(std::abs(first.z) < 0.01F);
+  const std::vector<glm::vec3> two{machine, first};
+  const glm::vec3 second = machineSpotBeside(machine, 0.0F, two);
+  CHECK(std::abs(second.x + MachineSpotStep) < 0.01F);
+  // A partner far enough away takes nothing.
+  const std::vector<glm::vec3> far{{MachineSpotStep * 2.0F, 0.0F, 0.0F}};
+  CHECK(machineSpotBeside(machine, 0.0F, far) == machine);
 }
 
 TEST_CASE("co-op training: a held partner reported far from its player is not drawn there") {

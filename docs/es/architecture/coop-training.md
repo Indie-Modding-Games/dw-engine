@@ -158,7 +158,7 @@ La sesión de un jugador en cooperativo, de la casilla de confirmar al siguiente
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Script: casilla de confirmar (el reloj del mundo se para mientras el anfitrión la lee)
+  [*] --> Script: casilla de confirmar (el reloj del mundo sigue; el compañero de quien lee se queda quieto, T7)
   Script --> Curso: rutina 7; holdForCourse(true), se guarda el inicio
   Curso --> Premio: se acaban los frames, cancelar mantenido o paran los rodillos
   Premio --> Cuenta: se cobra una hora al compañero (sharedClock, sin salto)
@@ -201,8 +201,11 @@ Las mismas reglas valen para cualquier tamaño de sala; nada escala con el núme
 - **Una sesión por jugador.** La partida de un jugador corre un curso a la vez (`GymScreen::start` no hace nada mientras
   corre uno); una tanda corre sus sesiones una tras otra, cada una esperando su hora.
 - **La misma máquina.** Cada partida corre el gimnasio en su propia copia del mapa, así que dos jugadores pueden usar la
-  misma máquina a la vez. Sus compañeros se dibujan en el mismo sitio en las pantallas de los demás, y solo la pantalla
-  de cada jugador mueve los objetos de la máquina (la roca, el tronco): un límite visual, ticket T8 en §9.
+  misma máquina a la vez. En cada pantalla, un segundo compañero en un curso en una máquina usada se dibuja un paso (300
+  unidades) al lado del primero, a uno u otro lado, hasta cuatro (`machineSpotBeside`, T8): el anfitrión lo hace con los
+  compañeros de los invitados en su campo, así que sus instantáneas lo llevan, y cada invitado con los compañeros que
+  dibuja junto al suyo. Solo se aparta un compañero que reproduce un clip de curso; fuera del curso está donde su partida
+  lo tiene. Solo la pantalla de cada jugador mueve los objetos de la máquina (la roca, el tronco).
 - **Entrenar y explorar.** Un jugador en un curso está ocupado: sin intercambios, sin ofertas de aliado, no se le mete
   en un combate. Los demás siguen explorando, luchando e intercambiando; el mundo nunca se retiene por quien entrena.
 
@@ -219,6 +222,33 @@ Las mismas reglas valen para cualquier tamaño de sala; nada escala con el núme
 - **El progreso vuelve a casa.** El compañero entrenado de un invitado vuelve a su propio guardado con el resto de su
   progreso (#383, [multijugador](multiplayer.md), «Qué vuelve a casa»).
 
+### 4.8 El anfitrión retenido por su propio script o pantalla (T7, T9)
+
+Un script del anfitrión solo retiene a su jugador (decisión 6 de [multijugador](multiplayer.md)), y lo mismo una
+pantalla completa suya. Ninguno de los dos para ya el reloj del mundo:
+
+- **Qué retiene.** En el anfitrión en cooperativo, el reloj del mundo sigue mientras un script retiene su campo (una
+  charla, el menú del gimnasio, una escena) y mientras una pantalla suya corre en lugar del campo: las tiendas (objetos,
+  cartas, méritos), el guardaobjetos, el menú de tirar, la gramola, las pantallas de intercambio y del pájaro, el
+  horario, el mapa del mundo, el menú de depuración, la pesca, el juego de piedras, el aviso de premio, las escenas de
+  cuidado del compañero (montón, retrete, comida, elogio y regaño) y su evolución. Lo que aún lo para: un cambio de mapa
+  (se lleva a todos los jugadores), el sueño del anfitrión (su salto mueve el mundo), un torneo, las escenas de muerte y
+  de final, y un combate.
+- **El compañero del anfitrión se queda quieto mientras tanto,** como a solas, y vive ese tiempo cuando su jugador queda
+  libre, igual que el compañero de un invitado se pone al día con el mundo tras su propio diálogo (§4.1): las horas
+  enteras como un salto de tiempo (`skipHours`), el resto frame a frame en el reloj del mundo
+  (`GameSession::liveStoodTime`). Así una charla larga le cuesta los mismos cuidados que el mismo tiempo en el campo, y
+  ningún tiempo se vive dos veces: un salto de tiempo o de depuración durante la retención no cuenta, y el menú del
+  gimnasio se vive al empezar el curso, así que la hora del curso no.
+- **Los invitados** siguen jugando: el anfitrión dice su reloj en marcha y ellos lo siguen.
+- **A solas nada cambia:** el script o la pantalla paran el reloj, como en el original. **Los scripts y pantallas propios
+  de un invitado** siguen como antes: su reloj se para con ellos y luego se pone al día con el mundo.
+
+Las piezas: `GameSession::hostHeldByOwnScript` (una retención de script que no es un cambio de mapa),
+`runWorldPastHeldPlayer` (el reloj corre y los frames se guardan en `stoodFrames_`) y `tickHeldPlayer`, que
+`PlaySession::tickSystems` llama en los ticks en que una pantalla propia del jugador corre en lugar del tick de la
+sesión (no hace nada a solas ni en un invitado).
+
 ## 5. Desconexiones y casos límite
 
 - **Un invitado se va:** el anfitrión borra su curso (`CoopTraining::playerLeft`) y se lo dice a los demás; si vuelve,
@@ -226,8 +256,9 @@ Las mismas reglas valen para cualquier tamaño de sala; nada escala con el núme
 - **El anfitrión se va:** el invitado vuelve al título como antes; nada de este ticket sobrevive a la partida.
 - **Cambio de día y eventos:** solo la medianoche del mundo cambia el día, para todos a la vez (un invitado que la
   saltó la paga en `skipHours`). Los momentos del día siguen el reloj compartido.
-- **Menús y scripts del anfitrión:** sus menús y la pausa de Start ya no retienen el reloj del mundo (#415); sus scripts
-  sí (§7), así que el mundo se para para todos mientras el anfitrión lee un diálogo, y los invitados esperan con él.
+- **Menús, scripts y pantallas del anfitrión:** nada de lo que el anfitrión lee o abre retiene ya el reloj del mundo:
+  ni sus menús ni la pausa de Start (#415), ni sus scripts (una charla, el menú del gimnasio, T7), ni sus propias
+  pantallas completas (una tienda, el guardaobjetos, la pesca, una escena de cuidado, una evolución, T9). Ver §4.8.
 - **Un invitado duerme:** su compañero duerme y su pantalla espera a oscuras la mañana del mundo (§4.5); ya no vuelve
   a la noche.
 - **El anfitrión duerme:** los invitados saltan esas horas (§4.1), como un salto de tiempo de script.
@@ -246,7 +277,7 @@ Los casos que lista el issue:
 | Cambia el día durante una sesión | Solo la medianoche del mundo cambia el día; una sesión nunca suma uno (§4.2). |
 | Salta un evento con hora durante una sesión | Los eventos del mundo siguen el reloj del mundo; en la partida de quien entrena el curso retiene el campo, así que un evento que lo necesita empieza tras el curso, como a solas. |
 | Un jugador intenta varias sesiones a la vez | Un curso por partida; una tanda las corre seguidas, cada una dura su hora. |
-| Latencia o pérdida de paquetes | `WorldClock` y `TrainingStatus` son fiables; un invitado corre como mucho dos segundos más allá del último aviso y luego espera; un aviso tardío se juega como frames o un salto. Un curso que espera su hora espera más mientras el reloj del anfitrión está parado (un diálogo del anfitrión). |
+| Latencia o pérdida de paquetes | `WorldClock` y `TrainingStatus` son fiables; un invitado corre como mucho dos segundos más allá del último aviso y luego espera; un aviso tardío se juega como frames o un salto. Un curso que espera su hora espera más mientras el reloj del anfitrión está parado (un cambio de mapa o un combate del anfitrión). |
 
 ## 6. Código
 
@@ -257,16 +288,22 @@ Los casos que lista el issue:
 | El curso espera su hora | `packages/game/gym` (`GymPorts::hourRuns`, `CourseRun::finish`), `packages/session` (`GymFieldPorts::hourRuns`) |
 | Mensajes `0xC0`, `0xC1`, protocolo 11 | `packages/game/coop` (`protocol.hpp`, `link.cpp` `directionAllowed`) |
 | Enrutado y bucle del juego | `apps/game` (`coop_gameplay_bridge`, `coop_training`, `game.cpp`, `play_session`) |
+| El anfitrión retenido por su propio script o pantalla | `packages/session` (`GameSession::hostHeldByOwnScript`, `runWorldPastHeldPlayer`, `liveStoodTime`, `tickHeldPlayer`), `apps/game` (`PlaySession::tickSystems`) |
+| Un segundo compañero junto a una máquina usada | `apps/game` (`coop_machine_spot.hpp`, `CoopHostWorld::showHeld`, `presentCoopPlayers`) |
 | La etiqueta | `content/packs/game/ui/coop_hud`, API de UI 0.25.0 |
 
 ## 7. Límites y pendientes
 
 - **El sueño en cooperativo** (§4.5): un invitado que duerme mientras el anfitrión sigue despierto espera hasta una
   noche en tiempo real (unos diez minutos); al anfitrión no se le avisa de que un invitado duerme.
-- **Los diálogos y scripts del anfitrión siguen reteniendo el reloj del mundo** para todos (sus menús y su pausa ya no,
-  #415).
+- **Lo que aún para el reloj del mundo** para todos: los cambios de mapa del anfitrión, sus combates, un torneo y las
+  escenas de muerte y de final (§4.8).
+- **Un compañero del anfitrión retenido mucho rato** vive ese tiempo de golpe al quedar libre: más de una hora de charla
+  es para él un salto de tiempo, como para un invitado.
 - **Un curso espera la hora del mundo (#411)**: una sesión que el jugador salta retiene a sus actores hasta un minuto real
-  en cooperativo, y más mientras un diálogo del anfitrión para el reloj del mundo.
+  en cooperativo.
+- **Compañeros lado a lado (T8)** es solo dibujo: cada partida sigue corriendo el curso en su sitio. Un compañero que va
+  o vuelve de la máquina pasando junto a otro en un curso puede apartarse un momento.
 - **La animación de entrenamiento del compañero remoto** se dibuja en las otras máquinas desde el protocolo 14 (#420):
   los clips del curso y el sitio del compañero en la máquina viajan en las instantáneas y en los estados del invitado
   ([multijugador](multiplayer.md) §5.7, «Lo que reproduce un script»).
@@ -285,7 +322,12 @@ Los casos que lista el issue:
 - `packages/game/coop/tests/training_tests.cpp`: ida y vuelta, rechazos y las reglas de sentido con un `CoopLink` real.
 - `apps/game/tests/coop_training_tests.cpp`: un anfitrión y tres invitados en enlaces loopback entrenando a la vez.
 - `apps/game/tests/coop_replication_tests.cpp`: el curso de un invitado dibujado en el campo del anfitrión y en su
-  instantánea, y soltado al acabar.
+  instantánea, y soltado al acabar; un segundo compañero en la misma máquina dibujado junto al primero, y el sitio libre
+  a uno u otro lado.
+- `apps/game/tests/coop_host_clock_tests.cpp`: un anfitrión y un invitado en un `CoopPair`: un script y una pantalla del
+  anfitrión dejan correr el reloj del mundo para el invitado mientras el compañero del anfitrión se queda quieto, y luego
+  lo vive como lo habría jugado; a solas un script para el reloj; la charla propia de un invitado para su reloj y luego
+  se pone al día; el menú del gimnasio se vive antes del curso y la hora del curso no se vive dos veces.
 
 ## 9. Tickets
 
@@ -299,7 +341,7 @@ Lo que se construyó y lo que queda, como tickets de implementación. Todos mant
 | T4. Clips de entrenamiento remotos | Clips y sitio del compañero en instantáneas y estados del invitado | Hecho (#420) |
 | T5. Dormir en cooperativo | El sueño de un invitado espera la mañana del mundo | Hecho (#424) |
 | T6. Una sesión dura su hora | El curso espera la hora del mundo antes de terminar | Hecho (#411) |
-| T7. Diálogos del anfitrión y el reloj del mundo | Dejar correr el reloj del mundo mientras el anfitrión lee un script que solo retiene a su jugador (el menú del gimnasio entre ellos) | Abierto |
-| T8. Máquinas compartidas | Dibujar un segundo compañero junto a una máquina en uso, o mostrarla ocupada | Abierto |
-| T9. Pantallas locales del anfitrión | Las tiendas y otras pantallas completas del anfitrión siguen parando el reloj del mundo (`PlaySession::tickSystems` vuelve antes del tick de la sesión) | Abierto |
+| T7. Diálogos del anfitrión y el reloj del mundo | El reloj del mundo corre mientras un script propio del anfitrión lo retiene; su compañero vive ese tiempo al quedar libre (§4.8) | Hecho |
+| T8. Máquinas compartidas | Un segundo compañero en un curso en una máquina usada se dibuja junto al primero (§4.6) | Hecho |
+| T9. Pantallas locales del anfitrión | Las tiendas y otras pantallas completas propias del anfitrión dejan correr el reloj del mundo (`GameSession::tickHeldPlayer`, §4.8) | Hecho |
 | T10. Validación de ganancias por el anfitrión | Opcional: el anfitrión comprueba las ganancias de un invitado contra los límites de la fórmula | Abierto, solo si importan las trampas |
