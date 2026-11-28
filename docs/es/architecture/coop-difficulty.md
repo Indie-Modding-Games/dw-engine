@@ -14,6 +14,9 @@ toda la documentación de combate; su capítulo 8 marca el objetivo de escalado 
 este documento valen exactamente 100 % y ningún camino de código difiere del actual. El escalado cooperativo es una
 mejora, documentada y opcional, que elige el anfitrión.
 
+**Auditoría (2026-11-27):** contrastado con los entregables del issue en la [auditoría de #361](audits/361-audit.md);
+entonces se completaron §5.5, §8, §11 y §12.8.
+
 **Alternativa en evaluación (2026-11-27):** §12 recoge el modelo «+20 % por jugador en pantalla y mayor alcance de
 contacto» del ticket #361, que no está implementado. Las tablas de §5 y lo descrito en §9 siguen siendo lo que ya salió.
 
@@ -189,7 +192,7 @@ Una colocación de Sabana Engranaje (ilustrativa: HP 1200, MP 300, Atq 340, Def 
 | MP | 300 | 450 | 600 | 750 |
 | Atq | 340 | 340 | 357 | 374 |
 | Meta del remate (Vel 200) | 2800 ticks de llenado | ~2240 | ~1870 | ~1600 |
-| Probabilidad de que se una un segundo enemigo del mismo tipo (base 60 %) | 60 % | 75 % | 85 % | 95 % |
+| Probabilidad de que se una un segundo enemigo del mismo tipo (base 60 %, propuesta: el extra de unión no está construido) | 60 % | 75 % | 85 % | 95 % |
 
 Machinedramon en la cima (184:51; 9400 HP, Atq 999, Def 650), combate fijo:
 
@@ -198,6 +201,31 @@ Machinedramon en la cima (184:51; 9400 HP, Atq 999, Def 650), combate fijo:
 | HP | 9400 | 18800 | 27260 | 34780 |
 | Atq | 999 | 999 (tope) | 999 | 999 |
 | Subidas de estadísticas de cada compañero | desde 9400 HP, 999 Atq | igual | igual | igual |
+
+### 5.5 Lo que sale, por nivel
+
+Los valores que aplica hoy el juego (`coop_scaling` en `battle.yaml`, `game::battle::coopScalingFactors`). `N` cuenta
+los compañeros que pelean; cada ayudante (un jugador en el mapa cuyo compañero no pelea) suma 15 puntos de HP; `hard`
+suma 25 puntos de HP encima. `off` vale 100 en todo. Con `N = 1` y sin ayudante todos los niveles valen 100 (regla cero).
+
+| Combate normal | N = 1 | N = 2 | N = 3 | N = 4 |
+|---|---|---|---|---|
+| HP, estándar | 100 | 180 | 250 | 320 |
+| HP, difícil | 100 | 205 | 275 | 345 |
+| MP | 100 | 150 | 200 | 250 |
+| Atq | 100 | 100 | 105 | 110 |
+| Llenado del remate | 100 | 125 | 150 | 175 |
+
+| Combate fijo (trigger 1) | N = 1 | N = 2 | N = 3 | N = 4 |
+|---|---|---|---|---|
+| HP, estándar | 100 | 200 | 290 | 370 |
+| HP, difícil | 100 | 225 | 315 | 395 |
+| MP | 100 | 100 | 100 | 100 |
+| Atq | 100 | 105 | 110 | 115 |
+| Llenado del remate | 100 | 125 | 150 | 175 |
+
+Un combatiente con un ayudante (un compañero que se queda fuera) es 115 % de HP en estándar y 140 % en difícil; el resto
+de valores sigue en 100.
 
 La emboscada del cañón (43:51, tres rivales, fijo) es un trío de la historia, así que cada rival usa la tabla de jefe
 (HP ×2,0/2,9/3,7) en lugar de la normal (×1,8/2,5/3,2).
@@ -263,6 +291,11 @@ la historia. «Fijo» = trigger 1 (sin Huir, se unen todos, los enemigos no gast
 Por verificar antes de ajustar (no aparecen en las fuentes leídas): Myotismon (Mansión del Señor Gris), Devimon (51:57,
 mgen06), Mamemon y Piximon. Cada fila se puede sobrescribir por id en los datos (§9).
 
+**Lo que hace hoy el juego con esta tabla.** Las sobrescrituras por combate no están construidas (§9): un combate usa la
+tabla fija cuando su script lo empieza con trigger 1, y la normal si no. Así que cada fila «Fijo» de arriba ya recibe su
+trato; un reclutamiento o una emboscada que el script empieza con otro trigger usa la tabla normal hasta que exista una
+sobrescritura. Los torneos y el versus nunca escalan.
+
 ## 9. Implementación
 
 **Lo que entró (2026-11-20).** La opción es `coop_difficulty` (pestaña Juego: desactivada, estándar por defecto,
@@ -276,12 +309,13 @@ meta del remate de los enemigos desde sus estadísticas sin escalar. `startStats
 subidas de estadísticas son las del original. Cuando un compañero huye, los enemigos se vuelven a escalar para los que
 quedan, cada uno conservando su proporción de PV y PM; un compañero fuera de combate sigue contando. No se construyó de
 la propuesta de abajo: el extra en la tirada de unión (un combate que empieza un invitado no tiene tirada en el
-anfitrión a la que sumar), los `overrides` por combate, las opciones de recompensa de §5.3 y mostrarlo en la sala.
+anfitrión a la que sumar), los `overrides` por combate y las opciones de recompensa de §5.3. La sala muestra a todos el nivel del anfitrión
+(`online.current.coop_difficulty` y su `_key`, que lee `ui/online_room/logic.lua`).
 
 ### 9.1 Ajuste
 
-- `UserSettings::coopScaling` en `apps/game/src/user_settings.hpp` con los valores `off`, `standard` (valor por defecto
-  recomendado para las sesiones cooperativas) y `hard` (HP +25 puntos sobre cada tabla). Se muestra en las opciones de
+- `UserSettings::coopDifficulty` en `apps/game/src/user_settings.hpp` (la propuesta lo llamaba `coopScaling`) con los
+  valores `off`, `standard` (el valor por defecto) y `hard` (HP +25 puntos sobre cada tabla). Se muestra en las opciones de
   juego y en la sala. Solo cuenta el valor del anfitrión; los invitados lo ven.
 - Se aplica igual que la dificultad existente (`RuleOptions` en `apps/game/src/rule_options.hpp`, cambios a través de
   `RulesetStore`), pero el escalado no es un cambio fijo: depende de `N`, así que se calcula en cada combate.
@@ -377,6 +411,21 @@ objetos usados.
    activado.
 4. Qué modelo mantener: las tablas por combatiente ya implementadas (§5/§9) o el +20 % plano por jugador en pantalla
    (§12, sin construir).
+
+**Recomendación técnica (2026-11-27).** Mantener el modelo que salió como valor por defecto y añadir §12 como un tercer
+nivel (`linear_20`), no como sustituto, cuando §10.2 esté medido para los dos:
+
+- el modelo que salió cuenta compañeros que pelean, que es lo que cambia el daño hecho y recibido; §12 cuenta cuerpos en
+  el mapa, así que un espectador o un Novato endurecen un combate tanto como un compañero de final de juego (§12.6,
+  §12.7);
+- §12 necesita tres enganches nuevos (un multiplicador de daño en la estrategia de daño, un extra en la tirada de unión,
+  un alcance de contacto hostil) y el modelo que salió ninguno; el extra de unión vale la pena para los dos, porque es la
+  forma del propio original de hacer combates más grandes;
+- un nivel son datos en `coop_scaling`, así que el anfitrión puede elegir cualquiera sin un camino de código para el
+  juego de un jugador.
+
+Orden: primero el extra de unión (lo quieren los dos modelos), luego las sobrescrituras por combate de §8, luego
+`linear_20`, cada uno tras el ajuste y medido con los casos de §10.2 antes de ser valor por defecto.
 
 ## 12. Alternativa: +20 % plano por jugador en pantalla (2026-11-27)
 
@@ -518,6 +567,26 @@ normales y remates; la tirada de unión nunca pasa de 3 enemigos; alcance idént
 objetivo de tasa de victorias ±10 puntos y tiempo de victoria 0,9–1,3× el solitario. En juego: repetir §10.3 con el
 nuevo ajuste y comprobar que un invitado cerca de un enemigo en el mapa del anfitrión inicia el combate con las reglas
 del anfitrión.
+
+### 12.8 Ejemplos
+
+Las mismas colocaciones que §5.4, con la alternativa (golpe enemigo: 150 de daño ilustrativo antes del multiplicador).
+
+| Colocación de Sabana Engranaje, combate normal | P = 1 | P = 2 | P = 3 | P = 4 |
+|---|---|---|---|---|
+| HP | 1200 | 1440 | 1680 | 1920 |
+| MP | 300 | 300 | 300 | 300 |
+| Un golpe enemigo de 150 | 150 | 180 | 210 | 240 |
+| Probabilidad de que se una un segundo enemigo del mismo tipo (base 60 %) | 60 % | 70 % | 80 % | 90 % |
+
+| Machinedramon 184:51, combate fijo | P = 1 | P = 2 | P = 3 | P = 4 |
+|---|---|---|---|---|
+| HP | 9400 | 11280 | 13160 | 15040 |
+| Atq | 999 | 999 | 999 | 999 |
+| Daño de cada golpe | ×1,0 | ×1,2 | ×1,4 | ×1,6 |
+
+Frente al modelo que salió con cuatro jugadores, el jefe tiene 15040 HP en vez de 34780, y cada golpe hace un 60 % más
+donde el modelo que salió no puede subir su Atq por encima del tope: combates más cortos donde cada golpe pesa más.
 
 ## 13. Documentos relacionados
 
