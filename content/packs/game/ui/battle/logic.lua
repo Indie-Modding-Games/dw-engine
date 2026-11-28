@@ -839,13 +839,14 @@ local function start_end(state)
     balance_open = false,
     rows = end_rows(result),
     -- The row being typed, the first row on show, the rows begun since it (BATTLE_END_ROWS_SHOWN),
-    -- the characters typed of the row, whether a press set the typing on.
+    -- the characters typed of the row, whether the typing is on.
     row = 1,
     top = 1,
     shown = 0,
     typed = 0,
-    typing = false,
-    wait = result.wait_frames,
+    -- The original stops after the first two characters until a press; dwe types on at once.
+    typing = true,
+    wait = 0,
     closed = false,
   }
   local raised = false
@@ -903,6 +904,10 @@ local function step_end()
   end
   if #ending.rows == 0 then
     return
+  end
+  -- Unlike the original, the text goes on by itself once a wait ends; a press only hurries it.
+  if not ending.typing and ending.wait == 0 and ending.row <= #ending.rows then
+    ending.typing = true
   end
   if ending.shown == end_rows_shown then
     if ending.wait == 0 then
@@ -1062,6 +1067,8 @@ local reserved_zones = {
   "fighter-0",
   "fighter-0-hp-row",
   "fighter-0-mp-row",
+  "fighter-0-hp-label",
+  "fighter-0-mp-label",
   "finisher",
   "folder-panel",
   "speed-plate",
@@ -1186,19 +1193,23 @@ local function clear_of_hud(hud, x_percent, y_percent, dx, dy, w, h, placed)
   return (y - dy) * 100 / hud.height, (x - dx) * 100 / hud.width
 end
 
--- A world bar's parts as drawn last frame, from its anchor: dx, dy, w, h in dp.
-local function bar_extent(document, id, fallback)
-  local at_x, at_y = lookup(document, id):rect()
+-- Where this draw puts a world bar's parts, from its anchor (dx, dy, w, h in dp): the offsets come
+-- from `x`, `y`, as the last frame's rects lag a draw; sizes are measured, or the original's before
+-- the parts have one.
+local function bar_extent(document, id, x, y, tagged)
+  local parts = {
+    { "-frame", x, y, 165, 21 },
+    { "-value", x + 33, y - 9, 84, 24 },
+    tagged and { "-tag", x - 12, y - 9, 24, 24 } or nil,
+  }
   local left, top, right, bottom = math.huge, math.huge, -math.huge, -math.huge
-  for _, part in ipairs({ "-frame", "-value", "-tag" }) do
-    local x, y, w, h = lookup(document, id .. part):rect()
-    if w > 0 and h > 0 then
-      left, top = math.min(left, x - at_x), math.min(top, y - at_y)
-      right, bottom = math.max(right, x + w - at_x), math.max(bottom, y + h - at_y)
+  for _, part in ipairs(parts) do
+    local _, _, w, h = lookup(document, id .. part[1]):rect()
+    if w <= 0 or h <= 0 then
+      w, h = part[4], part[5]
     end
-  end
-  if right < left then
-    return fallback[1], fallback[2], fallback[3], fallback[4]
+    left, top = math.min(left, part[2] * 3), math.min(top, part[3] * 3)
+    right, bottom = math.max(right, part[2] * 3 + w), math.max(bottom, part[3] * 3 + h)
   end
   return left, top, right - left, bottom - top
 end
@@ -1373,7 +1384,13 @@ local function draw_hp_bars(document)
     if bar ~= nil then
       local x, y = bar.left, bar.top
       hud = hud or hud_zones(document)
-      local ex, ey, ew, eh = bar_extent(document, id, { x * 3 - 36, (y - 9) * 3, 220, 42 })
+      local tag, aimed, waited = "", false, false
+      for _, fighter in ipairs(fighters) do
+        if fighter.id == enemy and folder.active then
+          tag, aimed, waited = fighter.tag, fighter.targeted, fighter.queued
+        end
+      end
+      local ex, ey, ew, eh = bar_extent(document, id, x, y, tag ~= "")
       local top, left = clear_of_hud(hud, bar.x, bar.y, ex, ey, ew, eh, placed)
       set_property(document, id, "left", left .. "%")
       set_property(document, id, "top", top .. "%")
@@ -1386,12 +1403,6 @@ local function draw_hp_bars(document)
       set_property(document, id .. "-value", "left", pixels(x + 33))
       set_property(document, id .. "-value", "top", pixels(y - 9))
       draw_hp_value(document, enemy, bar.hp)
-      local tag, aimed, waited = "", false, false
-      for _, fighter in ipairs(fighters) do
-        if fighter.id == enemy and folder.active then
-          tag, aimed, waited = fighter.tag, fighter.targeted, fighter.queued
-        end
-      end
       set_class(document, id .. "-tag", "hidden", tag == "")
       set_class(document, id, "targeted", aimed)
       set_class(document, id, "queued", waited)
