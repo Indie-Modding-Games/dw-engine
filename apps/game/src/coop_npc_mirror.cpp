@@ -12,7 +12,7 @@ namespace dwe::app {
 namespace coop = game::coop;
 
 std::size_t CoopNpcMirror::show(game::field::FieldNpcs& npcs, const View& view, net::Millis now) {
-  if (view.world == nullptr) {
+  if (view.world == nullptr || view.battling) {
     npcs.releaseMirrors();
     missingSince_.clear();
     return 0;

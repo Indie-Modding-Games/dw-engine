@@ -520,11 +520,13 @@ toma de allí al empezar (§6.1).
 **Lo que reproduce un script (#420).** Un curso del gimnasio, una escena o una charla reproducen clips en el jugador y
 el compañero en lugar de los de su movimiento. Las instantáneas y los estados del invitado llevan ese clip (el id de
 animación del original y cuántas veces lo arrancó un script, para que un empujón arrancado de nuevo se vuelva a
-reproducir) desde el protocolo 14. Mientras la partida de un invitado retiene a su compañero (un script retiene su
-campo, o un script le reproduce un clip), sus estados llevan también el sitio y el clip del compañero: el anfitrión
-dibuja allí al compañero del invitado en lugar de hacerlo seguir, y lo deja seguir de nuevo desde ese sitio cuando el
-estado deja de llevarlo. Un compañero retenido a más de 2000 unidades de su jugador no se dibuja allí. Un clip que un
-script ya no reproduce no deja nada: el cuerpo vuelve al clip de su movimiento en todas las máquinas.
+reproducir) desde el protocolo 14. Los estados de un invitado llevan también el sitio de su compañero y el clip que le
+reproduce un script, en cada reporte (#411: antes, solo mientras su partida lo retenía): el anfitrión dibuja allí al
+compañero del invitado, suavizado en una pista propia como el cuerpo, en lugar de un seguimiento propio que se alejaba
+del del invitado. Una batalla que empieza coloca a ese compañero donde lo ve su jugador, y los demás invitados lo ven
+allí en las instantáneas del anfitrión. Un invitado que no manda compañero lo sigue teniendo con el seguimiento de
+antes. Un compañero a más de 2000 unidades de su jugador no se dibuja allí. Un clip que un script ya no reproduce no
+deja nada: el cuerpo vuelve al clip de su movimiento en todas las máquinas.
 
 **Los NPC del mapa (#419).** Antes cada partida movía sus NPC del mapa por su cuenta, así que uno salvaje estaba,
 perseguía y se iba distinto en cada pantalla. Desde el protocolo 14 las instantáneas del anfitrión listan también los
@@ -533,7 +535,8 @@ invitado que está en el mapa del anfitrión, cada NPC listado está donde el de
 como los jugadores; un script de la partida del propio invitado que lo retenga o lo anime sigue mandando. Uno que el
 anfitrión ya no tiene (una batalla lo quitó, un cambio de historia lo hizo irse) sale del mapa del invitado cuando
 lleva un segundo sin aparecer y no corre ningún script allí, así que no queda nada atrás. En otro mapa, durante un
-cambio de mapa o una batalla co-op, o sin enlace, los NPC del invitado se mueven por su cuenta. Reaccionan al jugador
+cambio de mapa o una batalla co-op, o sin enlace, los NPC del invitado se mueven por su cuenta; durante una batalla de
+la propia partida del invitado son sus luchadores y están donde esa batalla los pone. Reaccionan al jugador
 del anfitrión, como los ve su partida; un NPC que solo tiene el anfitrión no se añade en el invitado.
 
 **Ciclo de vida.** Un invitado entra cuando termina su saludo: recibe el id libre más bajo, un cuerpo y un compañero

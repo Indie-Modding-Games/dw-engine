@@ -1,5 +1,6 @@
 // What each player's own game does to its partner that the others' games must show the same: its
-// form after it evolves (#412) and what a gym course plays on it and where (#420).
+// form after it evolves (#412), what a gym course plays on it and where (#420), and where it stands
+// (#411).
 
 #include <dwe/game/field/field.hpp>
 #include <dwe/scene/world.hpp>
@@ -7,9 +8,11 @@
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <cmath>
 
 #include "coop_snapshot.hpp"
 #include "coop_world.hpp"
+#include "packages/game/coop/tests/support/coop_pair.hpp"
 #include "packages/game/field/tests/fixture.hpp"
 
 using namespace dwe::app;
@@ -191,7 +194,8 @@ TEST_CASE("co-op training: a guest's course shows on the host where and as the g
   guest.field.holdForScript(false);
   const auto after = guest.guest.report(guest.field, false, 6);
   REQUIRE(after);
-  CHECK_FALSE(after->partner);
+  REQUIRE(after->partner);
+  CHECK_FALSE(after->partner->action);
   CHECK_FALSE(after->action);
   session.host.receive(coop::GuestPlayerId, *after, Millis{100});
   (void)session.host.tick(session.field, 1, std::nullopt, Millis{250});
@@ -218,4 +222,61 @@ TEST_CASE("co-op training: a held partner reported far from its player is not dr
   REQUIRE(partner);
   CHECK(partner->position.x < static_cast<float>(session.placed.x) + 1000.0F);
   CHECK_FALSE(session.field.scriptedClipOf(*session.field.partnerEntity(coop::GuestPlayerId)));
+}
+
+TEST_CASE("co-op partners: the host draws a guest's partner where the guest's game has it (#411)") {
+  HostSession session;
+  GuestSession guest{session.placed};
+  coop::test::CoopPair pair;
+  REQUIRE(pair.connect());
+  (void)coop::test::CoopPair::drain(pair.host());
+  (void)coop::test::CoopPair::drain(pair.guest());
+  // The guest's states travel over the link, 50 ms apart, as its game reports them.
+  std::uint64_t tick = 0;
+  const auto report = [&] {
+    tick += 3;
+    const auto state = guest.guest.report(guest.field, false, tick);
+    REQUIRE(state);
+    pair.deliver(pair.guest(), *state, 50);
+    for (const coop::Message& message : coop::test::CoopPair::drain(pair.host())) {
+      session.host.receive(coop::GuestPlayerId, message, pair.now());
+    }
+  };
+  const auto hostCopy = [&] {
+    (void)session.host.tick(session.field, 1, std::nullopt, pair.now() + Millis{200});
+    session.field.tick(1.0F / 60.0F);
+    const auto partner = session.field.partner(coop::GuestPlayerId);
+    REQUIRE(partner);
+    return partner->position;
+  };
+
+  // The guest's partner stands where its own game moved it, unheld, away from where a follow of
+  // the host's would put it.
+  const glm::vec3 wandered{static_cast<float>(session.placed.x) + 300.0F, 0.0F, 450.0F};
+  guest.field.placeAt(guest.field.partnerEntity(), wandered, 1.0F);
+  for (int i = 0; i < 6; ++i) {
+    report();
+  }
+  const auto state = guest.guest.report(guest.field, false, tick + 3);
+  REQUIRE(state);
+  REQUIRE(state->partner);
+  CHECK_FALSE(state->partner->action);
+  // The host's copy stands there: a battle starting now places the guest's partner where its
+  // player sees it, and the host's snapshot shows it there to every other guest.
+  CHECK(glm::distance(hostCopy(), wandered) < 1.0F);
+  CHECK_FALSE(session.field.scriptedClipOf(*session.field.partnerEntity(coop::GuestPlayerId)));
+  const auto snapshot = makeCoopSnapshot(session.field, "room", 9, 0);
+  REQUIRE(snapshot);
+  const auto copy = std::ranges::find(snapshot->entities, 4, &coop::EntityState::networkId);
+  REQUIRE(copy != snapshot->entities.end());
+  CHECK(std::abs(static_cast<float>(copy->x) - wandered.x) <= 1.0F);
+  CHECK(std::abs(static_cast<float>(copy->z) - wandered.z) <= 1.0F);
+
+  // It walks on in the guest's game: the host's copy goes along, drawn between the states.
+  const glm::vec3 next = wandered + glm::vec3{0.0F, 0.0F, 200.0F};
+  guest.field.placeAt(guest.field.partnerEntity(), next, 1.0F);
+  for (int i = 0; i < 6; ++i) {
+    report();
+  }
+  CHECK(glm::distance(hostCopy(), next) < 1.0F);
 }

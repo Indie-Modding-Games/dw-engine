@@ -82,9 +82,14 @@ public:
 
 private:
   struct OwnerHeld;
-  // A guest's player and partner as its own game shows them (#420): the clip its scripts play,
-  // and its partner where its game holds it (back to following it without).
-  void showHeld(game::field::Field& field, game::coop::PlayerId id, const OwnerHeld& held);
+  // A guest's player and partner as its own game shows them (#420, #411): the clip its scripts
+  // play, and its partner where its game has it, smoothed as the body (`partner`, the sample of its
+  // track; back to following the body without).
+  void showHeld(game::field::Field& field, game::coop::PlayerId id, const OwnerHeld& held,
+                std::optional<game::field::CharacterState> partner = std::nullopt);
+  [[nodiscard]] std::optional<game::field::CharacterState>
+  partnerAt(game::coop::PlayerId id, std::string_view mapId, net::Millis now) const;
+  void forgetTracks(game::coop::PlayerId id);
   // Whether a claim's item is still there; taking it off the world (and telling the guests) if so.
   bool grant(CoopWorldView& view, const game::coop::ItemClaim& claim, CoopWorldShare& share,
              bool& chestsMayChange);
@@ -101,8 +106,9 @@ private:
   std::set<game::coop::PlayerId> synced_;
   std::optional<std::uint32_t> syncSerial_;
   std::map<game::coop::PlayerId, game::coop::PoseTrack> tracks_;
+  std::map<game::coop::PlayerId, game::coop::PoseTrack> partnerTracks_;
   // What each guest's newest taken state says its own scripts play on its player and where its
-  // game holds its partner (#420): the host's field shows them so.
+  // game has its partner (#420, #411): the host's field shows them so.
   struct OwnerHeld {
     std::optional<game::coop::ActionClip> action;
     std::optional<game::coop::HeldPartner> partner;

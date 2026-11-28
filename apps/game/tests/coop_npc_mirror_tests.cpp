@@ -155,3 +155,30 @@ TEST_CASE("co-op NPCs: one the host took off leaves the guest's map a second lat
   }
   CHECK(other.field.npcs().poses().size() == 2);
 }
+
+TEST_CASE("co-op NPCs: a battle of the guest's own keeps its NPCs where it put them") {
+  Side host;
+  Side guest;
+  CoopNpcMirror mirror;
+  host.run(2.0F);
+  guest.run(0.5F);
+  const glm::vec3 own = *guest.field.npcs().positionAt(0);
+  REQUIRE(apart(*host.field.npcs().positionAt(0), own) > 100.0F);
+  REQUIRE(host.field.npcs().takeOffUntilReload(1));
+  const PresentedCoopWorld world = drawn(host.field);
+
+  // The guest's solo battle runs on the host's map: its fighters are its own, none is taken off.
+  for (const Millis now : {Millis{0}, Millis{3000}}) {
+    CHECK(mirror.show(guest.field.npcs(),
+                      {.world = &world, .mapSerial = 1, .ready = true, .battling = true},
+                      now) == 0);
+  }
+  CHECK_FALSE(guest.field.npcs().mirrored(0));
+  CHECK(apart(own, *guest.field.npcs().positionAt(0)) < 1.0F);
+  CHECK(guest.field.npcs().entityAt(1).has_value());
+
+  // Once it ends they stand where the host's are again.
+  CHECK(mirror.show(guest.field.npcs(), {.world = &world, .mapSerial = 1, .ready = true},
+                    Millis{3100}) == 0);
+  CHECK(apart(*host.field.npcs().positionAt(0), *guest.field.npcs().positionAt(0)) < 1.0F);
+}

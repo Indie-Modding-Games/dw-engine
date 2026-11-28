@@ -16,7 +16,8 @@ namespace dwe::app {
 // «The map's NPCs»): each one the host lists stands where the host's does, so a wild one walks,
 // chases and leaves the same way on every screen. One the host no longer lists is taken off once
 // it has been missing for GoneAfter while this game's map stands still, so nothing stays behind.
-// Without a snapshot of this map (another map, a map change, no link) they walk on their own.
+// Without a snapshot of this map (another map, a map change, no link) they walk on their own;
+// during a battle of this game's own they are left to it.
 class CoopNpcMirror {
 public:
   static constexpr net::Millis GoneAfter{1000};
@@ -27,6 +28,8 @@ public:
     std::uint32_t mapSerial = 0;
     // No script of this game runs and its map does not change.
     bool ready = false;
+    // A battle of this game's own runs: its fighters stand where it puts them, the rest stay put.
+    bool battling = false;
   };
   // Returns how many NPCs it took off.
   std::size_t show(game::field::FieldNpcs& npcs, const View& view, net::Millis now);

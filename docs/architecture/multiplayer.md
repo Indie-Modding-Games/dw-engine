@@ -428,11 +428,13 @@ a battle takes them from there when it starts (§6.1).
 
 **What a script plays (#420).** A gym course, a scene or a talk plays clips on the player and the partner instead of
 their motion's. Snapshots and guest states carry that clip (the original's animation id and how many times a script
-started it, so a push started again plays again) with protocol 14. While a guest's game holds its partner (a script
-holds its field, or a script plays a clip on it), its states also carry the partner's place and clip: the host draws
-the guest's partner there instead of following, and lets it follow again from that spot once the state stops
-carrying it. A held partner reported more than 2000 units from its player is not drawn there. A clip a script no
-longer plays leaves nothing behind: the body goes back to its motion's clip on every machine.
+started it, so a push started again plays again) with protocol 14. A guest's states also carry its partner's place and
+the clip a script plays on it, on every report (#411: before, only while its game held the partner): the host draws the
+guest's partner there, smoothed on a track of its own as the body is, instead of running a follow of its own that
+drifted away from the guest's. A battle that starts places that partner where its player sees it, and other guests see
+it there in the host's snapshots. A guest that sends no partner gets the follow as before. A partner reported more than
+2000 units from its player is not drawn there. A clip a script no longer plays leaves nothing behind: the body goes
+back to its motion's clip on every machine.
 
 **The map's NPCs (#419).** Each game used to walk its map NPCs on its own, so a wild one stood, chased and left
 differently on each screen. With protocol 14 the host's snapshots also list its map's NPCs, id `0x100` plus the slot,
@@ -440,7 +442,8 @@ after the players (none when they do not fit in one datagram). On a guest standi
 snapshot lists stands where the host's does and moves its way, as smoothly as the players; a script of the guest's own
 game holding or animating one still comes first. One the host no longer has (a battle took it off, a story change made
 it leave) leaves the guest's map once it has been missing for a second while no script runs there, so nothing stays
-behind. On another map, during a map change or a co-op battle, or with no link, the guest's NPCs walk on their own.
+behind. On another map, during a map change or a co-op battle, or with no link, the guest's NPCs walk on their own;
+during a battle of the guest's own game they are its fighters and stand where that battle puts them.
 They react to the host's player, as the host's game sees them; an NPC only the host has is not added on the guest.
 
 **Lifecycle.** A guest joins when its handshake completes: it gets the lowest free id, a body and partner in the
