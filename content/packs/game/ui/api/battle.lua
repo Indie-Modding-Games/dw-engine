@@ -69,6 +69,7 @@ function battle.state()
     revive_seconds = seconds("battle.revive_seconds"),
     match_seconds = match,
     cup = match ~= nil,
+    helper = ui.setting("coop_battle.shown") == true and ui.setting("coop_battle.role") == "helper",
   }
 end
 

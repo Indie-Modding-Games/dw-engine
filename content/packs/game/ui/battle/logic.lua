@@ -1019,6 +1019,7 @@ local function draw_prompts(document)
   lookup(document, "prompt-confirm"):set_prompt("confirm")
   lookup(document, "prompt-charge"):set_prompt("confirm")
   lookup(document, "prompt-menu"):set_prompt("menu")
+  lookup(document, "prompt-cheer-key"):set_prompt("extra")
   -- The original's square button calls the finisher (battle_tick.c: handleCommands); here it is
   -- the `extra` action, so the gauge's box shows its key or button: the square itself on the
   -- original's pad. A key's name of more than two letters does not fit where the square was: a
@@ -1822,6 +1823,10 @@ local function draw(document)
   end
   ending = nil
   folder = battle.folder()
+  -- A co-op helper gives no orders; its finisher key cheers instead (coop-combat.md).
+  local helper = state.helper
+  set_class(document, "prompt-command", "hidden", helper)
+  set_class(document, "prompt-cheer", "hidden", not helper)
   fighters = battle.fighters()
   commands = battle.commands()
   for index = 0, max_fighters - 1 do

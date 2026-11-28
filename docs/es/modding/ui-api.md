@@ -67,6 +67,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.37.0 | `helper` en `battle.state()`: un invitado en cooperativo cuyo compañero no está en el combate, cuya tira indica su tecla de ánimo |
 | 0.36.0 | Cómo acabó el combate del anfitrión en el cuadro final de un invitado en cooperativo: `coop_battle.outcome` (victory, fled o defeat), que el titular de `coop_battle` nombra en vez de la invitación del combate |
 | 0.35.0 | El aliado al que vuela el próximo objeto de un invitado en cooperativo: `battle.ally.<n>.throw_target` y `throw_target` en `battle.allies()` (las skins iluminan su tarjeta con la clase `throw-target`), y `bag.throw_pick`, activo mientras la bolsa es la de combate de un invitado, cuyas Q y E lo eligen (la bolsa enseña esa pista) |
 | 0.34.0 | La razón del aviso gráfico: `software_notice.kind`, `software_notice.reason` y sus valores `software_notice.<valor>` ([diagnóstico gráfico](../architecture/graphics-diagnosis.md)) |

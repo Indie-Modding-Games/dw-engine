@@ -67,6 +67,7 @@ between game versions.
 
 | Version | Changes |
 |---|---|
+| 0.37.0 | `helper` in `battle.state()`: a co-op guest whose partner is not in the fight, whose strip hints its cheer key |
 | 0.36.0 | How the host's battle ended on a co-op guest's end box: `coop_battle.outcome` (victory, fled or defeat), which the `coop_battle` headline names instead of the battle's invitation |
 | 0.35.0 | The ally a co-op guest's next item flies to: `battle.ally.<n>.throw_target` and `throw_target` in `battle.allies()` (the skins light that ally's card with the class `throw-target`), and `bag.throw_pick`, set while the bag is a guest's battle bag whose Q and E pick it (the bag shows that hint) |
 | 0.34.0 | The graphics notice's reason: `software_notice.kind`, `software_notice.reason` and its values `software_notice.<value>` ([graphics diagnosis](../architecture/graphics-diagnosis.md)) |
@@ -113,7 +114,7 @@ versus, the online rooms, the co-op game's tag and notices and the story boxes (
 ## Reference
 
 <!-- ui-api:generated -->
-UI API version: **0.36.0**.
+UI API version: **0.37.0**.
 
 ### `ui`
 
@@ -949,7 +950,7 @@ UI API version: **0.36.0**.
 | `battle_close` | command | — | Closes the battle's end box. For an addon, only in the end phase. |
 | `battle_end_count` | command | — | A step of the count of the bits at the battle's end. For an addon, only in the end phase. |
 | `battle_end_counted` | command | — | The count of the bits at the battle's end has finished. For an addon, only in the end phase. |
-| `battle.state(): table` | query | table | The battle: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds and match_seconds (or nil) and cup (a cup battle). |
+| `battle.state(): table` | query | table | The battle: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds and match_seconds (or nil), cup (a cup battle) and helper (a co-op guest whose partner is not in the fight: no orders, its finisher key cheers). |
 | `battle.fighters(): table` | query | table | The fighters, the partner first: name_key, status_key, hp, max_hp, mp, max_mp, fainted, hp_bar, id, tag, targeted and queued. |
 | `battle.allies(): table` | query | table | The other players' partners fighting beside this player's in a co-op battle (empty otherwise): name_key, status_key, hp, max_hp, mp, max_mp, fainted and revive_seconds (a fallen ally's countdown, or nil). |
 | `battle.commands(): table` | query | table | The command strip, the finisher first: command, label_key, icon, available, current, mp_cost, problem_key (folder battle: why the move cannot be ordered now, or ""), area and friendly_fire (folder battle: the technique's area, "" for one target, and whether it hits allies). |

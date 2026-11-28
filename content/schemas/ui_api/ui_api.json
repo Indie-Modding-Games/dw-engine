@@ -1,5 +1,5 @@
 {
-  "version": "0.36.0",
+  "version": "0.37.0",
   "screens": {
     "ui": [
       {"name": "ui.setting", "kind": "function", "value": "any", "summary": "The value of a setting the game publishes; nil if it does not publish it.", "signature": "(name: string): any"},
@@ -745,7 +745,7 @@
       {"name": "battle_close", "kind": "command", "value": "none", "summary": "Closes the battle's end box. For an addon, only in the end phase."},
       {"name": "battle_end_count", "kind": "command", "value": "none", "summary": "A step of the count of the bits at the battle's end. For an addon, only in the end phase."},
       {"name": "battle_end_counted", "kind": "command", "value": "none", "summary": "The count of the bits at the battle's end has finished. For an addon, only in the end phase."},
-      {"name": "battle.state", "kind": "query", "value": "table", "summary": "The battle: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds and match_seconds (or nil) and cup (a cup battle).", "signature": "(): table"},
+      {"name": "battle.state", "kind": "query", "value": "table", "summary": "The battle: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds and match_seconds (or nil), cup (a cup battle) and helper (a co-op guest whose partner is not in the fight: no orders, its finisher key cheers).", "signature": "(): table"},
       {"name": "battle.fighters", "kind": "query", "value": "table", "summary": "The fighters, the partner first: name_key, status_key, hp, max_hp, mp, max_mp, fainted, hp_bar, id, tag, targeted and queued.", "signature": "(): table"},
       {"name": "battle.allies", "kind": "query", "value": "table", "summary": "The other players' partners fighting beside this player's in a co-op battle (empty otherwise): name_key, status_key, hp, max_hp, mp, max_mp, fainted and revive_seconds (a fallen ally's countdown, or nil).", "signature": "(): table"},
       {"name": "battle.commands", "kind": "query", "value": "table", "summary": "The command strip, the finisher first: command, label_key, icon, available, current, mp_cost, problem_key (folder battle: why the move cannot be ordered now, or \"\"), area and friendly_fire (folder battle: the technique's area, \"\" for one target, and whether it hits allies).", "signature": "(): table"},
