@@ -15,6 +15,8 @@ command.finisher: "Finisher"
 outcome.victory: "Victory!"
 outcome.fled: "Got away safely."
 outcome.defeat: "Defeated..."
+# The bits the player holds, in the box the won bits move into.
+outcome.total: "Total"
 status.poison: "Poisoned"
 status.confusion: "Confused"
 status.stun: "Stunned"

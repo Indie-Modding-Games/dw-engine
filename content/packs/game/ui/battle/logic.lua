@@ -770,9 +770,12 @@ local function draw_end(document)
   lookup(document, "bits-label"):set_text(t(bits_label_key))
   lookup(document, "bits-value"):set_text(tostring(ending.bits))
   lookup(document, "balance"):set_class("hidden", not ending.balance_open)
-  lookup(document, "balance-label"):set_text(t(bits_label_key))
+  lookup(document, "balance-label"):set_text(t("battle.outcome.total"))
   lookup(document, "balance-value"):set_text(tostring(ending.balance))
   lookup(document, "end-boxes"):set_class("with-text", #ending.rows > 0)
+  local waiting = ending.row <= #ending.rows and not ending.typing
+  set_class(document, "end-more", "hidden", not waiting)
+  lookup(document, "end-more"):set_prompt("confirm")
   draw_end_rows(document)
 end
 
@@ -824,6 +827,46 @@ local function draw_anger(document, intro)
   draw_marks(document, intro.flee, "flee-", max_flee, scale)
 end
 
+-- The HUD's zones, which what floats over the fighters (numbers, enemy bars, shouts) keeps out of:
+-- a thing that would land in one goes under it when the zone is in the window's top half, over it
+-- in the bottom half. Rects in dp from the window's corner; a hidden zone has no size.
+local reserved_zones = { "partner-panel", "folder-panel", "commands", "enemies", "allies" }
+local zone_gap = 6
+
+local function hud_zones(document)
+  local _, _, width, height = lookup(document, "damage"):rect()
+  local zones = {}
+  for _, id in ipairs(reserved_zones) do
+    local x, y, w, h = lookup(document, id):rect()
+    if w > 0 and h > 0 then
+      zones[#zones + 1] = { left = x, top = y, right = x + w, bottom = y + h }
+    end
+  end
+  return { width = width, height = height, zones = zones }
+end
+
+-- An anchor in percent of the window, moved out of the zones; the thing spans `dx`..`dx + w` and
+-- `dy`..`dy + h` dp from it.
+local function clear_of_hud(hud, x_percent, y_percent, dx, dy, w, h)
+  if hud.width <= 0 or hud.height <= 0 then
+    return y_percent
+  end
+  local x = x_percent * hud.width / 100 + dx
+  local y = y_percent * hud.height / 100 + dy
+  for _, zone in ipairs(hud.zones) do
+    local across = x + w >= zone.left - zone_gap and x <= zone.right + zone_gap
+    local within = y + h >= zone.top - zone_gap and y <= zone.bottom + zone_gap
+    if across and within then
+      if zone.top + zone.bottom < hud.height then
+        y = zone.bottom + zone_gap
+      else
+        y = zone.top - zone_gap - h
+      end
+    end
+  end
+  return (y - dy) * 100 / hud.height
+end
+
 -- The numbers over the fighters (packages/screens: damage_numbers.hpp; battle.numbers()): the
 -- anchor in percent of the window, the first digit's offset from it in the original's pixels, the
 -- value, its kind and its icon. Each digit is 8 pixels square, 7 apart (utils2.c: drawEntityText);
@@ -833,13 +876,16 @@ local number_icons = { "hp", "mp", "offense", "defense", "speed" }
 local function draw_damage(document)
   local list = battle.numbers()
   local count = math.min(max_numbers, #list)
+  local hud = count > 0 and hud_zones(document) or nil
   for index = 0, max_numbers - 1 do
     local id = "dn-" .. index
     set_class(document, id, "hidden", index >= count)
     if index < count then
       local shown = list[index + 1]
+      local width = (#tostring(shown.value or "") + 1) * 24
+      local top = clear_of_hud(hud, shown.x, shown.y, shown.dx * 3 - 24, shown.dy * 3, width, 24)
       set_property(document, id, "left", shown.x .. "%")
-      set_property(document, id, "top", shown.y .. "%")
+      set_property(document, id, "top", top .. "%")
       set_property(
         document,
         id,
@@ -981,14 +1027,17 @@ local function draw_hp_bars(document)
   for _, bar in ipairs(shown.bars) do
     bars[bar.enemy] = bar
   end
+  local hud = nil
   for enemy = 1, max_enemies do
     local bar = bars[enemy]
     local id = "hb-" .. enemy
     set_class(document, id, "hidden", bar == nil)
     if bar ~= nil then
       local x, y = bar.left, bar.top
+      hud = hud or hud_zones(document)
+      local top = clear_of_hud(hud, bar.x, bar.y, x * 3, (y - 9) * 3, 132, 42)
       set_property(document, id, "left", bar.x .. "%")
-      set_property(document, id, "top", bar.y .. "%")
+      set_property(document, id, "top", top .. "%")
       set_property(document, id .. "-frame", "left", pixels(x))
       set_property(document, id .. "-frame", "top", pixels(y))
       set_property(document, id .. "-fill", "left", pixels(x + 2))
@@ -1074,8 +1123,17 @@ local function draw_shout(document)
     x = shout_edge - half
   end
   local y = shout.line + shout.hop
+  local top = clear_of_hud(
+    hud_zones(document),
+    shout.x,
+    shout.y,
+    (x - node_x - half) * 3,
+    (y - node_y) * 3,
+    half * 6,
+    48
+  )
   set_property(document, "shout", "left", shout.x .. "%")
-  set_property(document, "shout", "top", shout.y .. "%")
+  set_property(document, "shout", "top", top .. "%")
   set_property(
     document,
     "shout",
@@ -1283,14 +1341,8 @@ local function draw_folder(document)
   end
   set_property(document, "folder-bar-fill", "width", percent(folder.bar, folder.bar_max) .. "%")
   set_class(document, "folder-bar-fill", "broken", folder.broken)
-  set_class(document, "folder-broken", "hidden", not folder.broken)
   local partner = fighters[1]
   local status = partner ~= nil and partner.status_key ~= "" and text(partner.status_key) or ""
-  if applied["folder-status text"] ~= status then
-    applied["folder-status text"] = status
-    lookup(document, "folder-status"):set_text(status)
-  end
-  set_class(document, "folder-status", "hidden", status == "")
   local notice = ""
   if folder.notice ~= nil then
     notice = text(folder.notice.key)
@@ -1301,21 +1353,26 @@ local function draw_folder(document)
       notice = notice .. " (" .. text(folder.notice.reason_key) .. ")"
     end
   end
-  if applied["folder-notice text"] ~= notice then
-    applied["folder-notice text"] = notice
-    lookup(document, "folder-notice"):set_text(notice)
+  local message, kind = status, "status"
+  if folder.broken then
+    message, kind = text("battle.folder.broken"), "broken"
+  elseif notice ~= "" then
+    message, kind = notice, "notice"
   end
-  set_class(document, "folder-notice", "hidden", notice == "")
-  local target = folder.target_key ~= ""
-      and (text("battle.folder.target") .. ": " .. text(folder.target_key))
-    or ""
-  if applied["folder-target text"] ~= target then
-    applied["folder-target text"] = target
-    lookup(document, "folder-target"):set_text(target)
+  if applied["folder-message text"] ~= message then
+    applied["folder-message text"] = message
+    lookup(document, "folder-message"):set_text(message)
   end
-  local active = ""
+  for _, each in ipairs({ "broken", "notice", "status" }) do
+    set_class(document, "folder-message", each, kind == each)
+  end
+  local target = folder.target_key ~= "" and text(folder.target_key) or ""
+  local active = target ~= "" and (text("battle.folder.target") .. ": " .. target) or ""
   if folder.move_key ~= "" then
     active = text(folder.move_key)
+    if target ~= "" then
+      active = active .. " > " .. target
+    end
     if folder.phase ~= "" then
       active = active .. " - " .. text("battle.folder.phase." .. folder.phase)
     end
@@ -1346,9 +1403,9 @@ local function draw(document)
   phase = state.phase
   -- In the original look the strip and the partner's bars stay through the victory and the end box,
   -- the strip without its cursor or name, and then go (battle_main.c:777); the rest of the fight's
-  -- screen goes.
+  -- screen goes. A Folder battle's HUD goes at once.
   local after = phase == "victory" or phase == "end" or phase == "closing"
-  local strip_after = after and ui.layout("menu") == "original"
+  local strip_after = after and ui.layout("menu") == "original" and not battle.folder().active
   lookup(document, "fight"):set_class(
     "hidden",
     phase ~= "fight" and phase ~= "intro" and not strip_after

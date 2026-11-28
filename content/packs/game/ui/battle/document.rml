@@ -150,16 +150,13 @@
 		<div id="match-clock" class="hidden"><div id="mc-side-1" class="mc-side"></div><div id="mc-side-2" class="mc-side"></div><div id="mc-d-0" class="mc-digit hidden"></div><div id="mc-d-1" class="mc-digit hidden"></div></div>
 
 
-		<!-- The Folder battle (battle.folder): the partner's defense bar and state, its active order, the waiting ones and
-		     how the last one ended when it did not finish. -->
+		<!-- The Folder battle (battle.folder), four rows of a fixed height: the partner's defense bar; one message (the
+		     broken defense, else how the last order ended when it did not finish, else an altered state); the active
+		     order and its foe, or the target; the waiting orders. -->
 		<div id="folder-panel" class="hidden">
 			<div class="folder-row"><span class="folder-label" text-key="battle.folder.guard"></span><div class="folder-track"><div class="folder-fill" id="folder-bar-fill"></div></div></div>
-			<p id="folder-broken" class="hidden" text-key="battle.folder.broken"></p>
-			<p id="folder-status" class="hidden"></p>
-			<p id="folder-notice" class="hidden"></p>
-			<p id="folder-target"></p>
-			<p id="folder-active"></p>
-			<div class="folder-track" id="folder-phase"><div class="folder-fill" id="folder-phase-fill"></div></div>
+			<p id="folder-message"></p>
+			<div class="folder-row" id="folder-order"><p id="folder-active"></p><div class="folder-track" id="folder-phase"><div class="folder-fill" id="folder-phase-fill"></div></div></div>
 			<p id="folder-queue"></p>
 		</div>
 
@@ -609,6 +606,7 @@
 				<div id="end-text">
 					<p class="end-row original-look" id="end-row-0"><span class="end-plain" id="end-row-0-0"></span><span class="end-name" id="end-row-0-1"></span><span class="end-plain" id="end-row-0-2"></span><span class="end-name" id="end-row-0-3"></span><span class="end-plain" id="end-row-0-4"></span></p>
 					<p class="end-row original-look" id="end-row-1"><span class="end-plain" id="end-row-1-0"></span><span class="end-name" id="end-row-1-1"></span><span class="end-plain" id="end-row-1-2"></span><span class="end-name" id="end-row-1-3"></span><span class="end-plain" id="end-row-1-4"></span></p>
+					<span class="key hidden" id="end-more"></span>
 				</div>
 			</div>
 		</div>

@@ -41,19 +41,18 @@ strip has every entry, whatever its brain, and each entry means something else.
 | Your call | Drops the waiting orders; the one being executed goes on |
 | Run | The flee, as in Classic |
 
-A plate at the bottom left (`battle.folder()` in the UI API) shows the partner's defense bar and its break, the foe
-the next orders aim at (Change picks it), the active order's technique and phase with the timed phase's progress, and
-the waiting orders (an order names its foe only when it is not the current target). Under them it tells the partner's
-altered state, in the skins whose partner bars carry none, and, for five seconds, how the last order ended when it
-did not finish: cancelled, interrupted, invalid or replaced, with the reason (not enough MP, its foe is gone, out of
-reach...). The line under the strip says why the focused technique or the finisher cannot be ordered now; in the
-modern skin, whose buttons already name the commands and whose move name shouts when it starts, that line shows only
-the reason.
+A plate at the bottom left (`battle.folder()` in the UI API) has four rows of a fixed height, so it never grows over
+the fighters: the partner's defense bar; one message, the break first, else, for five seconds, how the last order
+ended when it did not finish (cancelled, interrupted, invalid or replaced, with the reason: not enough MP, its foe is
+gone, out of reach...), else the partner's altered state; the active order's technique, foe and phase with the timed
+phase's progress, or the foe the next orders aim at while none runs (Change picks it); and the waiting orders. The
+line under the strip says why the focused technique or the finisher cannot be ordered now; in the modern skin, whose
+buttons already name the commands and whose move name shouts when it starts, that line shows only the reason.
 
 The plate keeps to its own region so it never covers another box: in the modern skin it sits between the partner's
 card and the key hints, under the enemies' cards; in the original, pixel and DevVago skins it takes the bottom left and
-moves up over a cup match's strip. In every skin it gives way while the bag is open, whose boxes reach its place. Each
-line keeps to one row.
+moves up over a cup match's strip. In every skin it gives way while the bag is open, and the whole HUD goes when the
+results open. The numbers, foes' bars and shouts over the fighters move out of the HUD's boxes.
 
 ## Architecture
 

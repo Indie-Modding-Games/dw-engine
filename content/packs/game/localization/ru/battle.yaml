@@ -13,6 +13,8 @@ command.finisher: "Коронный приём"
 outcome.victory: "Победа!"
 outcome.fled: "Удалось сбежать."
 outcome.defeat: "Поражение..."
+# The bits the player holds, in the box the won bits move into.
+outcome.total: "Итого"
 status.poison: "Отравлен"
 status.confusion: "В смятении"
 status.stun: "Оглушён"

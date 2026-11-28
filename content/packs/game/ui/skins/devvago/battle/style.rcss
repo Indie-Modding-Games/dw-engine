@@ -803,7 +803,8 @@
    117 (grey, blue while it rises), the up arrow at x 130 and the raise left at x 142, a line at x 122. The bits box
    under it (createBitsBox: -88, 18, 176 x 66): the label at x 10, the bits at x 70, a line at y 32 and the two rows of
    text from y 36 (BTL_initializeBattleEndText: -78, 54, 156 x 24). The final balance box (createFinalBalanceBox: -88,
-   -13, 176 x 31) opens over the stats box's foot once the raises are counted. The names are yellow (#fff371). */
+   -13, 176 x 31) opened over the stats box's foot once the raises were counted; here it goes under the bits box, so
+   the last stats stay readable, and the outcome heads the boxes. The names are yellow (#fff371). */
 
 #end {
 	display: block;
@@ -813,9 +814,9 @@
 #end-panel {
 	position: absolute;
 	left: 50%;
-	top: 108dp;
+	top: 46dp;
 	width: 528dp;
-	height: 486dp;
+	height: 627dp;
 	margin-left: -264dp;
 	padding: 0;
 	border-radius: 0;
@@ -824,16 +825,27 @@
 }
 
 #end-title {
-	display: none;
+	display: block;
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 528dp;
+	height: 42dp;
+	margin: 0;
+	font-size: 36dp;
+	line-height: 42dp;
+	text-align: center;
+	color: #fff371;
+	font-effect: shadow(3dp 3dp #000000);
 }
 
 #end-boxes {
 	display: block;
 	position: absolute;
 	left: 0;
-	top: 0;
+	top: 48dp;
 	width: 528dp;
-	height: 486dp;
+	height: 579dp;
 	margin: 0;
 }
 
@@ -988,11 +1000,15 @@
 }
 
 #balance {
-	top: 195dp;
+	top: 381dp;
 	height: 93dp;
 	font-size: 33dp;
 	line-height: 36dp;
 	background-color: #293942;
+}
+
+#end-boxes.with-text #balance {
+	top: 486dp;
 }
 
 #balance.hidden {
@@ -1111,10 +1127,25 @@
    into the same navy/cyan language as the title and pause screens. */
 #partner-panel {
 	width: 312dp;
-	height: 132dp;
+	height: auto;
+	padding-top: 6dp;
 	box-sizing: border-box;
 	border: 1dp #397ca4;
 	background-color: #0b1c2dc9;
+}
+
+/* The panel's head: the partner's name and, on its right, an altered state. */
+.partner .fighter-head {
+	display: block;
+	height: 26dp;
+	margin: 0 12dp 4dp 12dp;
+	font-size: 20dp;
+	line-height: 26dp;
+}
+
+.partner .fighter-status {
+	float: right;
+	color: #ffb347;
 }
 
 .partner .bar-row {
@@ -1331,33 +1362,6 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 	line-height: 33dp;
 }
 
-#folder-broken {
-	color: #ff7775;
-}
-
-#folder-target,
-#folder-queue {
-	color: #a8c7d9;
-}
-
-/* The panel's state lines: the partner's status (its panel carries none) in the cyan of the statuses and how the last
-   order ended in the accent yellow. Each line keeps to one row. */
-#folder-status {
-	display: block;
-	color: #72c7ff;
-}
-
-#folder-notice {
-	color: #ffb347;
-}
-
-#folder-target,
-#folder-queue,
-#folder-active {
-	white-space: nowrap;
-	overflow: hidden;
-}
-
 #fight.folder #command-label {
 	display: inline;
 }
@@ -1377,4 +1381,50 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 	font-family: "Pixel Small";
 	font-size: 22dp;
 	color: #ff7775;
+}
+
+/* The key that types on the end box's text, while the text waits for it. */
+#end-more {
+	display: block;
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	font-size: 18dp;
+}
+
+#end-more.hidden {
+	display: none;
+}
+
+/* The Folder plate keeps a fixed height at the bottom left, four rows of one line each: the defense bar, the message
+   (a broken defense, else how an order ended, else an altered state), the active order beside its phase, the queue. */
+#folder-panel {
+	height: 156dp;
+	box-sizing: border-box;
+	overflow: hidden;
+}
+
+#folder-message,
+#folder-active,
+#folder-queue {
+	height: 30dp;
+	line-height: 30dp;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+#folder-message.status { color: #72c7ff; }
+#folder-message.notice { color: #ffb347; }
+#folder-message.broken { color: #ff7775; }
+#folder-queue { color: #a8c7d9; }
+
+#folder-active {
+	flex: 0 1 auto;
+	max-width: 75%;
+	margin-right: 10dp;
+}
+
+#folder-phase {
+	flex: 1;
+	margin: 0;
 }

@@ -306,6 +306,9 @@ button:focus .original-look, button.original-look:focus {
    sight under a lighter scrim. */
 #scrim.battle-bag { background-color: #05080c40; }
 #scrim.battle-bag #tabs { display: none; }
+/* It opens at the left under the command strip, clear of the partner's card below it and the foes' list on the right. */
+#scrim.battle-bag { align-items: flex-start; justify-content: flex-start; }
+#scrim.battle-bag #panel { width: 620dp; margin: 120dp 0 0 24dp; }
 
 /* The status page (the original skin's style loads after this one and overrides each of these rules): the model in
    its own box at the top left (an addition: the original draws its stats over the
