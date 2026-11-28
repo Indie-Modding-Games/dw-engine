@@ -5,8 +5,12 @@
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <format>
 #include <string>
+#include <variant>
 #include <vector>
+
+#include "support/coop_room.hpp"
 
 using namespace dwe::game::coop;
 using dwe::net::Millis;
@@ -31,7 +35,77 @@ bool mentions(const std::vector<std::string>& events, std::string_view word) {
                              [&](const std::string& event) { return event.contains(word); });
 }
 
+// A room of `guests` + 1 over real links: the host asks every guest to report, each reports what
+// it holds twice a second for 2.5 s; the last guest holds the host 500 units off and the first one
+// says it lost snapshots. The host's monitor must tell them apart.
+void runRoom(std::size_t guests) {
+  CAPTURE(guests);
+  test::CoopRoom room{{.guests = guests}};
+  REQUIRE(room.connect());
+  REQUIRE(room.sendAll(SyncWatch{.on = true}));
+  room.pump();
+  for (auto& seat : room.seats()) {
+    const auto got = test::CoopPair::drain(*seat.guest);
+    CHECK(std::ranges::any_of(got, [](const Message& message) {
+      return std::holds_alternative<SyncWatch>(message) && std::get<SyncWatch>(message).on;
+    }));
+  }
+  std::vector<SyncHeld> truth{place(0, "room", 0)};
+  for (const auto& seat : room.seats()) {
+    truth.push_back(place(seat.id, "room", 100 * seat.id));
+  }
+  const auto off = static_cast<PlayerId>(guests);
+  SyncMonitor monitor{{.tolerance = 100.0F, .persistAfter = Millis{1000}}};
+  std::vector<std::string> events;
+  for (std::uint32_t round = 1; round <= 5; ++round) {
+    const Millis now{static_cast<std::int64_t>(round) * 500};
+    monitor.authority(truth, round * 10, now);
+    for (auto& seat : room.seats()) {
+      std::vector<SyncHeld> held = truth;
+      if (seat.id == off) {
+        held.front().x = 500;
+      }
+      REQUIRE(seat.guest->send(reportOf(round, std::move(held), seat.id == 1 ? round * 2 : 0)));
+    }
+    room.pump();
+    for (auto& seat : room.seats()) {
+      for (const Message& message : test::CoopPair::drain(*seat.host)) {
+        if (const auto* report = std::get_if<SyncReport>(&message)) {
+          monitor.report(seat.id, *report, now);
+        }
+      }
+    }
+    for (std::string& event : monitor.takeEvents()) {
+      events.push_back(std::move(event));
+    }
+  }
+  const auto divergences = monitor.divergences();
+  REQUIRE(divergences.size() == 1);
+  CHECK(divergences.front().guest == off);
+  CHECK(divergences.front().player == HostPlayerId);
+  CHECK(divergences.front().persistent);
+  CHECK(mentions(events, std::format("diverged: player {} holds player 0", off)));
+  CHECK(mentions(events, "lost: player 1 missed 2 more snapshots"));
+  CHECK(mentions(events, "2500 ms, tick 50: lost: player 1 missed 2 more snapshots (10 in all)"));
+  const auto lines = monitor.lines(Millis{2500});
+  for (const auto& seat : room.seats()) {
+    CHECK(mentions(lines, std::format("guest {}: report 0 ms ago", seat.id)));
+  }
+}
+
 } // namespace
+
+TEST_CASE("two players over a real link: the host's diagnostics see the guest's report") {
+  runRoom(1);
+}
+
+TEST_CASE("three players over real links: the host's diagnostics tell each guest apart") {
+  runRoom(2);
+}
+
+TEST_CASE("four players over real links: the host's diagnostics tell each guest apart") {
+  runRoom(3);
+}
 
 TEST_CASE("a sequence watch counts the gaps as lost and the stragglers as late, not lost") {
   SequenceWatch watch;

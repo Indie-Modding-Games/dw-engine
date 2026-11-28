@@ -27,11 +27,20 @@ game::coop::SyncHeld heldOf(game::coop::PlayerId id, const std::string& mapId,
 
 } // namespace
 
-std::vector<game::coop::SyncHeld> coopSyncAuthority(const game::field::Field& field) {
+std::vector<game::coop::SyncHeld> coopSyncAuthority(const game::field::Field& field,
+                                                    const game::coop::WorldAuthority* authority) {
   std::vector<game::coop::SyncHeld> players{
       heldOf(game::coop::HostPlayerId, field.mapId(), field.player().position)};
   for (game::coop::PlayerId id = game::coop::GuestPlayerId; game::coop::validPlayer(id); ++id) {
-    if (const auto guest = field.player(id)) {
+    const auto guest = field.player(id);
+    if (!guest) {
+      continue;
+    }
+    const game::coop::PlayerRecord* record = authority ? authority->find(id) : nullptr;
+    if (record != nullptr && record->pose && record->pose->mapId == field.mapId()) {
+      const game::coop::PlayerPose& pose = *record->pose;
+      players.push_back({.id = id, .mapId = pose.mapId, .x = pose.x, .y = pose.y, .z = pose.z});
+    } else {
       players.push_back(heldOf(id, field.mapId(), guest->position));
     }
   }
@@ -62,6 +71,10 @@ game::coop::SyncReport coopSyncReport(const game::field::Field& field,
 }
 
 void CoopSync::ask(std::string_view value) {
+  if (!built_) {
+    core::logWarning("coop sync: this build has no sync diagnostics (DWE_COOP_SYNC)");
+    return;
+  }
   if (value == "off") {
     // The guests told to report hear it is off on the next tick.
     on_ = false;
@@ -73,12 +86,27 @@ void CoopSync::ask(std::string_view value) {
     core::logInfo("coop sync: on (the guests report a couple of times a second)");
   }
   on_ = true;
-  reportAsked_ = value != "on";
+  if (value == "trace" || value == "on") {
+    trace_ = value == "trace";
+  }
+  if (monitor_) {
+    monitor_->trace(trace_);
+  }
+  reportAsked_ = value != "on" && value != "trace";
+}
+
+game::coop::SyncMonitor& CoopSync::watch() {
+  if (!monitor_) {
+    monitor_.emplace();
+    monitor_->trace(trace_);
+  }
+  return *monitor_;
 }
 
 std::vector<std::string> CoopSync::hostTick(const game::field::Field& field,
                                             std::uint32_t worldTick,
-                                            std::span<const CoopSyncPeer> guests, net::Millis now) {
+                                            std::span<const CoopSyncPeer> guests, net::Millis now,
+                                            const game::coop::WorldAuthority* authority) {
   std::vector<std::string> out;
   // A guest that went is no longer told nor compared.
   for (auto told = told_.begin(); told != told_.end();) {
@@ -106,20 +134,14 @@ std::vector<std::string> CoopSync::hostTick(const game::field::Field& field,
     for (const game::coop::Message& message : guest.bridge->takeSyncMessages()) {
       if (const auto* report = std::get_if<game::coop::SyncReport>(&message);
           report != nullptr && on_) {
-        if (!monitor_) {
-          monitor_.emplace();
-        }
-        monitor_->report(guest.id, *report, now);
+        watch().report(guest.id, *report, now);
       }
     }
   }
   if (!on_) {
     return out;
   }
-  if (!monitor_) {
-    monitor_.emplace();
-  }
-  monitor_->authority(coopSyncAuthority(field), worldTick, now);
+  watch().authority(coopSyncAuthority(field, authority), worldTick, now);
   for (const CoopSyncPeer& guest : guests) {
     monitor_->states(guest.id, guest.bridge->commandWatch());
   }
@@ -139,6 +161,9 @@ std::vector<std::string> CoopSync::hostTick(const game::field::Field& field,
 void CoopSync::guestTick(const game::field::Field& field, const PresentedCoopWorld* presented,
                          game::coop::PlayerId self, CoopGameplayBridge& host, std::uint64_t tick) {
   for (const game::coop::Message& message : host.takeSyncMessages()) {
+    if (!built_) {
+      continue;
+    }
     if (const auto* watch = std::get_if<game::coop::SyncWatch>(&message)) {
       if (watch->on != watched_) {
         core::logInfo("coop sync: the host {} watching this game's sync",

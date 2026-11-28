@@ -632,17 +632,22 @@ moment the roster loses them, so their partner never borrows this guest's own pa
 takes any player as its starter; before, the check stopped a battle that the third or fourth player started from going
 out. Audit: [#352](audits/352-audit.md).
 
-**Sync diagnostics.** A developer tool behind the console (F1), which only opens with the developer tools on, so it
-never runs in release builds. `coop_sync("on")` on the host tells every guest to report; `coop_sync("report")` prints
-the whole picture once and `coop_sync("off")` stops it. While on, the log says when a player changes map, when
-snapshots or commands are lost or come late, and when a guest holds a player somewhere else (another map, or farther
-than 600 units) for more than two seconds, and again when it is back in sync. The report lists every player's place
-on the host and, per guest, what it holds, how many world ticks it is behind and what it lost.
+**Sync diagnostics.** A developer tool behind the console (F1), which only opens with the developer tools on. A build
+configured with `DWE_COOP_SYNC=OFF` (the default of a package, `DWE_PACKAGE`) leaves it out: its host never asks and its
+guests never report. `coop_sync("on")` on the host tells every guest to report; `coop_sync("trace")` does the same and
+also logs every report, player by player, next to where the host has that player; `coop_sync("report")` prints the
+whole picture once and `coop_sync("off")` stops it. While on, the log says when a player changes map, when snapshots or
+commands are lost or come late, and when a guest holds a player somewhere else (another map, or farther than 600
+units) for more than two seconds, and again when it is back in sync. Every such line starts with the host's time and
+world tick. The report lists every player's authoritative place (the host's own in its field, each guest's newest
+valid state as the authority took it) and, per guest, what it holds, how many world ticks it is behind and what it
+lost. Audit: [#359](audits/359-audit.md).
 `coop_fell("<player>")` (same console, host only) fells that player's partner in the host's co-op battle, so the ally
 countdown and the Aim of the bag can be checked without a long fight.
 
 Tests: `packages/game/coop/tests/sync_watch_tests.cpp`, `apps/game/tests/coop_connection_tests.cpp` (four seats),
-`apps/game/tests/coop_sync_tests.cpp` (2, 3 and 4 players headless over lossy links, converging) and the seat tests of
+`apps/game/tests/coop_sync_tests.cpp` (2, 3 and 4 players headless over lossy links, converging, and one guest cut off
+from the snapshots diverging alone) and the seat tests of
 `apps/versus-signal/test`.
 
 ### 5.10 Joining and rejoining a game in progress

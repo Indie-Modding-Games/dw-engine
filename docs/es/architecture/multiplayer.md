@@ -743,17 +743,22 @@ empezó (antes la comprobación impedía que saliera un combate empezado por el 
 [#352](audits/352-audit.md).
 
 **Diagnóstico de sincronía.** Una herramienta de desarrollo detrás de la consola (F1), que solo se abre con las
-herramientas de desarrollo activas, así que nunca corre en las builds de release. `coop_sync("on")` en el anfitrión
-pide a cada invitado que informe; `coop_sync("report")` imprime el cuadro completo una vez y `coop_sync("off")` lo
-para. Mientras está activo, el log dice cuándo un jugador cambia de mapa, cuándo se pierden o llegan tarde
-instantáneas o comandos, y cuándo un invitado tiene a un jugador en otro sitio (otro mapa, o a más de 600 unidades)
-durante más de dos segundos, y otra vez cuando vuelve a estar sincronizado. El informe lista dónde tiene el anfitrión a
-cada jugador y, por invitado, dónde lo tiene él, cuántos ticks del mundo va por detrás y qué perdió.
+herramientas de desarrollo activas. Una build configurada con `DWE_COOP_SYNC=OFF` (lo predeterminado en un paquete,
+`DWE_PACKAGE`) lo deja fuera: su anfitrión nunca lo pide y sus invitados nunca informan. `coop_sync("on")` en el
+anfitrión pide a cada invitado que informe; `coop_sync("trace")` hace lo mismo y además registra cada informe, jugador
+por jugador, junto a dónde tiene el anfitrión a ese jugador; `coop_sync("report")` imprime el cuadro completo una vez y
+`coop_sync("off")` lo para. Mientras está activo, el log dice cuándo un jugador cambia de mapa, cuándo se pierden o
+llegan tarde instantáneas o comandos, y cuándo un invitado tiene a un jugador en otro sitio (otro mapa, o a más de 600
+unidades) durante más de dos segundos, y otra vez cuando vuelve a estar sincronizado. Cada una de esas líneas empieza
+con la hora y el tick del mundo del anfitrión. El informe lista el sitio autoritativo de cada jugador (el del anfitrión
+en su campo, y el de cada invitado según su último estado válido aceptado por la autoridad) y, por invitado, dónde lo
+tiene él, cuántos ticks del mundo va por detrás y qué perdió. Auditoría: [#359](audits/359-audit.md).
 `coop_fell("<jugador>")` (la misma consola, solo en el anfitrión) derriba al compañero de ese jugador en el combate
 cooperativo del anfitrión, para probar la cuenta atrás del aliado y Apuntar de la bolsa sin un combate largo.
 
 Tests: `packages/game/coop/tests/sync_watch_tests.cpp`, `apps/game/tests/coop_connection_tests.cpp` (cuatro plazas),
-`apps/game/tests/coop_sync_tests.cpp` (2, 3 y 4 jugadores sin ventana sobre enlaces con pérdidas, convergiendo) y los
+`apps/game/tests/coop_sync_tests.cpp` (2, 3 y 4 jugadores sin ventana sobre enlaces con pérdidas, convergiendo, y un
+invitado sin instantáneas que diverge solo) y los
 tests de plazas de `apps/versus-signal/test`.
 
 ### 5.10 Unirse y volver a una partida en curso

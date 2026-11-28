@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dwe/game/coop/authority.hpp>
 #include <dwe/game/coop/sync_watch.hpp>
 #include <dwe/game/field/field.hpp>
 
@@ -15,13 +16,22 @@
 
 namespace dwe::app {
 
-// The console command of the shared world's sync diagnostics (#359): coop_sync("on"), ("off") or
-// ("report"). The console is a developer tool (F1, behind userSettings.devTools as F2's menu), so
-// release builds never run it.
+// The console command of the shared world's sync diagnostics (#359): coop_sync("on"), ("trace"),
+// ("off") or ("report"). The console is a developer tool (F1, behind userSettings.devTools as F2's
+// menu), and a build configured with DWE_COOP_SYNC off (a package's default) leaves the
+// diagnostics out: its host never watches and its guests never report.
 inline constexpr std::string_view CoopSyncCommand = "coop_sync";
+#ifdef DWE_NO_COOP_SYNC
+inline constexpr bool CoopSyncBuilt = false;
+#else
+inline constexpr bool CoopSyncBuilt = true;
+#endif
 
-// Every player's place in the host's field: the session's authority over where they are.
-[[nodiscard]] std::vector<game::coop::SyncHeld> coopSyncAuthority(const game::field::Field& field);
+// Every player's authoritative place: the host's own in its field, and each guest's newest valid
+// state as `authority` took it (where the host's field draws it, a little behind, without one).
+[[nodiscard]] std::vector<game::coop::SyncHeld>
+coopSyncAuthority(const game::field::Field& field,
+                  const game::coop::WorldAuthority* authority = nullptr);
 // What a guest holds of every player: its own where it stands, the others where the host's
 // snapshots draw them (`presented`, none before the first one).
 [[nodiscard]] game::coop::SyncReport coopSyncReport(const game::field::Field& field,
@@ -47,16 +57,19 @@ public:
   static constexpr std::uint64_t ReportTicks = 30;
   static constexpr std::uint64_t SummaryTicks = 600;
 
-  // The console's word: "on", "off", else a report now (and on).
+  explicit CoopSync(bool built = CoopSyncBuilt) : built_{built} {}
+
+  // The console's word: "on", "trace" (on, and every report logged), "off", else a report now
+  // (and on).
   void ask(std::string_view value);
   [[nodiscard]] bool watching() const { return on_; }
 
   // The host's tick: the watch to each guest, their reports into the monitor, its field as the
   // authority. Returns the lines to log (events, and the whole picture when asked or due).
-  [[nodiscard]] std::vector<std::string> hostTick(const game::field::Field& field,
-                                                  std::uint32_t worldTick,
-                                                  std::span<const CoopSyncPeer> guests,
-                                                  net::Millis now);
+  [[nodiscard]] std::vector<std::string>
+  hostTick(const game::field::Field& field, std::uint32_t worldTick,
+           std::span<const CoopSyncPeer> guests, net::Millis now,
+           const game::coop::WorldAuthority* authority = nullptr);
   // A guest's tick: takes the host's watch, and reports to it while watched.
   void guestTick(const game::field::Field& field, const PresentedCoopWorld* presented,
                  game::coop::PlayerId self, CoopGameplayBridge& host, std::uint64_t tick);
@@ -69,7 +82,11 @@ public:
   [[nodiscard]] bool watched() const { return watched_; }
 
 private:
+  game::coop::SyncMonitor& watch();
+
+  bool built_ = true;
   bool on_ = false;
+  bool trace_ = false;
   bool reportAsked_ = false;
   std::uint64_t hostTicks_ = 0;
   // The guests told the current watch, by player id.

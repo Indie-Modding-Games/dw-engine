@@ -2403,7 +2403,8 @@ int runGame(const Options& requested) {
             watched.push_back({.id = peer.id, .bridge = peer.bridge.get()});
           }
           for (const std::string& line :
-               coopSync.hostTick(play->scene().field(), coopWorldTick, watched, coopNow)) {
+               coopSync.hostTick(play->scene().field(), coopWorldTick, watched, coopNow,
+                                 coopHostWorld ? &coopHostWorld->authority() : nullptr)) {
             core::logInfo("coop sync: {}", line);
           }
         } else if (coopLinked && coopGuestWorld) {
