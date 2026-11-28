@@ -901,6 +901,13 @@
 	color: #ffffff;
 }
 
+#command-row.grouped .command.kind-technique:focus,
+#command-row.grouped .command.kind-stance:focus {
+	border-color: #f0a73a;
+	background-color: #f0a73a;
+	color: #1a1f27;
+}
+
 #command-row.grouped .command.short,
 #command-row.grouped .command.short:focus {
 	color: #e0796c;
@@ -1036,4 +1043,20 @@
 
 .ally.throw-target .fighter-name {
 	color: #f0a43a;
+}
+
+/* The open bag covers the ally rows' place: they move to the Folder panel's, which hides meanwhile. */
+#fight.bag-open #allies {
+	left: 404dp;
+	top: 480dp;
+}
+
+/* A ready finisher shows its key beside the word. */
+#finisher.ready #finisher-ready {
+	display: inline-block;
+	margin-left: 8dp;
+}
+
+#finisher-push {
+	display: none;
 }
