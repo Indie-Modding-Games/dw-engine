@@ -114,4 +114,12 @@ void AwardScreen::putAway() {
   }
 }
 
+bool AwardScreen::holdsField(bool coopMove) {
+  if (active_ && coopMove) {
+    core::logInfo("coop: the notice waits until this player arrives where the host went");
+    putAway();
+  }
+  return active_;
+}
+
 } // namespace dwe::app

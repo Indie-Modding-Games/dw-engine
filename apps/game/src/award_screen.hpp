@@ -45,6 +45,10 @@ public:
   // opens again on a later tick.
   void putAway();
 
+  // Whether the notice holds the field this tick. A co-op guest following the host to another
+  // zone (`coopMove`) puts it away instead: it opens again once the guest arrives.
+  [[nodiscard]] bool holdsField(bool coopMove);
+
 private:
   void open(bool medal, session::TamerLevelChange change);
   void openSickness();

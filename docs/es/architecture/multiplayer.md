@@ -509,7 +509,10 @@ zona», el nombre del anfitrión) en pantalla, y luego hace el fundido. La esper
 (`CoopGuestWorld::takeZoneChange` da el mapa y la época de la corrección, para una skin que quiera su propio aspecto) y
 aguarda mientras corre un cambio de mapa propio del invitado. Unirse, un reinicio de sala en el mismo mapa y volver
 tras un salto de historia propio del invitado no muestran aviso ni esperan. El invitado no informa nada durante la
-espera, igual que durante el viaje.
+espera, igual que durante el viaje. Un aviso de campo abierto en el invitado (una enfermedad, una medalla, un nivel de
+domador) nunca retiene el viaje: se aparta mientras el invitado sigue al anfitrión (`AwardScreen::holdsField`) y vuelve
+a abrirse cuando camina por el mapa nuevo, así que el invitado nunca se queda atrás con la pantalla en negro ni se
+pierde los combates del anfitrión allí.
 
 **Interpolación (#358).** Los jugadores remotos y sus compañeros se dibujan desde un búfer corto de estados con hora
 (`PoseTrack`): 100 ms por detrás del más nuevo, mezclando los dos que rodean ese momento. Un estado tardío que aún va

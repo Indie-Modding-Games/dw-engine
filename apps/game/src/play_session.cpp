@@ -1154,7 +1154,7 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent, const Fishi
         !fieldItemsScreen_.active()) {
       awardScreen_.tick();
     }
-    if (awardScreen_.active()) {
+    if (awardScreen_.holdsField(scene_->movingCoopSelf())) {
       session.tickHeldPlayer(TickSeconds);
       return;
     }

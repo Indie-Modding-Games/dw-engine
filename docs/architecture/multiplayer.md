@@ -417,7 +417,10 @@ nor driven, and is shown again when it arrives.
 another area", the host's name) up, then fades. The lead starts once per change (`CoopGuestWorld::takeZoneChange`
 gives the map and the correction's epoch for a skin that wants its own look) and waits while the guest's own map
 change runs. Joining, a room reset on the same map and being brought back after a guest's own story warp show no
-notice and do not wait. The guest reports nothing during the lead, as during the trip.
+notice and do not wait. The guest reports nothing during the lead, as during the trip. A field notice open on the
+guest (a sickness, a medal, a level change) never holds the trip: it goes away while the guest follows the host
+(`AwardScreen::holdsField`) and opens again once it walks on the new map, so the guest never stays behind on a black
+screen and misses the host's battles there.
 
 **Interpolation (#358).** Remote players and their partners are drawn from a short buffer of timed states
 (`PoseTrack`): 100 ms behind the newest one, blending between the two around that moment. A late state that is still
