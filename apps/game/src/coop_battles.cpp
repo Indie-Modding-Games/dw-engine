@@ -273,6 +273,9 @@ void CoopBattles::tick(PlaySession& play, std::span<const Peer> peers, Role role
                         coopPlayerHere(play.scene().field(), here_, coop::HostPlayerId);
   play.handBattlesToHost(handOver);
   play.holdCoopBattles(role == Role::Host ? partnersDying(play) : handOver && play.partnerDying());
+  if (play.takeHeldCoopBattle()) {
+    notice_ = CoopBattleWaitsRebirthText;
+  }
   if (host != nullptr) {
     if (mirror_.self() != self && !mirror_.running() && !mirror_.pendingAsk()) {
       mirror_ = coop::BattleMirror{self};
@@ -468,14 +471,17 @@ void CoopBattles::answer(PlaySession& play, coop::PlayerId from, const coop::Bat
       ask, {.map = field.mapChangePending() ? std::string_view{} : std::string_view{field.mapId()},
             .guestHere = coopPlayerHere(field, here_, from),
             .battling = play.battleScreen().active(),
-            .held = play.coopBattleBlocked() || partnersDying(play) ||
-                    referee_.partnerDying(std::array{from})});
+            .held = play.coopBattleBlocked(),
+            .partnerDying = partnersDying(play) || referee_.partnerDying(std::array{from})});
   if (verdict.waits) {
     if (referee_.wait(from, ask, ticks_)) {
       return;
     }
-    core::logInfo("coop: player {}'s battle {} is refused: this game stayed held", from, ask.ask);
-    sendTo(from, coop::BattleRefused{.ask = ask.ask, .reason = coop::BattleRefusal::Busy});
+    core::logInfo("coop: player {}'s battle {} is refused: this game stayed held{}", from, ask.ask,
+                  verdict.waitRefusal == coop::BattleRefusal::PartnerDying
+                      ? " while a partner is reborn"
+                      : "");
+    sendTo(from, coop::BattleRefused{.ask = ask.ask, .reason = verdict.waitRefusal});
     return;
   }
   referee_.forget(from);
@@ -636,7 +642,11 @@ void CoopBattles::guestTick(PlaySession& play, CoopGameplayBridge& bridge) {
   sendOffer(play, bridge);
   if (const auto refused = mirror_.takeRefused()) {
     asked_.reset();
-    if (refused->reason == coop::BattleRefusal::Busy) {
+    if (refused->reason == coop::BattleRefusal::PartnerDying) {
+      core::logInfo("coop: the host refused battle {}: a partner is being reborn", refused->ask);
+      notice_ = CoopBattleWaitsRebirthText;
+      play.finishHandedBattle(game::story::BattleOutcome::Refused);
+    } else if (refused->reason == coop::BattleRefusal::Busy) {
       // Another battle runs in the world: this player watches and helps in that one.
       core::logInfo("coop: the host refused battle {}: another one runs", refused->ask);
       play.finishHandedBattle(game::story::BattleOutcome::Refused);

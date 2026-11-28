@@ -34,11 +34,15 @@ struct HostMoment {
   bool guestHere = false;
   bool battling = false;
   bool held = false;
+  // A partner on its map dies or waits to be reborn (it holds the host too).
+  bool partnerDying = false;
 };
 
 struct BattleAskVerdict {
   bool waits = false;
   std::optional<BattleRefusal> refusal;
+  // Why a wait that runs out is refused.
+  BattleRefusal waitRefusal = BattleRefusal::Busy;
 
   [[nodiscard]] bool starts() const { return !waits && !refusal; }
 };

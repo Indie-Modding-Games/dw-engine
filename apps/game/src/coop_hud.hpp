@@ -64,6 +64,8 @@ inline constexpr std::string_view CoopGuestOtherVariantKeptText =
 inline constexpr std::string_view CoopWaitingHostText = "online.coop.waiting_host";
 // A guest's host led the group to another map, {name}: shown before this game's fade.
 inline constexpr std::string_view CoopHostChangedZoneText = "online.coop.host_changed_zone";
+// A battle this player started was refused while a partner dies or waits to be reborn.
+inline constexpr std::string_view CoopBattleWaitsRebirthText = "online.coop.battle_waits_rebirth";
 // The words that name a player with no name of their own.
 inline constexpr std::string_view HostPlayerText = "online.host_player";
 inline constexpr std::string_view GuestPlayerText = "online.guest_player";

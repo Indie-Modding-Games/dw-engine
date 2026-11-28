@@ -199,6 +199,7 @@ coop.item_gone: "¡Tarde! Otro jugador ya lo tomó."
 # Un invitado cuyo anfitrión está ocupado en una carga larga.
 coop.waiting_host: "Esperando a {name}..."
 coop.host_changed_zone: "{name} cambió de zona."
+coop.battle_waits_rebirth: "Un compañero está renaciendo: la batalla espera a que vuelva."
 # La partida del invitado es el mundo del anfitrión en memoria: solo su compañero y su bolsa vuelven a su propio
 # guardado (multiplayer.md, «Guardado en cooperativo»); {name} es el anfitrión.
 coop.guest_not_saved: "Estás en el mundo de {name}. Tu compañero y tu bolsa vuelven contigo; lo demás se queda aquí."

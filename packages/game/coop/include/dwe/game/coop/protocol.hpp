@@ -300,6 +300,8 @@ enum class BattleRefusal : std::uint8_t {
   // The host's game could not start it (a screen, a scene or a script holds it, or the start
   // failed): the guest's game runs it solo.
   Failed,
+  // A partner on the host's map dies or waits to be reborn: no battle starts until it is back.
+  PartnerDying,
 };
 
 struct BattleRefused {

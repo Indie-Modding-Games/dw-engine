@@ -199,6 +199,7 @@ coop.item_gone: "Zu spät! Jemand anderes hat es genommen."
 # A guest whose host is busy with a long load.
 coop.waiting_host: "Warte auf {name}..."
 coop.host_changed_zone: "{name} ist in ein anderes Gebiet gegangen."
+coop.battle_waits_rebirth: "Ein Partner wird wiedergeboren: Der Kampf wartet, bis er zurück ist."
 # A guest's game is the host's world in memory: only its partner and bag go home to its own save (multiplayer.md,
 # "Saves in co-op"); {name} is the host.
 coop.guest_not_saved: "Du bist in {name}s Welt. Dein Partner und deine Tasche kommen mit dir nach Hause; der Rest bleibt hier."

@@ -123,6 +123,8 @@ public:
   [[nodiscard]] bool handsBattlesOver() const { return handOver_; }
   // On while a partner dies: the original starts no battle while its death script holds the player.
   void holdBattles(bool on) { holdBattles_ = on; }
+  // Whether a battle was refused while held since the last call.
+  [[nodiscard]] bool takeHeldBattle() { return std::exchange(heldBattle_, false); }
   [[nodiscard]] std::optional<HandedBattle> takeHandedBattle() {
     return std::exchange(handed_, std::nullopt);
   }
@@ -143,6 +145,7 @@ private:
   bool storyBattle_ = false;
   bool handOver_ = false;
   bool holdBattles_ = false;
+  bool heldBattle_ = false;
   std::optional<HandedBattle> handed_;
   bool handedWaits_ = false;
   // The story's ask of the battle handed over, kept to run it here; and whether to.

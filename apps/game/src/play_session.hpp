@@ -495,6 +495,7 @@ public:
   // deathHoldsWakeMap: a co-op guest stays on its own wake map meanwhile.
   [[nodiscard]] bool ownDeathHoldsMap() const { return deathScene_.active() || deathScript_; }
   void holdCoopBattles(bool on) { storyScenes_.holdBattles(on); }
+  [[nodiscard]] bool takeHeldCoopBattle() { return storyScenes_.takeHeldBattle(); }
   [[nodiscard]] std::optional<StorySceneGlue::HandedBattle> takeHandedBattle() {
     return storyScenes_.takeHandedBattle();
   }

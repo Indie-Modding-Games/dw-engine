@@ -166,6 +166,7 @@ TEST_CASE("cooperative battle messages round trip") {
                         .folder = true});
   roundTrip(BattleRefused{.ask = 3, .reason = BattleRefusal::Busy});
   roundTrip(BattleRefused{.ask = 4, .reason = BattleRefusal::NotHere});
+  roundTrip(BattleRefused{.ask = 5, .reason = BattleRefusal::PartnerDying});
   roundTrip(frame(9, 42));
   roundTrip(act(9, BattleActionKind::Command, 8));
   roundTrip(act(9, BattleActionKind::ThrowItem, 0, "medicine"));
@@ -238,6 +239,10 @@ TEST_CASE("cooperative battle messages reject what the battle cannot be") {
   rejects(act(1, BattleActionKind::Order,
               battleOrderValue(0, static_cast<std::int32_t>(MaxBattleFighters) + 1)));
   rejects(BattleRefused{.ask = 0});
+  // A refusal past the reasons this protocol knows.
+  auto refusal = encode(Message{BattleRefused{.ask = 1, .reason = BattleRefusal::PartnerDying}});
+  ++refusal.back();
+  CHECK_FALSE(decode(refusal));
   // An unknown action kind on the wire.
   auto bytes = encode(Message{act(1, BattleActionKind::Cheer)});
   bytes[5] = 9;
@@ -367,6 +372,20 @@ TEST_CASE("an ask that waits too long is refused as busy, and a guest leaving dr
 
   referee.guestLeft(GuestPlayerId);
   CHECK(referee.waiting().empty());
+}
+
+TEST_CASE("an ask held by a dying partner waits and is refused for that reason") {
+  BattleReferee referee;
+  referee.guestJoined(GuestPlayerId);
+  const BattleAsk ask{.ask = 4, .mapId = "forest", .enemyNpcs = {2}, .fighter = fighter()};
+  const BattleAskVerdict dying =
+      referee.judge(ask, HostMoment{.map = "forest", .guestHere = true, .partnerDying = true});
+  CHECK(dying.waits);
+  CHECK_FALSE(dying.refusal);
+  CHECK(dying.waitRefusal == BattleRefusal::PartnerDying);
+  const BattleAskVerdict held =
+      referee.judge(ask, HostMoment{.map = "forest", .guestHere = true, .held = true});
+  CHECK(held.waitRefusal == BattleRefusal::Busy);
 }
 
 TEST_CASE("a guest keeps its partner offered while its own ask waits on the host (#411)") {
