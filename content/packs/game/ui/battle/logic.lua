@@ -571,6 +571,11 @@ end
 local charge_gauge_bars = 10
 local charge_per_bar = 8
 
+-- Where the world bars went on their last draw, for the numbers and the charge gauge to keep off.
+local bar_boxes = {}
+-- Defined with the HUD zones below.
+local hud_zones, clear_of_hud
+
 local function draw_finisher_gauge(document)
   local finisher = battle.finisher()
   local gauge = finisher.gauge
@@ -578,8 +583,23 @@ local function draw_finisher_gauge(document)
   if gauge == nil then
     return
   end
-  set_property(document, "charge-gauge", "left", gauge.x .. "%")
-  set_property(document, "charge-gauge", "top", gauge.y .. "%")
+  local _, _, w, h = lookup(document, "charge-gauge"):rect()
+  local placed = {}
+  for _, box in ipairs(bar_boxes) do
+    placed[#placed + 1] = box
+  end
+  local top, left = clear_of_hud(
+    hud_zones(document),
+    gauge.x,
+    gauge.y,
+    0,
+    0,
+    w > 0 and w or 138,
+    h > 0 and h or 36,
+    placed
+  )
+  set_property(document, "charge-gauge", "left", left .. "%")
+  set_property(document, "charge-gauge", "top", top .. "%")
   local bars = math.min(charge_gauge_bars, math.floor(finisher.charge / charge_per_bar))
   for index = 0, charge_gauge_bars - 1 do
     set_class(document, "cg-" .. index, "hidden", index >= bars)
@@ -787,11 +807,44 @@ local function rows_of_line(line, rows)
   end
 end
 
+-- The rows a wider look than the original's joins, in glyphs.
+local end_wide_glyphs = 30
+
+-- A row broken for the original's narrow box goes on in the next one's place in a wider look,
+-- while both fit.
+local function joined_rows(rows)
+  local joined = {}
+  for _, row in ipairs(rows) do
+    local last = joined[#joined]
+    local fits = last ~= nil and #last.runs > 0 and #row.runs > 0
+    if fits and not last.waits and last.glyphs + 1 + row.glyphs <= end_wide_glyphs then
+      local tail = last.runs[#last.runs]
+      tail.text = tail.text .. " "
+      for _, run in ipairs(row.runs) do
+        if #last.runs < end_runs and run.colour ~= last.runs[#last.runs].colour then
+          table.insert(last.runs, { text = run.text, colour = run.colour })
+        else
+          local end_run = last.runs[#last.runs]
+          end_run.text = end_run.text .. run.text
+        end
+      end
+      last.glyphs = last.glyphs + 1 + row.glyphs
+      last.waits = row.waits
+    else
+      joined[#joined + 1] = row
+    end
+  end
+  return joined
+end
+
 -- Every row of the end box's lines.
 local function end_rows(result)
   local rows = {}
   for index = 1, math.min(#result.lines, max_end_lines) do
     rows_of_line(line_text(result.lines[index]), rows)
+  end
+  if ui.layout("menu") ~= "original" then
+    return joined_rows(rows)
   end
   return rows
 end
@@ -1070,6 +1123,7 @@ local reserved_zones = {
   "fighter-0-hp-label",
   "fighter-0-mp-label",
   "finisher",
+  "finisher-word",
   "folder-panel",
   "speed-plate",
   "enemies",
@@ -1085,7 +1139,7 @@ local zone_gap = 6
 
 -- A skin may place a panel's parts on their own, which leaves the panel without a size or as big as
 -- the window: each part counts, and a box over half the window is a container, not a zone.
-local function hud_zones(document)
+function hud_zones(document)
   local _, _, width, height = lookup(document, "damage"):rect()
   local zones = {}
   local function add(id)
@@ -1175,7 +1229,7 @@ end
 -- An anchor in percent of the window, moved to the nearest spot clear of the HUD and of the boxes
 -- already `placed` (then added to them); the thing spans `dx`..`dx + w` and `dy`..`dy + h` dp from
 -- it. Returns top, then left.
-local function clear_of_hud(hud, x_percent, y_percent, dx, dy, w, h, placed)
+function clear_of_hud(hud, x_percent, y_percent, dx, dy, w, h, placed)
   if hud.width <= 0 or hud.height <= 0 then
     return y_percent, x_percent
   end
@@ -1224,14 +1278,32 @@ local function draw_damage(document)
   local list = battle.numbers()
   local count = math.min(max_numbers, #list)
   local hud = count > 0 and hud_zones(document) or nil
+  local placed = {}
+  for _, box in ipairs(bar_boxes) do
+    placed[#placed + 1] = box
+  end
   for index = 0, max_numbers - 1 do
     local id = "dn-" .. index
     set_class(document, id, "hidden", index >= count)
     if index < count then
       local shown = list[index + 1]
-      local width = (#tostring(shown.value or "") + 1) * 24
-      local top, left =
-        clear_of_hud(hud, shown.x, shown.y, shown.dx * 3 - 24, shown.dy * 3, width, 24)
+      -- A skin may write the icon as a word: its measured width, else the original's 8 pixels.
+      local icon_width = 0
+      if shown.icon ~= nil then
+        local _, _, w = lookup(document, "di-" .. index):rect()
+        icon_width = math.max(24, w)
+      end
+      local width = icon_width + #tostring(shown.value or "") * 24
+      local top, left = clear_of_hud(
+        hud,
+        shown.x,
+        shown.y,
+        shown.dx * 3 - icon_width,
+        shown.dy * 3,
+        width,
+        24,
+        placed
+      )
       set_property(document, id, "left", left .. "%")
       set_property(document, id, "top", top .. "%")
       set_property(
@@ -1424,6 +1496,7 @@ local function draw_hp_bars(document)
       )
     end
   end
+  bar_boxes = placed
 end
 
 -- The countdown over the fallen partner (packages/screens: death_countdown.hpp; command_menu.c:

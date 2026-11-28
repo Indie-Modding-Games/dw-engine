@@ -441,6 +441,11 @@
 	display: none;
 }
 
+/* The ally rows wait for the banner to go up: it would cover their names. */
+#fight.opening #allies {
+	display: none;
+}
+
 /* The strip's slide (command_menu.c: BTL_tickCommandMenu): logic.lua moves and stretches the frame's pieces from their
    top and the icons from theirs (9dp into their boxes) as the game moves the strip's edges. Before the banner and
    once it has gone back up it waits above the screen. After the fight it stays with the partner's bars, without the cursor or the

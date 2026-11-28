@@ -119,5 +119,8 @@ end
 
 function on_tick(document, _seconds)
   fit_text.tick()
+  -- The naming box stands where this box does (script_menu.c: setupNameSelectorBox): the box
+  -- waits unseen under it, as a choice that asked for a name stays open meanwhile.
+  document:get("box"):set_class("under-naming", naming.is_open())
   screen_fit.apply(document, document:get("box"), opening_scale)
 end
