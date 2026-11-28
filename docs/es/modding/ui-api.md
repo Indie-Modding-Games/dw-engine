@@ -818,6 +818,7 @@ Versión de la API de la interfaz: **0.32.0**.
 | `battle.hp_bars` | ajuste | texto | Las barras de vida de los enemigos: nueve valores cada una. |
 | `battle.markers` | ajuste | texto | Las marcas de 1P y COM de un combate de copa entre dos de la misma especie: tres valores cada una. |
 | `battle.death_countdown` | ajuste | texto | La cuenta sobre el compañero caído: siete valores, o vacío. |
+| `battle.stun_signs` | ajuste | texto | Los carteles de aturdimiento sobre los luchadores: cuatro valores cada uno (izquierda, arriba, ancho y alto en porcentaje). |
 | `battle.shout.revision` | ajuste | número | Sube cada vez que cambia el grito del jugador. |
 | `battle.shout.shown` | ajuste | sí/no | Si se ve el grito del jugador. |
 | `battle.shout.text` | ajuste | texto | La clave de texto del grito. |
@@ -846,6 +847,7 @@ Versión de la API de la interfaz: **0.32.0**.
 | `battle.hp_bars(): table` | consulta | tabla | Las barras de vida de los enemigos: always y bars (enemy, x, y, left, top, fill, red, green, hp). |
 | `battle.markers(): table` | consulta | tabla | Las marcas de 1P y COM: fighter (0 el compañero, 1 el rival), x e y (porcentaje). |
 | `battle.death_countdown(): table?` | consulta | tabla | La cuenta sobre el compañero caído (x, y, digit, digit_scale, badge_scale, turn, palette), o nil. |
+| `battle.stun_signs(): table` | consulta | tabla | Los carteles de aturdimiento sobre los luchadores: left, top, width y height (porcentaje). |
 | `battle.shout(): table?` | consulta | tabla | El grito del jugador (text_key, x, y, node_x, node_y, line, hop, scale), o nil. |
 | `battle.result(): table` | consulta | tabla | La caja del final: outcome_key, lines (parts, name_key, subject_key, amount), stats (value, max, gain), bits, money, count_delay_frames y wait_frames. |
 | `battle.match(): table` | consulta | tabla | Lo que un combate de copa enseña encima: shown, name, name_y, stats, counted, stat, time_up, time_up_label, box, partner, rival, damage_label, dealt, taken y wipe. |

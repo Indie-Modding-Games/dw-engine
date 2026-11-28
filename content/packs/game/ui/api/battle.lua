@@ -332,6 +332,22 @@ function battle.markers()
   return list
 end
 
+-- The stun signs the field draws over the fighters: each {left, top, width, height} in percent of
+-- the window.
+function battle.stun_signs()
+  local values = numbers("battle.stun_signs")
+  local list = {}
+  for base = 0, #values - 4, 4 do
+    list[#list + 1] = {
+      left = values[base + 1],
+      top = values[base + 2],
+      width = values[base + 3],
+      height = values[base + 4],
+    }
+  end
+  return list
+end
+
 -- The countdown over the fallen partner, or nil: x, y (the anchor, in percent), digit (1 to 5),
 -- digit_scale, badge_scale, turn (degrees) and palette (0 to 2).
 function battle.death_countdown()

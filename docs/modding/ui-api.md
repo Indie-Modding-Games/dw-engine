@@ -933,6 +933,7 @@ UI API version: **0.37.0**.
 | `battle.hp_bars` | setting | text | The enemies' health bars: nine values each. |
 | `battle.markers` | setting | text | The 1P and COM markers of a cup battle between two of the same species: three values each. |
 | `battle.death_countdown` | setting | text | The countdown over the fainted partner: seven values, or empty. |
+| `battle.stun_signs` | setting | text | The stun signs over the fighters: four values each (left, top, width, height as percentages). |
 | `battle.shout.revision` | setting | number | Goes up each time the player's shout changes. |
 | `battle.shout.shown` | setting | yes/no | Whether the player's shout is shown. |
 | `battle.shout.text` | setting | text | The text key of the shout. |
@@ -961,6 +962,7 @@ UI API version: **0.37.0**.
 | `battle.numbers(): table` | query | table | The numbers over the fighters: x, y (percentage), dx, dy, value, kind (damage, gain, poison) and icon. |
 | `battle.hp_bars(): table` | query | table | The enemies' health bars: always and bars (enemy, x, y, left, top, fill, red, green, hp). |
 | `battle.markers(): table` | query | table | The 1P and COM markers: fighter (0 the partner, 1 the rival), x and y (percentage). |
+| `battle.stun_signs(): table` | query | table | The stun signs over the fighters: left, top, width and height (percentage). |
 | `battle.death_countdown(): table?` | query | table | The countdown over the fainted partner (x, y, digit, digit_scale, badge_scale, turn, palette), or nil. |
 | `battle.shout(): table?` | query | table | The player's shout (text_key, x, y, node_x, node_y, line, hop, scale), or nil. |
 | `battle.result(): table` | query | table | The end box: outcome_key, lines (parts, name_key, subject_key, amount), stats (value, max, gain), bits, money, count_delay_frames and wait_frames. |

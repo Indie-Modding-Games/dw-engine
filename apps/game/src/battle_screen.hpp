@@ -14,6 +14,7 @@
 #include <dwe/screens/enemy_hp_bars.hpp>
 #include <dwe/screens/finisher_gauge.hpp>
 #include <dwe/screens/partner_bars.hpp>
+#include <dwe/screens/stun_signs.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/battle_effects.hpp>
 #include <dwe/session/field_items_adapter.hpp>

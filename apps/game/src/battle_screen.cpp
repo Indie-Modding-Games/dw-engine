@@ -560,10 +560,22 @@ void BattleScreen::publishHpBars() {
                                               static_cast<double>(camera->viewportSize().y));
     }
   }
+  // The stun signs the field draws over the fighters, which the bars keep off.
+  std::vector<screens::WindowFraction> stunSigns;
+  double stunAspect = 1.0;
+  if (battle_ && camera != nullptr && camera->viewportSize().y > 0.0F) {
+    stunAspect = static_cast<double>(camera->viewportSize().x) /
+                 static_cast<double>(camera->viewportSize().y);
+    for (const glm::vec2 foot : desc_.scene->stunSignsOnWindow()) {
+      stunSigns.push_back({.x = foot.x, .y = foot.y});
+    }
+  }
   screens::ScreenSettings settings = screens::settingsOf(bars);
   std::ranges::move(screens::finisherGaugeSettingsOf(finisherGaugeCorner_),
                     std::back_inserter(settings));
   std::ranges::move(screens::settingsOf(markers), std::back_inserter(settings));
+  std::ranges::move(screens::stunSignSettingsOf(stunSigns, stunAspect),
+                    std::back_inserter(settings));
   std::ranges::move(screens::settingsOf(deathCountdownAnchor_
                                             ? screens::deathCountdownLookOf(*timer)
                                             : std::nullopt,

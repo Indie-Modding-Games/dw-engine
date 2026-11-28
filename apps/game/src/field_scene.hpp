@@ -659,6 +659,9 @@ public:
   // getEntityScreenPos(ENTITY_TABLE[0], node), as for a fighter's); nothing when the node is no
   // joint of its skin or it is behind the camera.
   [[nodiscard]] std::optional<glm::vec2> playerNodeOnWindow(std::uint32_t node) const;
+  // Where each stun sign over a fighter stands (the foot of its post), as fractions of
+  // the window; the sign itself is the original's size on screen (screens: stun_signs.hpp).
+  [[nodiscard]] std::vector<glm::vec2> stunSignsOnWindow() const;
   // The battle's time for the held fighters' clips, which run while the field waits.
   void runFighters(double seconds) { fighterSecondsDue_ += seconds; }
   // Whether the held fighter's clip, the figure's, has played through once (anim.c: animFlag 1

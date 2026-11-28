@@ -515,6 +515,10 @@ function battle.hp_bars() end
 ---@return table
 function battle.markers() end
 
+--- The stun signs over the fighters: left, top, width and height (percentage).
+---@return table
+function battle.stun_signs() end
+
 --- The countdown over the fainted partner (x, y, digit, digit_scale, badge_scale, turn, palette), or nil.
 ---@return table?
 function battle.death_countdown() end

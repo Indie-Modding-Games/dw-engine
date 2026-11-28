@@ -1458,7 +1458,21 @@ local function draw_hp_bars(document)
     bars[bar.enemy] = bar
   end
   local hud = nil
+  -- The stun signs the field draws over the fighters come first: the bars keep off them.
   local placed = {}
+  local signs = battle.stun_signs()
+  if #signs > 0 then
+    hud = hud_zones(document)
+    for _, sign in ipairs(signs) do
+      local left, top = sign.left * hud.width / 100, sign.top * hud.height / 100
+      placed[#placed + 1] = {
+        left = left,
+        top = top,
+        right = left + sign.width * hud.width / 100,
+        bottom = top + sign.height * hud.height / 100,
+      }
+    end
+  end
   for enemy = 1, max_enemies do
     local bar = bars[enemy]
     local id = "hb-" .. enemy
@@ -1506,7 +1520,10 @@ local function draw_hp_bars(document)
       )
     end
   end
-  bar_boxes = placed
+  bar_boxes = {}
+  for index = #signs + 1, #placed do
+    bar_boxes[#bar_boxes + 1] = placed[index]
+  end
 end
 
 -- The countdown over the fallen partner (packages/screens: death_countdown.hpp; command_menu.c:
