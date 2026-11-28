@@ -41,6 +41,9 @@ struct SystemCheck {
   std::optional<GpuInfo> gpu;
   // The GPU passed only the 1.2 compatible floor: the game will run it in that mode on its own.
   bool compatible = false;
+  // The diagnosis as one line of JSON (gpu_diagnosis.hpp): every GPU, the reasons, most actionable
+  // first. Empty when it was not gathered.
+  std::string diagnosis;
 };
 
 // Checks, without a window and without content, whether the renderer can start: creates a Vulkan
@@ -61,7 +64,8 @@ GpuInfo deviceGpu(const Device& device);
 // The check as `key=value` lines under a `dwe-check-system 1` header: result (ok, no-vulkan,
 // no-device, unsuitable), detail, devices, floor (1.3, or 1.2 for the compatible mode), then gpu,
 // vendor (0x....), kind (discrete, integrated, virtual, software, other), api (major.minor.patch)
-// and driver when a GPU was found. Values are on one line each.
+// and driver when a GPU was found, and diagnosis (JSON) when it was gathered. Values are on one
+// line each.
 std::string formatSystemCheck(const SystemCheck& check);
 
 } // namespace dwe::rhi

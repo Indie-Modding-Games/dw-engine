@@ -1,5 +1,5 @@
 {
-  "version": "0.33.0",
+  "version": "0.34.0",
   "screens": {
     "ui": [
       {"name": "ui.setting", "kind": "function", "value": "any", "summary": "The value of a setting the game publishes; nil if it does not publish it.", "signature": "(name: string): any"},
@@ -232,6 +232,10 @@
       {"name": "whamon_in_water", "kind": "option", "value": "boolean", "summary": "Whamon in the water."},
       {"name": "boosted_techniques", "kind": "option", "value": "boolean", "summary": "Boosted techniques."},
       {"name": "auto_quality", "kind": "option", "value": "boolean", "summary": "Automatic quality: the game adjusts the graphics to the frame time."},
+      {"name": "graphics_preset", "kind": "option", "value": "text", "summary": "Graphics preset: performance, balanced or quality (the default look); custom when the options match none."},
+      {"name": "graphics.mode", "kind": "setting", "value": "text", "summary": "How the game draws: card, compatible (the Vulkan 1.2 path) or processor."},
+      {"name": "graphics.gpu", "kind": "setting", "value": "text", "summary": "The graphics device's name."},
+      {"name": "graphics.auto_reason", "kind": "setting", "value": "text", "summary": "Why the automatic quality chose the look: software, integrated, compatible or slow; empty when it does not choose."},
       {"name": "render_scale", "kind": "option", "value": "text", "summary": "Render scale: 100, 75 or 50 (percent)."},
       {"name": "frame_limit", "kind": "option", "value": "text", "summary": "Frame limit: off, 60 or 30."},
       {"name": "smooth_motion", "kind": "option", "value": "boolean", "summary": "Smooth motion."},
@@ -270,7 +274,10 @@
       {"name": "ui_addon.problem", "kind": "setting", "value": "text", "summary": "Why the chosen interface could not be used; empty if it could."}
     ],
     "software_notice": [
-      {"name": "software_mode", "kind": "setting", "value": "boolean", "summary": "Whether the game draws without a graphics card (software mode); the notice shows once a run."}
+      {"name": "software_mode", "kind": "setting", "value": "boolean", "summary": "Whether the game draws without a graphics card (software mode); the notice shows once a run."},
+      {"name": "software_notice.kind", "kind": "setting", "value": "text", "summary": "software (no graphics card) or compatible (the card in the Vulkan 1.2 mode)."},
+      {"name": "software_notice.reason", "kind": "setting", "value": "text", "summary": "Why, as a reason code of docs/architecture/graphics-diagnosis.md; empty if unknown."},
+      {"name": "software_notice.<value>", "kind": "setting", "value": "text", "summary": "The reason's values: gpu, adapter, dedicated, driver, minimum and api."}
     ],
     "field_item_notice": [
       {"name": "field_item_notice.text", "kind": "setting", "value": "text", "summary": "The text key of the notice for an item on the ground or in a chest."},

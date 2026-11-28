@@ -67,6 +67,7 @@ between game versions.
 
 | Version | Changes |
 |---|---|
+| 0.34.0 | The graphics notice's reason: `software_notice.kind`, `software_notice.reason` and its values `software_notice.<value>` ([graphics diagnosis](../architecture/graphics-diagnosis.md)) |
 | 0.33.0 | The Folder battle's order panel: `battle.folder()` and its `battle.folder.*` settings (the active order, its phase, the waiting orders, the target, each waiting order's foe, the defense bar and the break, the stance, the commit point, the foes' letters and which foes the orders aim at, the move that replaced an order), and the `battle_system` option and the `strip` skin layout option ([Folder battle](../architecture/folder-battle.md)); each co-op ally's current order (`order_key` in `battle.allies()`) |
 | 0.32.0 | Software mode ([software mode](../architecture/software-mode.md)): the options `auto_quality`, `render_scale` and `frame_limit`, and the `software_notice` notice with the `software_mode` setting |
 | 0.31.0 | The partner menu marks the partner's boosted technique (`partner.technique.<n>.boosted`, `partner.technique.choice.<n>.boosted`: its power and MP are already the boosted ones), and the `boosted_techniques` option arrives ([battle](../modules/game/battle.md#boosted-techniques)) |
@@ -110,7 +111,7 @@ versus, the online rooms, the co-op game's tag and notices and the story boxes (
 ## Reference
 
 <!-- ui-api:generated -->
-UI API version: **0.33.0**.
+UI API version: **0.34.0**.
 
 ### `ui`
 
@@ -364,6 +365,10 @@ UI API version: **0.33.0**.
 | `whamon_in_water` | option | yes/no | Whamon in the water. |
 | `boosted_techniques` | option | yes/no | Boosted techniques. |
 | `auto_quality` | option | yes/no | Automatic quality: the game adjusts the graphics to the frame time. |
+| `graphics_preset` | option | text | Graphics preset: performance, balanced or quality (the default look); custom when the options match none. |
+| `graphics.mode` | setting | text | How the game draws: card, compatible (the Vulkan 1.2 path) or processor. |
+| `graphics.gpu` | setting | text | The graphics device's name. |
+| `graphics.auto_reason` | setting | text | Why the automatic quality chose the look: software, integrated, compatible or slow; empty when it does not choose. |
 | `render_scale` | option | text | Render scale: 100, 75 or 50 (percent). |
 | `frame_limit` | option | text | Frame limit: off, 60 or 30. |
 | `smooth_motion` | option | yes/no | Smooth motion. |
@@ -409,6 +414,9 @@ UI API version: **0.33.0**.
 | Name | Kind | Value | What it is |
 |---|---|---|---|
 | `software_mode` | setting | yes/no | Whether the game draws without a graphics card (software mode); the notice shows once a run. |
+| `software_notice.kind` | setting | text | software (no graphics card) or compatible (the card in the Vulkan 1.2 mode). |
+| `software_notice.reason` | setting | text | Why, as a reason code of docs/architecture/graphics-diagnosis.md; empty if unknown. |
+| `software_notice.<value>` | setting | text | The reason's values: gpu, adapter, dedicated, driver, minimum and api. |
 
 ### `field_item_notice`
 

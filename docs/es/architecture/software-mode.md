@@ -1,7 +1,7 @@
 # Modo software
 
 Cuando ninguna tarjeta gráfica puede mover el juego, el lanzador lo arranca con lavapipe, el driver Vulkan de Mesa que
-dibuja con el procesador ([lanzador: modo de compatibilidad](../modules/apps/launcher.md#requisitos-del-equipo)). El
+dibuja con el procesador ([lanzador: sin tarjeta gráfica](../modules/apps/launcher.md#requisitos-del-equipo)). El
 juego lo nota solo, arranca con un ajuste ligero, adapta la calidad al tiempo de cada fotograma mientras corre y se lo
 dice al jugador una vez por partida. Todo sigue siendo una opción que el jugador puede cambiar.
 
@@ -73,7 +73,42 @@ Están en Opciones > Gráficos en cualquier modo, después de la sincronización
 sin tomar teclas: "Jugando sin tarjeta gráfica", que el procesador dibuja el juego y puede ir lento, que la calidad se
 ajusta sola y dónde cambiarla, y cómo arreglarlo (instalar o actualizar el controlador de la tarjeta gráfica desde la
 web de su fabricante). Está traducido a los nueve idiomas (`localization/<idioma>/software_notice.yaml`). El ajuste
-`software_mode` dice si aplica.
+`software_mode` dice si aplica. Cuando el launcher sabe por qué no hay tarjeta gráfica (`DWE_GRAPHICS_REASON`,
+[diagnóstico gráfico](graphics-diagnosis.md)), la última línea nombra esa razón y su arreglo. El mismo aviso, con el
+título «Modo gráfico compatible», sale una vez por partida cuando la tarjeta va por el modo compatible de Vulkan 1.2
+(`software_notice.kind`).
+
+## Tarjetas gráficas poco potentes y ajustes gráficos
+
+Una tarjeta que mueve el juego pero puede ir justa, integrada o en el modo compatible de Vulkan 1.2 (`game.cpp`,
+`weakGpu`), empieza las opciones que el jugador no eligió desde el ajuste **Equilibrado** y activa la calidad
+automática salvo que el jugador la haya apagado. `SlowFrameWatch` (`software_mode.hpp`) mira ventanas de 5 s mientras
+hay un campo en pantalla: si la mayoría de imágenes tarda más de 25 ms (menos de 40 fps) baja un ajuste, espera 3 s y
+nunca vuelve a subir. Una tarjeta dedicada en la ruta Vulkan 1.3 o 1.4 empieza exactamente igual que antes, con el
+aspecto de serie; las pruebas automáticas y `--low-performance` mantienen su propio inicio.
+
+Opciones › Gráficos tiene una fila **Ajuste gráfico** (`graphics_preset`: rendimiento, equilibrado, calidad;
+«personalizado» si las opciones no coinciden con ninguno) que pone todas las opciones gráficas a la vez y las guarda
+como elección del jugador, y una fila **Modo gráfico** que muestra el modo con las palabras del lanzador (tarjeta gráfica, gráficos
+compatibles, sin tarjeta gráfica); su descripción nombra el dispositivo y, mientras la calidad automática elige, por qué
+(`graphics.auto_reason`: software, integrated, compatible, slow).
+
+| Ajuste | Escala | Sombras | Texturas de modelos | Escenario | Iluminación, colores vivos | Antialiasing |
+|---|---|---|---|---|---|---|
+| Rendimiento | 75 % | No | Píxeles | Suave | No | No |
+| Equilibrado | 100 % | Redondas | Suaves | Suave | Sí | No |
+| Calidad (el aspecto de serie) | 100 % | Sol | Mejoradas | Mejorado | Sí | Sí |
+
+El límite de fps y la calidad automática no forman parte de un ajuste. La interfaz se dibuja al tamaño de la ventana
+después de estirar la escena, así que sigue nítida al 75 y al 50 % de escala.
+
+## La caché de pipelines
+
+Todos los pipelines se construyen con un mismo `VkPipelineCache` (`Device::pipelineCache`), que se carga al arrancar
+desde `<datos del usuario>/cache/pipelines.bin` y se vuelve a escribir a los 15 s de partida y al cerrar el juego, solo
+si creció. Un archivo cuya cabecera nombra otra GPU, otro dispositivo u otro controlador
+(`VkPipelineCacheHeaderVersionOne`) se ignora. Las pruebas automáticas y las partidas por canal de control no guardan
+ninguna.
 
 ## Mediciones y requisitos mínimos
 
@@ -105,3 +140,20 @@ hacen menos trabajo por núcleo que este:
 - **Mejor:** 6 hilos o más a 3,5 GHz o más llegan a escala completa a 30 fps.
 
 Por debajo de eso el juego arranca igual, pero va a menos de 30 fps incluso en el nivel 0.
+
+### El primer arranque
+
+Medido el 2026-11-28 en la misma máquina, tranquila (carga media de 3 a 12), con `--new-game --start twna02` y datos
+de usuario nuevos cada vez; tres pruebas por fila, todas a menos de 0,1 s entre sí.
+
+| `LP_NUM_THREADS` | Del arranque al campo, primera vez | Segunda vez | Pipelines construidos | Su tiempo de construcción (el más lento) |
+|---|---|---|---|---|
+| 2 | 1,7 s | 1,7 s | 61 | 0,9 s (145 ms) |
+| 4 | 1,7 s | 1,7 s | 61 | 0,9 s (148 ms) |
+
+Todos los pipelines se construyen antes de que aparezca el campo, así que ninguno da tirones durante el juego.
+lavapipe no guarda nada en un `VkPipelineCache` (el archivo se queda en su cabecera de 32 bytes) y su propia caché de
+shaders de Mesa tampoco cambió el tiempo, así que en un equipo sin tarjeta gráfica el segundo arranque va igual de
+rápido que el primero. La caché de pipelines del juego es para los controladores que sí la llenan. Con la máquina
+ocupada en otros trabajos (carga media de 30 a 55) el mismo arranque tardó de 2 a 22 s, que es lo que puede esperar un
+jugador con muchas cosas abiertas.

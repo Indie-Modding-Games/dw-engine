@@ -140,6 +140,34 @@ local option_actions = {
 -- original has nothing like them and they change no game.
 local display_entries = {
   {
+    -- How the game draws and on which device, and why the automatic quality chose the look
+    -- (docs/architecture/graphics-diagnosis.md); nothing to change.
+    id = "graphics-device",
+    tab = "graphics",
+    label = "pause_menu.graphics_device",
+    help = "pause_menu.help.graphics_device",
+    kind = "info",
+    tag = false,
+    shown = function()
+      return (ui.setting("graphics.gpu") or "") ~= ""
+    end,
+    value = function()
+      return ui.setting("graphics.mode")
+    end,
+    text = function()
+      return t("pause_menu.graphics_device." .. (ui.setting("graphics.mode") or "card"))
+    end,
+    help_text = function()
+      local text = t("pause_menu.help.graphics_device", { gpu = ui.setting("graphics.gpu") or "" })
+      local reason = ui.setting("graphics.auto_reason") or ""
+      if reason ~= "" and ui.setting("auto_quality") == true then
+        text = text .. " " .. t("pause_menu.graphics_auto." .. reason)
+      end
+      return text
+    end,
+    change = function(_step) end,
+  },
+  {
     id = "display-mode",
     tab = "graphics",
     label = "pause_menu.display_mode",
@@ -1791,6 +1819,8 @@ local function refresh_option_info(document)
     document
       :get("option-help")
       :set_text(t("pause_menu.help.locked", { variant = variant and t(variant) or "" }))
+  elseif entry ~= nil and entry.help_text ~= nil then
+    document:get("option-help"):set_text(entry.help_text())
   else
     document:get("option-help"):set_text(help and t(help) or "")
   end
@@ -1819,7 +1849,7 @@ local function refresh_option_rows(document)
       parts.label:set_text(t(entry.label))
       parts.value:set_text(entry_text(entry))
       parts.row:set_class("locked", entry_locked(entry))
-      for _, name in ipairs({ "toggle", "list", "range" }) do
+      for _, name in ipairs({ "toggle", "list", "range", "info" }) do
         parts.row:set_class("kind-" .. name, kind == name)
       end
       parts.value:set_class("on", kind == "toggle" and value == true)
@@ -1830,8 +1860,8 @@ local function refresh_option_rows(document)
         parts.fill:set_property("width", string.format("%d%%", math.floor(share * 100 + 0.5)))
         low, high = value <= lowest, value >= highest
       end
-      parts.less:set_class("at-end", low)
-      parts.more:set_class("at-end", high)
+      parts.less:set_class("at-end", low or kind == "info")
+      parts.more:set_class("at-end", high or kind == "info")
     end
   end
   refresh_option_info(document)

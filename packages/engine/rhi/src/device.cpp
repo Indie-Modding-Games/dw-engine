@@ -1,6 +1,7 @@
 #include <dwe/core/assert.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/rhi/device.hpp>
+#include <dwe/rhi/gpu_diagnosis.hpp>
 #include <dwe/rhi/gpu_report.hpp>
 
 #include <SDL3/SDL_vulkan.h>
@@ -11,9 +12,13 @@
 #include <array>
 #include <atomic>
 #include <cstdint>
+#include <cstring>
 #include <deque>
+#include <filesystem>
 #include <format>
+#include <fstream>
 #include <functional>
+#include <iterator>
 #include <optional>
 #include <string>
 #include <utility>
@@ -204,6 +209,12 @@ struct Device::Impl {
   // The device uses the extension entry points of synchronization2 and dynamic rendering
   // (vulkan_calls.hpp), put back to the core ones when it is destroyed.
   bool extensionCalls = false;
+  VkPipelineCache pipelineCache = VK_NULL_HANDLE;
+  std::filesystem::path pipelineCacheFile;
+  std::size_t pipelineCacheSaved = 0;
+
+  void createPipelineCache();
+  void savePipelineCache();
 
   core::Result<void> createSwapchain();
   void destroySwapchainViews();
@@ -329,12 +340,83 @@ void Device::Impl::destroyRetired(std::uint64_t completedFrame) {
   }
 }
 
+void Device::Impl::createPipelineCache() {
+  std::vector<char> data;
+  if (!pipelineCacheFile.empty()) {
+    std::ifstream file{pipelineCacheFile, std::ios::binary};
+    data.assign(std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{});
+  }
+  VkPhysicalDeviceProperties properties{};
+  vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+  VkPipelineCacheHeaderVersionOne header{};
+  if (data.size() > sizeof(header)) {
+    std::memcpy(&header, data.data(), sizeof(header));
+  }
+  const bool matches = data.size() > sizeof(header) && header.headerSize >= sizeof(header) &&
+                       header.headerVersion == VK_PIPELINE_CACHE_HEADER_VERSION_ONE &&
+                       header.vendorID == properties.vendorID &&
+                       header.deviceID == properties.deviceID &&
+                       std::ranges::equal(header.pipelineCacheUUID, properties.pipelineCacheUUID);
+  if (!data.empty() && !matches) {
+    core::logInfo("pipeline cache: {} is from another GPU or driver; starting a new one",
+                  pipelineCacheFile.string());
+    data.clear();
+  }
+  const VkPipelineCacheCreateInfo info{.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
+                                       .pNext = nullptr,
+                                       .flags = 0,
+                                       .initialDataSize = data.size(),
+                                       .pInitialData = data.empty() ? nullptr : data.data()};
+  if (vkCreatePipelineCache(device, &info, nullptr, &pipelineCache) != VK_SUCCESS) {
+    pipelineCache = VK_NULL_HANDLE;
+    return;
+  }
+  pipelineCacheSaved = data.size();
+  if (!data.empty()) {
+    core::logInfo("pipeline cache: {} KiB from {}", data.size() / 1024, pipelineCacheFile.string());
+  }
+}
+
+void Device::Impl::savePipelineCache() {
+  if (pipelineCache == VK_NULL_HANDLE || pipelineCacheFile.empty() || gpuDeviceLost()) {
+    return;
+  }
+  std::size_t size = 0;
+  if (vkGetPipelineCacheData(device, pipelineCache, &size, nullptr) != VK_SUCCESS ||
+      size <= pipelineCacheSaved) {
+    return;
+  }
+  std::vector<char> data(size);
+  if (vkGetPipelineCacheData(device, pipelineCache, &size, data.data()) != VK_SUCCESS) {
+    return;
+  }
+  std::error_code error;
+  std::filesystem::create_directories(pipelineCacheFile.parent_path(), error);
+  std::filesystem::path partial = pipelineCacheFile;
+  partial += ".partial";
+  {
+    std::ofstream file{partial, std::ios::binary | std::ios::trunc};
+    file.write(data.data(), static_cast<std::streamsize>(size));
+    if (!file) {
+      return;
+    }
+  }
+  std::filesystem::rename(partial, pipelineCacheFile, error);
+  if (!error) {
+    pipelineCacheSaved = size;
+  }
+}
+
 Device::Impl::~Impl() {
   if (device.device != VK_NULL_HANDLE) {
     if (!gpuDeviceLost()) {
       vkDeviceWaitIdle(device);
     }
     destroyRetired(submittedFrames + 1);
+    savePipelineCache();
+    if (pipelineCache != VK_NULL_HANDLE) {
+      vkDestroyPipelineCache(device, pipelineCache, nullptr);
+    }
     gpuForgetDevice(device);
     vmaDestroyAllocator(allocator);
     for (FrameSlot& frame : frames) {
@@ -393,6 +475,7 @@ core::Result<std::unique_ptr<Device>> Device::createOnce(const platform::Window&
   Uint32 extensionCount = 0;
   const char* const* extensions = SDL_Vulkan_GetInstanceExtensions(&extensionCount);
   if (extensions == nullptr) {
+    noteStartFailure({.stage = StartStage::Instance, .result = 0, .message = SDL_GetError()});
     return core::fail(std::format("Vulkan is not available: {}", SDL_GetError()));
   }
 
@@ -417,12 +500,16 @@ core::Result<std::unique_ptr<Device>> Device::createOnce(const platform::Window&
   }
   auto instance = instanceBuilder.build();
   if (!instance) {
+    noteStartFailure({.stage = StartStage::Instance,
+                      .result = static_cast<std::int32_t>(instance.vk_result()),
+                      .message = instance.error().message()});
     return core::fail(
         std::format("could not create the Vulkan instance: {}", instance.error().message()));
   }
   impl->instance = instance.value();
 
   if (!SDL_Vulkan_CreateSurface(window.sdlWindow(), impl->instance, nullptr, &impl->surface)) {
+    noteStartFailure({.stage = StartStage::Surface, .result = 0, .message = SDL_GetError()});
     return core::fail(std::format("could not create the window surface: {}", SDL_GetError()));
   }
 
@@ -430,6 +517,9 @@ core::Result<std::unique_ptr<Device>> Device::createOnce(const platform::Window&
   requireRendererFeatures(selector, desc.compatibleMode);
   auto physicalDevice = selector.set_surface(impl->surface).select();
   if (!physicalDevice) {
+    noteStartFailure({.stage = StartStage::SelectGpu,
+                      .result = static_cast<std::int32_t>(physicalDevice.vk_result()),
+                      .message = physicalDevice.error().message()});
     return core::fail(std::format("no GPU supports the renderer's Vulkan floor ({}) with this "
                                   "window: {}",
                                   desc.compatibleMode ? "Vulkan 1.2 + extensions" : "Vulkan 1.3",
@@ -462,6 +552,9 @@ core::Result<std::unique_ptr<Device>> Device::createOnce(const platform::Window&
   }
   auto device = deviceBuilder.build();
   if (!device) {
+    noteStartFailure({.stage = StartStage::Device,
+                      .result = static_cast<std::int32_t>(device.vk_result()),
+                      .message = device.error().message()});
     return core::fail(
         std::format("could not create the Vulkan device: {}", device.error().message()));
   }
@@ -514,6 +607,8 @@ core::Result<std::unique_ptr<Device>> Device::createOnce(const platform::Window&
   if (auto created = impl->createFrames(); !created) {
     return std::unexpected{created.error()};
   }
+  impl->pipelineCacheFile = desc.pipelineCacheFile;
+  impl->createPipelineCache();
   auto newDevice = std::unique_ptr<Device>{new Device{std::move(impl)}};
   gpuReportDevice(*newDevice, diagnostics);
   return newDevice;
@@ -522,6 +617,14 @@ core::Result<std::unique_ptr<Device>> Device::createOnce(const platform::Window&
 Device::Device(std::unique_ptr<Impl> impl) : impl_{std::move(impl)} {}
 
 Device::~Device() = default;
+
+VkPipelineCache Device::pipelineCache() const {
+  return impl_->pipelineCache;
+}
+
+void Device::savePipelineCache() {
+  impl_->savePipelineCache();
+}
 
 std::optional<Frame> Device::beginFrame() {
   Impl& impl = *impl_;

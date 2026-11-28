@@ -67,6 +67,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
+| 0.34.0 | La razón del aviso gráfico: `software_notice.kind`, `software_notice.reason` y sus valores `software_notice.<valor>` ([diagnóstico gráfico](../architecture/graphics-diagnosis.md)) |
 | 0.33.0 | El panel de órdenes del combate Folder: `battle.folder()` y sus ajustes `battle.folder.*` (la orden activa, su fase, las órdenes en espera, el objetivo, el enemigo de cada orden en espera, la barra de defensa y la ruptura, la postura, el punto de compromiso, las letras de los enemigos y a qué enemigos apuntan las órdenes, la técnica que reemplazó una orden), la opción `battle_system` y la opción de layout `strip` de las skins ([Combate Folder](../architecture/folder-battle.md)); la orden en curso de cada aliado en cooperativo (`order_key` en `battle.allies()`) |
 | 0.32.0 | Modo software ([modo software](../architecture/software-mode.md)): las opciones `auto_quality`, `render_scale` y `frame_limit`, y el aviso `software_notice` con el ajuste `software_mode` |
 | 0.31.0 | El menú del compañero marca su técnica potenciada (`partner.technique.<n>.boosted`, `partner.technique.choice.<n>.boosted`: su poder y su MP ya son los potenciados), y llega la opción `boosted_techniques` ([combate](../modules/game/battle.md#tecnicas-potenciadas)) |
