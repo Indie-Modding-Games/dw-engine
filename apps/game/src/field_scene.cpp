@@ -1077,11 +1077,11 @@ void FieldScene::followClock() {
   clockHour_ = hour;
   // map.c: renderMap starts the palette fade at the top of the hours where the time of day changes,
   // on maps without a fixed time; tickDaytimeTransition switches the lights when it ends.
-  if (!render::timeOfDayChangesAt(hour, schedule_) ||
-      render::timeOfDayAt(hour, schedule_) == time_) {
+  const std::optional<render::TimeOfDay> turn = timeOfDayTurn(hour, time_, schedule_, sharedClock_);
+  if (!turn) {
     return;
   }
-  time_ = render::timeOfDayAt(hour, schedule_);
+  time_ = *turn;
   if (!fixedTime_) {
     mapRenderer_->setVariant(map_.backgroundVariant(time_, false));
     lightingDelay_ = render::TimeOfDayFadeSeconds;
@@ -1093,8 +1093,8 @@ bool FieldScene::daytimeFadeRunning() const {
     return true;
   }
   const std::int32_t hour = clock_->time().hour;
-  return hour != clockHour_ && !fixedTime_ && render::timeOfDayChangesAt(hour, schedule_) &&
-         render::timeOfDayAt(hour, schedule_) != time_;
+  return hour != clockHour_ && !fixedTime_ &&
+         timeOfDayTurn(hour, time_, schedule_, sharedClock_).has_value();
 }
 
 void FieldScene::applyLighting() {
@@ -1513,8 +1513,8 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
             .additive = stage_.playerAdditive});
   }
   for (const auto& [id, body] : coopBodies_) {
-    if (body.shown && body.player && stage_.showsPlayer())
-      submit(*body.player, alpha, {});
+    if (body.shown && body.player && stage_.showsOtherPlayers())
+      submit(*body.player, alpha, {.tint = sceneryTint()});
   }
   if (stage_.showsNpcs()) {
     drawNpcs(animationSeconds, alpha);
@@ -1543,8 +1543,8 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
   }
   for (const auto& [id, body] : coopBodies_) {
     const CoopPartner& remote = body.partner;
-    if (remote.shown && remote.actor && stage_.showsPartner())
-      submit(*remote.actor, alpha, {.scale = glm::vec3{remote.scale}});
+    if (remote.shown && remote.actor && stage_.showsOtherPlayers())
+      submit(*remote.actor, alpha, {.scale = glm::vec3{remote.scale}, .tint = sceneryTint()});
   }
   if (!paused) {
     advanceObjectSmoke(frameSeconds);

@@ -95,6 +95,9 @@ ticket no quiere ("sin esperarlos"), y además salta el mundo para quienes no en
     horas, así que no las vive otra vez: la sesión recuerda hasta dónde vivió y no le da frames hasta que el mundo pase
     ese punto.
 - Antes del primer aviso del anfitrión, un invitado corre su propio reloj como antes.
+- En una partida cooperativa el campo pone la hora del día del reloj a cualquier hora, no solo en las horas en que
+  cambia el día, así que un invitado que se une o se pone al día ve la hora del mundo. En solitario solo cambia en esas
+  horas, como antes.
 
 ### 4.2 La hora del compañero
 

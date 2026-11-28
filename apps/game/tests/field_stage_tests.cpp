@@ -40,3 +40,33 @@ TEST_CASE("the death hides everyone, keeps the wake map's host and brings all ba
   CHECK(swap.showsNpcs());
   CHECK_FALSE(swap.showsPartner());
 }
+
+TEST_CASE("a scene of this player's own hides the other co-op players and their partners") {
+  // Co-op QA: the other players' partners stood beside this player's partner in its death on
+  // black, its evolution and the lives box.
+  FieldStage scene;
+  scene.sceneryHidden = true;
+  CHECK_FALSE(scene.showsOtherPlayers());
+  CHECK(scene.showsPartner());
+  CHECK(FieldStage{}.showsOtherPlayers());
+  FieldStage hiddenPartner;
+  hiddenPartner.partnerHidden = true;
+  CHECK(hiddenPartner.showsOtherPlayers());
+}
+
+TEST_CASE("a co-op game turns to the world's time of day even past the hour it starts") {
+  // Co-op QA: guests whose clock jumped to the host's in a dialog drew night while the host, held
+  // across the dusk's first hour, drew day, in the same battle.
+  using dwe::render::TimeOfDay;
+  const dwe::render::TimeOfDaySchedule schedule{.dayStart = 6, .duskStart = 16, .nightStart = 20};
+  using dwe::app::timeOfDayTurn;
+  // The original: only the first hour of a time of day starts its fade.
+  CHECK(timeOfDayTurn(16, TimeOfDay::Day, schedule, false) == TimeOfDay::Dusk);
+  CHECK_FALSE(timeOfDayTurn(18, TimeOfDay::Day, schedule, false));
+  CHECK_FALSE(timeOfDayTurn(17, TimeOfDay::Dusk, schedule, false));
+  // Co-op: any hour whose time of day is not the one shown.
+  CHECK(timeOfDayTurn(18, TimeOfDay::Day, schedule, true) == TimeOfDay::Dusk);
+  CHECK(timeOfDayTurn(22, TimeOfDay::Day, schedule, true) == TimeOfDay::Night);
+  CHECK(timeOfDayTurn(9, TimeOfDay::Night, schedule, true) == TimeOfDay::Day);
+  CHECK_FALSE(timeOfDayTurn(18, TimeOfDay::Dusk, schedule, true));
+}

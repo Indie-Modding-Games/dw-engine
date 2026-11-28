@@ -88,6 +88,9 @@ them"), and it still jumps the world for players who are not training.
     those hours, so it does not live them again: the session remembers how far the partner lived and gives it no
     frames until the world passes that point.
 - Before the host's first word, a guest runs its own clock as before.
+- In a co-op game the field turns its time of day to the clock's hour at any hour, not only at the hours the day
+  changes, so a guest that joins or catches up sees the world's time of day. Solo play turns only at those hours, as
+  before.
 
 ### 4.2 The partner's hour
 
