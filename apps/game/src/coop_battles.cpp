@@ -12,6 +12,7 @@
 #include <dwe/session/inventory_adapter.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -269,8 +270,10 @@ void CoopBattles::tick(PlaySession& play, std::span<const Peer> peers, Role role
       role == Role::Guest && !peers_.empty() ? peers_.front().bridge : nullptr;
   // A battle the guest's story starts is shared while the host stands on its map (#351); elsewhere
   // it is a solo battle of the guest's own game.
-  play.handBattlesToHost(host != nullptr && !play.battleScreen().active() &&
-                         coopPlayerHere(play.scene().field(), here_, coop::HostPlayerId));
+  const bool handOver = host != nullptr && !play.battleScreen().active() &&
+                        coopPlayerHere(play.scene().field(), here_, coop::HostPlayerId);
+  play.handBattlesToHost(handOver);
+  play.holdCoopBattles(role == Role::Host ? partnersDying(play) : handOver && play.partnerDying());
   if (host != nullptr) {
     if (mirror_.self() != self && !mirror_.running() && !mirror_.pendingAsk()) {
       mirror_ = coop::BattleMirror{self};
@@ -405,6 +408,18 @@ void CoopBattles::endBattle(PlaySession& play) {
   play.scene().setBattlePartner(std::nullopt);
 }
 
+// Whether the partner of this game's player, or of a guest on its map, dies or waits to be reborn:
+// no co-op battle starts meanwhile.
+bool CoopBattles::partnersDying(const PlaySession& play) const {
+  std::vector<coop::PlayerId> here;
+  for (const coop::PlayerId guest : referee_.guests()) {
+    if (coopPlayerHere(play.scene().field(), here_, guest)) {
+      here.push_back(guest);
+    }
+  }
+  return play.partnerDying() || referee_.partnerDying(here);
+}
+
 // The guests whose partners join a battle `starter` begins (docs/architecture/coop-combat.md §3):
 // every other guest standing on this map and offering it (free of menus, scenes and battles).
 std::vector<BattleScreen::CoopAlly> CoopBattles::freeAllies(const PlaySession& play,
@@ -455,7 +470,8 @@ void CoopBattles::answer(PlaySession& play, coop::PlayerId from, const coop::Bat
       ask, {.map = field.mapChangePending() ? std::string_view{} : std::string_view{field.mapId()},
             .guestHere = coopPlayerHere(field, here_, from),
             .battling = play.battleScreen().active(),
-            .held = play.coopBattleBlocked()});
+            .held = play.coopBattleBlocked() || partnersDying(play) ||
+                    referee_.partnerDying(std::array{from})});
   if (verdict.waits) {
     if (referee_.wait(from, ask, ticks_)) {
       return;
@@ -674,7 +690,7 @@ void CoopBattles::sendOffer(PlaySession& play, CoopGameplayBridge& bridge) {
   const bool available = mirror_.partnerFree(!play.coopBattleBlocked()) &&
                          !play.heldForCoopBattle() &&
                          coopPlayerHere(play.scene().field(), here_, coop::HostPlayerId);
-  if (auto offer = mirror_.offer(available, profileOf(play.coopFighter()))) {
+  if (auto offer = mirror_.offer(available, profileOf(play.coopFighter()), play.partnerDying())) {
     send(&bridge, std::move(*offer));
   }
 }

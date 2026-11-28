@@ -120,6 +120,13 @@ std::optional<BattleFighterProfile> BattleReferee::offered(PlayerId guest) const
   return offer->fighter;
 }
 
+bool BattleReferee::partnerDying(std::span<const PlayerId> guests) const {
+  return std::ranges::any_of(guests, [this](PlayerId guest) {
+    return validGuest(guest) && present_.at(guest) && offers_.at(guest) &&
+           offers_.at(guest)->partnerDying;
+  });
+}
+
 std::optional<BattleRole> BattleReferee::roleOf(PlayerId player) const {
   if (!running_) {
     return std::nullopt;
@@ -293,8 +300,10 @@ std::optional<PlayerId> BattleMirror::waitingFor() const {
   return running_->starter;
 }
 
-std::optional<BattleOffer> BattleMirror::offer(bool available, BattleFighterProfile fighter) {
-  BattleOffer next{.available = available, .fighter = std::move(fighter)};
+std::optional<BattleOffer> BattleMirror::offer(bool available, BattleFighterProfile fighter,
+                                               bool partnerDying) {
+  BattleOffer next{
+      .available = available, .fighter = std::move(fighter), .partnerDying = partnerDying};
   if (offered_ && *offered_ == next) {
     return std::nullopt;
   }

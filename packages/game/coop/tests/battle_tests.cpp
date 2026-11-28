@@ -5,6 +5,7 @@
 
 #include <doctest/doctest.h>
 
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -669,6 +670,35 @@ TEST_CASE("the mirror sends its offer only when it changes, and knows it is an a
   // The host gone, the offer is sent again on the next link.
   static_cast<void>(mirror.hostLeft());
   CHECK(mirror.offer(false, hurt));
+}
+
+TEST_CASE("a guest's offer says while its partner dies, and the host holds the battles meanwhile") {
+  BattleMirror mirror;
+  REQUIRE(mirror.offer(false, fighter()));
+  const auto dying = mirror.offer(false, fighter(), true);
+  REQUIRE(dying);
+  CHECK(dying->partnerDying);
+  CHECK_FALSE(mirror.offer(false, fighter(), true));
+  roundTrip(*dying);
+  auto bytes = encode(Message{*dying});
+  bytes.back() = 2;
+  CHECK_FALSE(decode(bytes));
+
+  BattleReferee referee;
+  referee.guestJoined(GuestPlayerId);
+  referee.guestJoined(GuestPlayerId + 1);
+  const std::array<PlayerId, 2> both{GuestPlayerId, GuestPlayerId + 1};
+  referee.receive(GuestPlayerId + 1, BattleOffer{.available = true, .fighter = fighter()});
+  CHECK_FALSE(referee.partnerDying(both));
+  referee.receive(GuestPlayerId, *dying);
+  CHECK(referee.partnerDying(both));
+  CHECK_FALSE(referee.partnerDying(std::array<PlayerId, 1>{GuestPlayerId + 1}));
+  // Reborn, or gone: it holds nothing any more.
+  referee.receive(GuestPlayerId, *mirror.offer(true, fighter()));
+  CHECK_FALSE(referee.partnerDying(both));
+  referee.receive(GuestPlayerId, *dying);
+  referee.guestLeft(GuestPlayerId);
+  CHECK_FALSE(referee.partnerDying(both));
 }
 
 // docs/architecture/coop-combat.md §4.1: every guest there and free fights as an ally.

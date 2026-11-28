@@ -233,6 +233,11 @@ void StorySceneGlue::startBattle(session::StoryScenes& scenes, BattleScreen& bat
       npcs.push_back(static_cast<std::size_t>(joiner));
     }
   }
+  if (holdBattles_) {
+    core::logInfo("coop: no battle starts while a partner dies or waits to be reborn");
+    scenes.battleFinished(game::story::BattleOutcome::NotStarted);
+    return;
+  }
   if (handOver_) {
     if (npcs.empty()) {
       scenes.battleFinished(game::story::BattleOutcome::NotStarted);

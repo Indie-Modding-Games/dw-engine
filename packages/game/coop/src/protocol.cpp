@@ -673,6 +673,7 @@ net::Bytes encode(const Message& message) {
         } else if constexpr (std::is_same_v<T, BattleOffer>) {
           out.put(BattleOfferKind).put(body.available);
           put(out, body.fighter);
+          out.put(body.partnerDying);
         } else if constexpr (std::is_same_v<T, BattleRefused>) {
           out.put(BattleRefusedKind).put(body.ask).put(body.reason);
         } else if constexpr (std::is_same_v<T, BattleFrame>) {
@@ -954,7 +955,8 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
   }
   case BattleOfferKind: {
     BattleOffer offer;
-    if (!getFlag(in, offer.available) || !getFighter(in, offer.fighter)) {
+    if (!getFlag(in, offer.available) || !getFighter(in, offer.fighter) ||
+        !getFlag(in, offer.partnerDying)) {
       return core::fail("invalid cooperative battle offer");
     }
     message = std::move(offer);

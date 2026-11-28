@@ -494,6 +494,10 @@ public:
                                         bool predefined);
   // The guest: the battles its story asks for go to the host (StorySceneGlue::handBattlesOver).
   void handBattlesToHost(bool on) { storyScenes_.handBattlesOver(on); }
+  // Whether this player's partner dies or waits to be reborn (a death's scene runs or waits).
+  [[nodiscard]] bool partnerDying() const { return deathScene_.active(); }
+  // While on, the battles the story asks for do not start (StorySceneGlue::holdBattles).
+  void holdCoopBattles(bool on) { storyScenes_.holdBattles(on); }
   [[nodiscard]] std::optional<StorySceneGlue::HandedBattle> takeHandedBattle() {
     return storyScenes_.takeHandedBattle();
   }

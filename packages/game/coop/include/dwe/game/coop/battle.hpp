@@ -82,6 +82,8 @@ public:
   void receive(PlayerId guest, const BattleOffer& offer);
   // The partner `guest` offers now: none when it is not free to join or not there.
   [[nodiscard]] std::optional<BattleFighterProfile> offered(PlayerId guest) const;
+  // Whether the partner of any of `guests` there dies or waits to be reborn (their offers say so).
+  [[nodiscard]] bool partnerDying(std::span<const PlayerId> guests) const;
   [[nodiscard]] const std::optional<Running>& running() const { return running_; }
   // The role of a player in the running battle; none without one.
   [[nodiscard]] std::optional<BattleRole> roleOf(PlayerId player) const;
@@ -145,8 +147,10 @@ public:
     return !running_ && (gameFree || pending_.has_value());
   }
   // The offer of this guest's partner for the host's battles to send, when it changed since the
-  // last one sent (`available` with its fighter); none when it did not.
-  [[nodiscard]] std::optional<BattleOffer> offer(bool available, BattleFighterProfile fighter);
+  // last one sent (`available` with its fighter, and whether its partner dies); none when it did
+  // not.
+  [[nodiscard]] std::optional<BattleOffer> offer(bool available, BattleFighterProfile fighter,
+                                                 bool partnerDying = false);
   // The running battle, its newest frame and this player's role in it.
   [[nodiscard]] const std::optional<BattleBegin>& running() const { return running_; }
   [[nodiscard]] const std::optional<BattleFrame>& frame() const { return frame_; }

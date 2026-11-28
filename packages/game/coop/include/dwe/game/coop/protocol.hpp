@@ -265,10 +265,12 @@ struct BattleAsk {
 
 // Whether the guest's partner is free to join a battle the host starts on its map, and as what
 // fighter (sent when either changes): not while the guest is in a menu, a scene or a battle of its
-// own (docs/architecture/coop-combat.md §3).
+// own (docs/architecture/coop-combat.md §3). `partnerDying` while its partner dies or waits to be
+// reborn: no co-op battle starts on its map meanwhile.
 struct BattleOffer {
   bool available = false;
   BattleFighterProfile fighter;
+  bool partnerDying = false;
 
   friend bool operator==(const BattleOffer&, const BattleOffer&) = default;
 };

@@ -798,6 +798,12 @@ joins the host's battle as an **ally**, after the enemies: the guest's role is `
 throws at it, and its partner's result comes back in the spoils. A partner away or busy is left out and its player
 helps as above. Each partner runs or is knocked out on its own; the team loses only when no partner is left.
 
+**No battle while a partner dies.** In the original no encounter starts while the death and the egg's rebirth play: the
+death script holds the player, so no talk or touch reaches a battle. In co-op no battle starts while the partner of the
+host, or of a guest on its map, dies or waits to be reborn (the death's scene runs or waits; the guest's offer says so):
+the host's story battle ends as not started (the NPC can start it again), a guest's ask waits and is then refused as
+busy, and a dying guest's own story hands no battle over. Single player is unchanged.
+
 Limits of this first version: the techniques' effects, the damage numbers and the status marks are drawn only on the
 host; the guest sees the fighters move and the life bars. Tournament fighters that are not map NPCs are not drawn on
 the guest. A helper's item is drawn thrown from the host's tamer. The enemies jump to the host's places when the battle
@@ -818,7 +824,7 @@ The battle messages (each guest's link carries its own):
 | `0x68` | `BattleFrame` | unreliable | host → client | Battle and frame number, phase; for the guest's own partner (the fighting one for a helper) its current command, the strip, the bag, and (protocol version 15) its finisher gauge's progress and goal and, in a Folder battle, its plate (active order with phase and progress, commit, waiting orders with their targets, target, stance, defense bar and capacity, break seconds, the last order's notice); whether a finisher charges; every fighter's HP, MP, maxima, down, revive seconds and (protocol version 15) current order, stance, status and whether its HP bar shows; the held figures; the items thrown. |
 | `0x69` | `BattleAction` | reliable | client → host | A command, an order, a stance, a cheer, the end box's close, or an item thrown with the partner it flies to (fighter plus one, 0 for its own or the fighting one). |
 | `0x6B` | `BattleEnd` | reliable | host → client | Outcome, the NPCs that left the map, bits, and this guest's partner's spoils. |
-| `0x80` | `BattleOffer` | reliable | client → host | Whether the guest's partner can join the host's battles, and as what fighter. |
+| `0x80` | `BattleOffer` | reliable | client → host | Whether the guest's partner can join the host's battles, and as what fighter; (protocol version 15) whether it dies or waits to be reborn. |
 
 ### 6.2 Item trades (#360)
 

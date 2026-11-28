@@ -108,6 +108,7 @@ private:
   void apply(PlaySession& play, game::coop::PlayerId from, const game::coop::BattleAction& action);
   void endBattle(PlaySession& play);
   void offerAllies(PlaySession& play);
+  [[nodiscard]] bool partnersDying(const PlaySession& play) const;
   [[nodiscard]] std::vector<BattleScreen::CoopAlly> freeAllies(const PlaySession& play,
                                                                game::coop::PlayerId starter) const;
   [[nodiscard]] game::battle::CoopScaling
