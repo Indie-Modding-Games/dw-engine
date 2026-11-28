@@ -2615,9 +2615,10 @@ TEST_CASE("original look text draws with the font the player picks, at once") {
   ui->setTextFont(TextFont::Original);
   ui->update();
   CHECK(ui->textFont() == TextFont::Original);
-  // The fixture's A and B advance 3 and 4 pixels, three times larger.
+  // The fixture's A and B advance 3 and 4 pixels, three times larger; ○'s 6 are trimmed to 4, as
+  // its ink is one column wide (MaxBlankAfterInk).
   CHECK(widthOf(*ui, "bitmap") == doctest::Approx(21.0F));
-  CHECK(widthOf(*ui, "symbol") == doctest::Approx(39.0F));
+  CHECK(widthOf(*ui, "symbol") == doctest::Approx(33.0F));
   // ñ is not in the bitmap font: the modern font draws it between the bitmap's A and B.
   CHECK(widthOf(*ui, "missing") > 21.0F);
 

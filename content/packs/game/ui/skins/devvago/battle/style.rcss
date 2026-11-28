@@ -1163,6 +1163,7 @@
 #partner-panel {
 	width: 312dp;
 	height: auto;
+	min-height: 110dp;
 	padding-top: 6dp;
 	box-sizing: border-box;
 	border: 1dp #397ca4;
