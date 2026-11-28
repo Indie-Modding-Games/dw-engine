@@ -7,6 +7,7 @@
 #include <dwe/session/battle_adapter.hpp>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -53,6 +54,13 @@ inline constexpr std::string_view FolderTargetSetting = "battle.folder.target";
 inline constexpr std::string_view FolderNoticeSetting = "battle.folder.notice";
 inline constexpr std::string_view FolderNoticeMoveSetting = "battle.folder.notice_move";
 inline constexpr std::string_view FolderNoticeReasonSetting = "battle.folder.notice_reason";
+inline constexpr std::string_view FolderNoticeBySetting = "battle.folder.notice_by";
+inline constexpr std::string_view FolderActiveTargetSetting = "battle.folder.active_target";
+inline constexpr std::string_view FolderActiveTagSetting = "battle.folder.active_tag";
+inline constexpr std::string_view FolderTargetTagSetting = "battle.folder.target_tag";
+inline constexpr std::string_view FolderStanceSetting = "battle.folder.stance";
+inline constexpr std::string_view FolderBrokenSecondsSetting = "battle.folder.broken_seconds";
+inline constexpr std::string_view FolderCommittedSetting = "battle.folder.committed";
 
 // A command's label: a technique's or the finisher's move name, the others the original's command
 // name (battle_main.c: BTL_COMMAND_NAMES; vs_main.c: VS_renderMoveName).
@@ -88,6 +96,14 @@ struct FighterView {
   // A co-op ally's revive countdown in whole seconds while it shows (as the partner's
   // BattleView::reviveSeconds); none otherwise.
   std::optional<std::int32_t> reviveSeconds;
+  // Its number in the battle, which the enemies' HP bars name it by.
+  std::size_t id = 0;
+  // A foe of the same species as another foe: its letter ("A", "B"...) in the battle's order, the
+  // HUD's mark for it; empty otherwise.
+  std::string tag;
+  // In the Folder battle, the foe the next orders aim at and a foe an order aims at.
+  bool targeted = false;
+  bool queued = false;
 
   friend bool operator==(const FighterView&, const FighterView&) = default;
 };
@@ -155,8 +171,19 @@ struct BattleView {
     // (empty when it aims at none).
     std::vector<std::string> queue;
     std::vector<std::string> queueTargets;
+    std::vector<std::string> queueTargetTags;
+    // The active order's foe, by name key and letter (FighterView::tag).
+    std::string activeTargetKey;
+    std::string activeTargetTag;
     // The name key of the foe the next orders aim at (Change picks it); empty without one.
     std::string targetKey;
+    std::string targetTag;
+    // The stance the partner moves by now ("aggressive", "hold", "distance", "guard"); the break
+    // holds it, for brokenSeconds more seconds.
+    std::string stance;
+    std::int32_t brokenSeconds = 0;
+    // The active order's technique has thrown what lands (#425): a hit no longer stops it.
+    bool committed = false;
     std::int32_t bar = 0;
     std::int32_t barMax = 0;
     bool broken = false;
@@ -166,6 +193,8 @@ struct BattleView {
     std::string noticeKey;
     std::string noticeMoveKey;
     std::string noticeReasonKey;
+    // A replaced order's notice: the move of the order that took its place.
+    std::string noticeByKey;
 
     friend bool operator==(const Folder&, const Folder&) = default;
   };

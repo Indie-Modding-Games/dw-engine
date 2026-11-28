@@ -482,9 +482,12 @@ void BattleScreen::publishHpBars() {
                           static_cast<double>(camera->viewportSize().y);
     const auto& fighters = battle_->state().fighters;
     const bool match = battle_->state().matchClock.has_value();
+    // A Folder battle keeps every foe's bar, the mark its letter and the orders go by.
+    const bool always =
+        enemyHpBarsAlways_ || battle_->system() == game::battle::BattleSystemId::Folder;
     for (game::battle::FighterId id = 1; id < fighters.size() && id <= enemyNpcs_.size(); ++id) {
       const game::battle::Fighter& enemy = fighters[id];
-      if (!screens::enemyHpBarShown({.always = enemyHpBarsAlways_,
+      if (!screens::enemyHpBarShown({.always = always,
                                      .match = match,
                                      .recentlyHit = battle_->hpBarShown(id),
                                      .standing = enemy.hp > 0 && !enemy.fainted})) {

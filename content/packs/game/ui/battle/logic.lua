@@ -48,9 +48,12 @@ local bag_open = false
 -- game bumps the battle's revision on any change of them, and each frame's cursor reads them here.
 local fighters = {}
 local commands = {}
+-- The Folder battle's state (battle.folder()) as the last draw read it.
+local folder = { active = false }
 local intro_step = "done"
 local icon_classes = {}
 local frame_classes = {}
+local kind_classes = {}
 -- What each banner piece shows now, by piece index (draw_banner): its numbers as published (false
 -- once hidden), its block's size and texture and its trail.
 local shown_pieces = {}
@@ -112,6 +115,14 @@ local function text(key, arguments)
   return t(key, arguments)
 end
 
+-- Sets an element's text only when it changes.
+local function set_text_once(document, id, value)
+  if applied[id .. " text"] ~= value then
+    applied[id .. " text"] = value
+    lookup(document, id):set_text(value)
+  end
+end
+
 local function percent(value, maximum)
   if maximum <= 0 then
     return 0
@@ -146,8 +157,15 @@ local function draw_fighter(document, index)
     lookup(document, prefix .. "-mp-fill"):set_property("width", percent(mp, max_mp) .. "%")
   else
     -- An enemy's HP bar only shows for a while after it takes damage, and it has no MP bar
-    -- (battle_main.c: BTL_renderEnemyHPBars).
-    document:get(prefix .. "-hp-row"):set_class("hidden", not fighter.hp_bar)
+    -- (battle_main.c: BTL_renderEnemyHPBars); a Folder battle keeps it, the letter of a twin foe
+    -- and the marks of the foe the orders aim at.
+    document:get(prefix .. "-hp-row"):set_class("hidden", not (fighter.hp_bar or folder.active))
+    local tag = folder.active and fighter.tag or ""
+    local tag_element = lookup(document, prefix .. "-tag")
+    tag_element:set_text(tag)
+    tag_element:set_class("hidden", tag == "")
+    panel:set_class("targeted", folder.active and fighter.targeted)
+    panel:set_class("queued", folder.active and fighter.queued)
   end
   panel:set_class("fainted", fighter.fainted)
 end
@@ -225,8 +243,52 @@ local function frame_kind(index, count)
   return index % 2 == 1 and "frame-odd" or "frame-even"
 end
 
+-- The three blocks of a Folder strip: techniques, stances and the other actions (the bag's entry
+-- among these).
+local command_kinds = {
+  [2] = "stance",
+  [4] = "stance",
+  [5] = "stance",
+  [6] = "stance",
+  [8] = "technique",
+  [9] = "technique",
+  [10] = "technique",
+  [11] = "technique",
+}
+
+local function command_kind(entry)
+  return command_kinds[entry.command] or "action"
+end
+
+-- What a Folder strip's button says: a technique with its MP cost, the target command with the foe
+-- the orders aim at.
+local function command_text(entry)
+  local label = text(entry.label_key)
+  if not folder.active then
+    return label
+  end
+  if entry.mp_cost > 0 then
+    return label .. " " .. t("battle.mp_cost", { mp = entry.mp_cost })
+  end
+  if entry.command == 7 and folder.target_key ~= "" then
+    local foe = text(folder.target_key)
+    if folder.target_tag ~= "" then
+      foe = foe .. " " .. folder.target_tag
+    end
+    return text("battle.folder.target") .. ": " .. foe
+  end
+  return label
+end
+
+-- A technique the partner has not the MP for, which a Folder strip greys before it is pressed.
+local function short_of_mp(entry)
+  local partner = fighters[1]
+  return entry.mp_cost > 0 and (partner ~= nil and partner.mp or 0) < entry.mp_cost
+end
+
 local function draw_commands(document)
   local count = command_count()
+  local last_kind = nil
   for index = 0, max_commands - 1 do
     local button = lookup(document, "command-" .. index)
     local id = "command-" .. index
@@ -235,8 +297,18 @@ local function draw_commands(document)
     frame:set_class("hidden", index >= count)
     if index < count then
       local entry = command(index)
-      button:set_text(text(entry.label_key))
+      local label = command_text(entry)
+      if applied[id .. " text"] ~= label then
+        applied[id .. " text"] = label
+        button:set_text(label)
+      end
       button:set_class("unavailable", not entry.available)
+      button:set_class("short", folder.active and short_of_mp(entry))
+      local kind = folder.active and command_kind(entry) or nil
+      swap_class(button, kind_classes, id, kind and ("kind-" .. kind) or nil)
+      swap_class(frame, kind_classes, "frame-" .. index, kind and ("kind-" .. kind) or nil)
+      button:set_class("group-start", kind ~= nil and last_kind ~= nil and kind ~= last_kind)
+      last_kind = kind
       button:set_class("current", entry.current)
       local icon = entry.icon
       button:set_class("no-icon", icon == "")
@@ -250,6 +322,82 @@ local function draw_commands(document)
   end
   -- The bag's entry follows the strip, where a skin that draws it wants it.
   swap_class(lookup(document, "open-bag"), frame_classes, "open-bag", "place-" .. count)
+end
+
+-- The modern layout's Folder strip in its three blocks, each on the row where it fits whole: the
+-- techniques, the stances side by side as one control, then the target, clearing the queue, the bag
+-- and fleeing. The buttons keep their ids and order in the document (routes and the original
+-- layout go by them); only their places change.
+local action_places = { [7] = 1, [3] = 2, [1] = 4 }
+-- The grouped strip's buttons in the order they show, which left and right walk; empty otherwise.
+local strip_order = {}
+
+local function lay_out_strip(document)
+  local grouped = folder.active and ui.layout("strip") ~= "icons"
+  set_class(document, "command-row", "grouped", grouped)
+  strip_order = {}
+  if not grouped then
+    return
+  end
+  local blocks = { technique = {}, stance = {}, action = {} }
+  for index = 0, command_count() - 1 do
+    local entry = command(index)
+    local list = blocks[command_kind(entry)]
+    list[#list + 1] = { id = "command-" .. index, place = action_places[entry.command] or 0 }
+  end
+  local actions = blocks.action
+  actions[#actions + 1] = { id = "open-bag", place = 3 }
+  table.sort(actions, function(a, b)
+    return a.place < b.place
+  end)
+  local _, _, room = lookup(document, "commands"):rect()
+  room = room * 0.96
+  local rows, row = {}, { width = 0, height = 0 }
+  local gap = 0
+  for _, name in ipairs({ "technique", "stance", "action" }) do
+    local block, width, height = {}, 0, 0
+    for _, item in ipairs(blocks[name]) do
+      local _, _, w, h = lookup(document, item.id):rect()
+      gap = math.max(gap, h * 0.4)
+      local spacing = (#block > 0 and name ~= "stance") and gap * 0.3 or 0
+      block[#block + 1] = { id = item.id, x = width + spacing }
+      width = width + spacing + w
+      height = math.max(height, h)
+    end
+    for _, item in ipairs(block) do
+      strip_order[#strip_order + 1] = item.id
+    end
+    if #block > 0 then
+      local spacing = row.width > 0 and gap or 0
+      if row.width > 0 and row.width + spacing + width > room then
+        rows[#rows + 1] = row
+        row, spacing = { width = 0, height = 0 }, 0
+      end
+      for _, item in ipairs(block) do
+        item.x = item.x + row.width + spacing
+        row[#row + 1] = item
+      end
+      row.width = row.width + spacing + width
+      row.height = math.max(row.height, height)
+    end
+  end
+  rows[#rows + 1] = row
+  local widest = 0
+  for _, each in ipairs(rows) do
+    widest = math.max(widest, each.width)
+  end
+  local pad = gap * 0.4
+  local top = pad
+  for _, each in ipairs(rows) do
+    local left = pad + (widest - each.width) / 2
+    for _, item in ipairs(each) do
+      set_property(document, item.id, "left", string.format("%.0fpx", left + item.x))
+      set_property(document, item.id, "top", string.format("%.0fpx", top))
+    end
+    top = top + each.height + pad
+  end
+  set_property(document, "command-row", "width", string.format("%.0fpx", widest + pad * 2))
+  set_property(document, "command-row", "height", string.format("%.0fpx", top))
 end
 
 -- The cursor round the hovered icon, and its blink; nothing while the battle opens. The game says
@@ -306,6 +454,26 @@ local function draw_command_name(document)
   set_class(document, "command-problem", "hidden", problem == "")
   set_class(document, "command-name", "short", short or problem ~= "")
   set_class(document, "command-name", "problem", problem ~= "")
+  -- The modern layout's Folder strip says why under the strip, below the button itself.
+  if problem ~= "" and folder.active and ui.layout("strip") ~= "icons" then
+    for index = 0, command_count() - 1 do
+      local button = lookup(document, "command-" .. index)
+      if button:has_focus() then
+        local left, _, width = button:rect()
+        local from_left, from_top = lookup(document, "commands"):rect()
+        local _, row_top, _, row_height = lookup(document, "command-row"):rect()
+        local _, _, own = lookup(document, "command-name"):rect()
+        local x = left + width / 2 - own / 2 - from_left
+        set_property(document, "command-name", "left", string.format("%.0fpx", math.max(0, x)))
+        set_property(
+          document,
+          "command-name",
+          "top",
+          string.format("%.0fpx", row_top + row_height - from_top + 4)
+        )
+      end
+    end
+  end
 end
 
 local function focus_command(document)
@@ -333,6 +501,16 @@ end
 -- look whose tiles overlap (the pixel one) still reaches each of them; past the last icon the
 -- default navigation goes on to the entries round the strip.
 local function step_along_strip(document, step)
+  -- The grouped strip goes round its blocks in the order they show.
+  if #strip_order > 0 then
+    for index, id in ipairs(strip_order) do
+      if lookup(document, id):has_focus() then
+        local next_index = (index - 1 + step) % #strip_order + 1
+        lookup(document, strip_order[next_index]):focus()
+        return true
+      end
+    end
+  end
   local icons = {}
   local from = nil
   for index = 0, command_count() - 1 do
@@ -403,6 +581,13 @@ local function draw_finisher(document)
   local stop = utf8.offset(word, shown + 1) or (#word + 1)
   lookup(document, "finisher-word"):set_text(string.sub(word, 1, stop - 1))
   lookup(document, "finisher"):set_class("ready", ready)
+  local filled_percent = math.floor(percent(progress, goal))
+  local shown_percent = ready and t("battle.finisher_ready")
+    or (filled_percent > 0 and string.format("%d%%", filled_percent) or "")
+  if applied["finisher-percent text"] ~= shown_percent then
+    applied["finisher-percent text"] = shown_percent
+    lookup(document, "finisher-percent"):set_text(shown_percent)
+  end
   lookup(document, "charge"):set_class("hidden", not finisher.charging)
   document:get("charge-fill"):set_property("width", math.min(100, finisher.charge) .. "%")
   draw_finisher_gauge(document)
@@ -1022,7 +1207,7 @@ end
 local function draw_hp_bars(document)
   local shown = battle.hp_bars()
   -- Enemy life bars (a dwe improvement): the modern look draws them too while the option is on.
-  set_class(document, "hp-bars", "always", shown.always)
+  set_class(document, "hp-bars", "always", shown.always or folder.active)
   local bars = {}
   for _, bar in ipairs(shown.bars) do
     bars[bar.enemy] = bar
@@ -1047,6 +1232,20 @@ local function draw_hp_bars(document)
       set_property(document, id .. "-value", "left", pixels(x + 33))
       set_property(document, id .. "-value", "top", pixels(y - 9))
       draw_hp_value(document, enemy, bar.hp)
+      local tag, aimed, waited = "", false, false
+      for _, fighter in ipairs(fighters) do
+        if fighter.id == enemy and folder.active then
+          tag, aimed, waited = fighter.tag, fighter.targeted, fighter.queued
+        end
+      end
+      set_class(document, id .. "-tag", "hidden", tag == "")
+      set_class(document, id, "targeted", aimed)
+      set_class(document, id, "queued", waited)
+      if tag ~= "" then
+        set_text_once(document, id .. "-tag", tag)
+        set_property(document, id .. "-tag", "left", pixels(x - 12))
+        set_property(document, id .. "-tag", "top", pixels(y - 9))
+      end
       -- The line from the outline's bottom-left corner to the node, both ends drawn.
       local dx, dy = -x, -(y + 6)
       set_property(document, id .. "-line", "left", pixels(x))
@@ -1330,10 +1529,36 @@ local function draw_intro(document)
   lookup(document, "fight"):set_class("veiled", intro_step == "anger")
 end
 
--- The Folder battle's panel (battle.folder()): the defense bar, the active order with its phase and
--- the orders that wait.
+-- The Folder battle's panel (battle.folder()): the defense bar and the stance, the message, the
+-- active order with its five phases and the commit point's lock, the waiting orders as chips.
+local folder_steps = { "processing", "positioning", "preparing", "executing", "recovering" }
+
+-- A foe's name with its letter when it has a twin.
+local function foe_name(key, tag)
+  local name = text(key)
+  if name ~= "" and tag ~= nil and tag ~= "" then
+    name = name .. " " .. tag
+  end
+  return name
+end
+
+-- How an order ended, with the move that replaced it and why it could not go on.
+local function notice_text(notice)
+  local said = text(notice.key)
+  local replaced = notice.key == "battle.folder.end.replaced" and notice.by_key ~= ""
+  if replaced then
+    said = t("battle.folder.end.replaced_by", { move = text(notice.by_key) })
+  end
+  if notice.move_key ~= "" and not replaced then
+    said = text(notice.move_key) .. ": " .. said
+  end
+  if notice.reason_key ~= "" then
+    said = said .. " (" .. text(notice.reason_key) .. ")"
+  end
+  return said
+end
+
 local function draw_folder(document)
-  local folder = battle.folder()
   set_class(document, "folder-panel", "hidden", not folder.active)
   lookup(document, "fight"):set_class("folder", folder.active)
   if not folder.active then
@@ -1341,60 +1566,67 @@ local function draw_folder(document)
   end
   set_property(document, "folder-bar-fill", "width", percent(folder.bar, folder.bar_max) .. "%")
   set_class(document, "folder-bar-fill", "broken", folder.broken)
-  local partner = fighters[1]
-  local status = partner ~= nil and partner.status_key ~= "" and text(partner.status_key) or ""
-  local notice = ""
-  if folder.notice ~= nil then
-    notice = text(folder.notice.key)
-    if folder.notice.move_key ~= "" then
-      notice = text(folder.notice.move_key) .. ": " .. notice
-    end
-    if folder.notice.reason_key ~= "" then
-      notice = notice .. " (" .. text(folder.notice.reason_key) .. ")"
+  local stance = folder.stance ~= "" and text("battle.stance." .. folder.stance) or ""
+  if folder.broken and stance ~= "" then
+    stance = stance .. " · " .. text("battle.folder.forced")
+    if folder.broken_seconds > 0 then
+      stance = stance .. " " .. t("battle.folder.seconds", { seconds = folder.broken_seconds })
     end
   end
+  set_text_once(document, "folder-stance", stance)
+  set_class(document, "folder-stance", "forced", folder.broken)
+  local partner = fighters[1]
+  local status = partner ~= nil and partner.status_key ~= "" and text(partner.status_key) or ""
+  local notice = folder.notice ~= nil and notice_text(folder.notice) or ""
   local message, kind = status, "status"
   if folder.broken then
     message, kind = text("battle.folder.broken"), "broken"
   elseif notice ~= "" then
     message, kind = notice, "notice"
   end
-  if applied["folder-message text"] ~= message then
-    applied["folder-message text"] = message
-    lookup(document, "folder-message"):set_text(message)
-  end
+  set_text_once(document, "folder-message", message)
   for _, each in ipairs({ "broken", "notice", "status" }) do
     set_class(document, "folder-message", each, kind == each)
   end
-  local target = folder.target_key ~= "" and text(folder.target_key) or ""
+  local target = foe_name(folder.target_key, folder.target_tag)
   local active = target ~= "" and (text("battle.folder.target") .. ": " .. target) or ""
   if folder.move_key ~= "" then
     active = text(folder.move_key)
-    if target ~= "" then
-      active = active .. " > " .. target
-    end
-    if folder.phase ~= "" then
-      active = active .. " - " .. text("battle.folder.phase." .. folder.phase)
+    local foe = folder.active_tag ~= "" and folder.active_tag or text(folder.active_target_key)
+    if foe ~= "" then
+      active = active .. " > " .. foe
     end
   end
-  if applied["folder-active text"] ~= active then
-    applied["folder-active text"] = active
-    lookup(document, "folder-active"):set_text(active)
-  end
+  set_text_once(document, "folder-active", active)
   set_class(document, "folder-phase", "hidden", folder.phase == "")
-  set_property(document, "folder-phase-fill", "width", folder.phase_percent .. "%")
-  local names = {}
-  for index, key in ipairs(folder.queue) do
-    -- The target line names the usual foe; an order names its own only when it is another one.
-    local foe = folder.queue_targets and folder.queue_targets[index] or ""
-    local other = foe ~= "" and foe ~= folder.target_key
-    names[#names + 1] = other and (text(key) .. " (" .. text(foe) .. ")") or text(key)
+  local now = 0
+  for index, name in ipairs(folder_steps) do
+    if name == folder.phase then
+      now = index
+    end
   end
-  local queue = #names > 0 and (text("battle.folder.queue") .. ": " .. table.concat(names, ", "))
-    or ""
-  if applied["folder-queue text"] ~= queue then
-    applied["folder-queue text"] = queue
-    lookup(document, "folder-queue"):set_text(queue)
+  for index = 1, #folder_steps do
+    local id = "folder-step-" .. (index - 1)
+    set_class(document, id, "done", index < now)
+    set_class(document, id, "now", index == now)
+  end
+  set_class(document, "folder-lock", "locked", folder.committed)
+  for index = 1, 2 do
+    local id = "folder-chip-" .. (index - 1)
+    local key = folder.queue[index]
+    set_class(document, id, "hidden", key == nil)
+    if key ~= nil then
+      local foe = folder.queue_tags[index] or ""
+      if foe == "" then
+        local other = folder.queue_targets[index] or ""
+        foe = other ~= folder.target_key and text(other) or ""
+      end
+      local chip = index .. " " .. text(key)
+      if foe ~= "" then
+        chip = chip .. " > " .. foe
+      end
+      set_text_once(document, id, chip)
+    end
   end
 end
 
@@ -1426,6 +1658,7 @@ local function draw(document)
     return
   end
   ending = nil
+  folder = battle.folder()
   fighters = battle.fighters()
   commands = battle.commands()
   for index = 0, max_fighters - 1 do
@@ -1437,6 +1670,7 @@ local function draw(document)
   lookup(document, "fight"):set_class("bag-open", bag_open)
   draw_bag(document, state)
   draw_commands(document)
+  lay_out_strip(document)
   -- Under the open bag the row keeps its cursor and the hovered command's name: the bag's
   -- document holds the focus meanwhile.
   if not bag_open then

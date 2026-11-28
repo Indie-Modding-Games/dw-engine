@@ -37,6 +37,10 @@ constexpr std::string_view FaintedField = "fainted";
 constexpr std::string_view HpBarField = "hp_bar";
 constexpr std::string_view StatusField = "status";
 constexpr std::string_view ReviveSecondsField = "revive_seconds";
+constexpr std::string_view IdField = "id";
+constexpr std::string_view TagField = "tag";
+constexpr std::string_view TargetedField = "targeted";
+constexpr std::string_view QueuedField = "queued";
 constexpr std::string_view CommandField = "command";
 constexpr std::string_view LabelField = "label";
 constexpr std::string_view AvailableField = "available";
@@ -80,7 +84,11 @@ FighterView fighterViewOf(const battle::Fighter& fighter, bool hpBarShown, const
           .statusKey = status == battle::StatusEffect::None
                            ? std::string{}
                            : std::string{battle::statusTextKey(status)},
-          .reviveSeconds = std::nullopt};
+          .reviveSeconds = std::nullopt,
+          .id = 0,
+          .tag = {},
+          .targeted = false,
+          .queued = false};
 }
 
 bool gaugeFull(const battle::Fighter& fighter) {
@@ -104,7 +112,12 @@ void addFighter(ScreenSettings& settings, std::size_t index, const FighterView& 
   if (list == BattleAllyList) {
     add(ReviveSecondsField,
         fighter.reviveSeconds ? static_cast<double>(*fighter.reviveSeconds) : NoValue);
+    return;
   }
+  add(IdField, static_cast<double>(fighter.id));
+  add(TagField, fighter.tag);
+  add(TargetedField, fighter.targeted);
+  add(QueuedField, fighter.queued);
 }
 
 void addCommand(ScreenSettings& settings, std::size_t index, const CommandEntry& entry) {
@@ -188,6 +201,41 @@ std::int32_t techniqueCostOf(const battle::Battle& battle, battle::Command comma
   return battle.partnerMoveCost(static_cast<std::size_t>(number - FirstTechnique), own).value_or(0);
 }
 
+std::string_view stanceName(battle::Stance stance) {
+  switch (stance) {
+  case battle::Stance::Aggressive:
+    break;
+  case battle::Stance::Hold:
+    return "hold";
+  case battle::Stance::Distance:
+    return "distance";
+  case battle::Stance::Guard:
+    return "guard";
+  }
+  return "aggressive";
+}
+
+// The letter of a foe that shares its species with another foe, by their order in the battle.
+std::string foeTagOf(const battle::BattleState& state, battle::FighterId own,
+                     battle::FighterId id) {
+  if (id >= state.fighters.size() || !state.foes(own, id)) {
+    return {};
+  }
+  std::size_t same = 0;
+  char letter = 'A';
+  for (battle::FighterId other = 0; other < state.fighters.size(); ++other) {
+    if (!state.foes(own, other) ||
+        state.fighters[other].combatant.species != state.fighters[id].combatant.species) {
+      continue;
+    }
+    ++same;
+    if (other < id) {
+      ++letter;
+    }
+  }
+  return same > 1 ? std::string(1, letter) : std::string{};
+}
+
 std::string_view phaseName(battle::OrderPhase phase) {
   switch (phase) {
   case battle::OrderPhase::Idle:
@@ -227,7 +275,7 @@ std::string problemKeyOf(battle::OrderProblem problem) {
   return {};
 }
 
-std::string endKeyOf(battle::OrderEnd end) {
+std::string endKeyOf(battle::OrderEnd end, battle::OrderProblem problem) {
   switch (end) {
   case battle::OrderEnd::Done:
     break;
@@ -236,7 +284,8 @@ std::string endKeyOf(battle::OrderEnd end) {
   case battle::OrderEnd::Invalid:
     return "battle.folder.end.invalid";
   case battle::OrderEnd::Cancelled:
-    return "battle.folder.end.cancelled";
+    return problem == battle::OrderProblem::ByTrainer ? "battle.folder.end.annulled"
+                                                      : "battle.folder.end.cancelled";
   case battle::OrderEnd::Replaced:
     return "battle.folder.end.replaced";
   }
@@ -280,18 +329,34 @@ BattleView::Folder folderViewOf(const battle::Battle& battle, const battle::Fold
                ? names.species(state.fighters[*target].combatant.species)
                : std::string{};
   };
+  const auto foeTag = [&](std::optional<battle::FighterId> target) {
+    return target ? foeTagOf(state, own, *target) : std::string{};
+  };
+  if (folder.active) {
+    view.activeTargetKey = foeKey(folder.active->target);
+    view.activeTargetTag = foeTag(folder.active->target);
+    view.committed = folder.committed;
+  }
   for (const battle::Order& order : folder.queue) {
     view.queue.push_back(orderMoveKey(battle, own, order, names));
     view.queueTargets.push_back(foeKey(order.target));
+    view.queueTargetTags.push_back(foeTag(order.target));
   }
   view.targetKey = foeKey(state.fighters[own].target);
+  view.targetTag = foeTag(state.fighters[own].target);
+  view.stance = std::string{stanceName(folder.effectiveStance())};
   view.bar = folder.defenseBar;
   view.barMax = battle.defenseBarCapacity(own);
   view.broken = folder.broken();
+  view.brokenSeconds =
+      (folder.brokenFrames + battle::FramesPerSecond - 1) / battle::FramesPerSecond;
   if (folder.notice) {
-    view.noticeKey = endKeyOf(folder.notice->end);
+    view.noticeKey = endKeyOf(folder.notice->end, folder.notice->problem);
     view.noticeMoveKey = orderMoveKey(battle, own, folder.notice->order, names);
     view.noticeReasonKey = problemKeyOf(folder.notice->problem);
+    if (folder.notice->by) {
+      view.noticeByKey = orderMoveKey(battle, own, *folder.notice->by, names);
+    }
   }
   return view;
 }
@@ -305,10 +370,16 @@ BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names,
   if (own >= state.fighters.size() || !state.commanded(own)) {
     own = battle::PartnerId;
   }
-  view.fighters.push_back(fighterViewOf(state.fighters[own], battle.hpBarShown(own), names));
+  const auto fighterOf = [&](battle::FighterId id) {
+    FighterView fighter = fighterViewOf(state.fighters[id], battle.hpBarShown(id), names);
+    fighter.id = id;
+    fighter.tag = foeTagOf(state, own, id);
+    return fighter;
+  };
+  view.fighters.push_back(fighterOf(own));
   for (battle::FighterId id = 1; id < state.fighters.size(); ++id) {
     if (!state.isPlayerSide(id) || state.allies.empty()) {
-      view.fighters.push_back(fighterViewOf(state.fighters[id], battle.hpBarShown(id), names));
+      view.fighters.push_back(fighterOf(id));
     }
   }
   for (battle::FighterId id = 0; id < state.fighters.size(); ++id) {
@@ -347,6 +418,17 @@ BattleView battleViewOf(const battle::Battle& battle, const NameKeys& names,
   }
   if (const battle::FolderFighter* orders = battle.folderOf(own)) {
     view.folder = folderViewOf(battle, *orders, own, names);
+    const auto aims = [&](const battle::Order& order, battle::FighterId id) {
+      return order.target == id;
+    };
+    for (FighterView& fighter : view.fighters) {
+      fighter.targeted = state.fighters[own].target == fighter.id && fighter.id != own;
+      fighter.queued =
+          fighter.id != own && ((orders->active && aims(*orders->active, fighter.id)) ||
+                                std::ranges::any_of(orders->queue, [&](const battle::Order& order) {
+                                  return aims(order, fighter.id);
+                                }));
+    }
   }
   view.bagAvailable = battle.bagAvailableFor(own);
   view.bagOpen = battle.bagOpen(own);
@@ -520,6 +602,8 @@ ScreenSettings settingsOf(const BattleView& view) {
         {.name = listEntryName(FolderQueueList, index, "move"), .value = folder.queue[index]});
     settings.push_back({.name = listEntryName(FolderQueueList, index, "target"),
                         .value = folder.queueTargets[index]});
+    settings.push_back({.name = listEntryName(FolderQueueList, index, "tag"),
+                        .value = folder.queueTargetTags[index]});
   }
   settings.push_back(
       {.name = std::string{FolderBarSetting}, .value = static_cast<double>(folder.bar)});
@@ -531,6 +615,16 @@ ScreenSettings settingsOf(const BattleView& view) {
   settings.push_back({.name = std::string{FolderNoticeMoveSetting}, .value = folder.noticeMoveKey});
   settings.push_back(
       {.name = std::string{FolderNoticeReasonSetting}, .value = folder.noticeReasonKey});
+  settings.push_back({.name = std::string{FolderNoticeBySetting}, .value = folder.noticeByKey});
+  settings.push_back(
+      {.name = std::string{FolderActiveTargetSetting}, .value = folder.activeTargetKey});
+  settings.push_back(
+      {.name = std::string{FolderActiveTagSetting}, .value = folder.activeTargetTag});
+  settings.push_back({.name = std::string{FolderTargetTagSetting}, .value = folder.targetTag});
+  settings.push_back({.name = std::string{FolderStanceSetting}, .value = folder.stance});
+  settings.push_back({.name = std::string{FolderBrokenSecondsSetting},
+                      .value = static_cast<double>(folder.brokenSeconds)});
+  settings.push_back({.name = std::string{FolderCommittedSetting}, .value = folder.committed});
   return settings;
 }
 

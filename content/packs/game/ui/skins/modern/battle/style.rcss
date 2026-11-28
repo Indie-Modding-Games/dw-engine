@@ -747,7 +747,6 @@
 
 #folder-bar-fill { background-color: #ffd34f; }
 #folder-bar-fill.broken { background-color: #ff5a48; }
-#folder-phase-fill { background-color: #4f9cff; }
 
 #folder-phase {
 	height: 6dp;
@@ -807,6 +806,7 @@
 /* The Folder plate keeps a fixed height at the bottom left, four rows of one line each: the defense bar, the message
    (a broken defense, else how an order ended, else an altered state), the active order beside its phase, the queue. */
 #folder-panel {
+	width: 470dp;
 	height: 136dp;
 	box-sizing: border-box;
 	overflow: hidden;
@@ -827,8 +827,8 @@
 #folder-queue { color: #9aa7b6; }
 
 #folder-active {
-	flex: 0 1 auto;
-	max-width: 75%;
+	flex: 0 0 auto;
+	width: 58%;
 	margin-right: 10dp;
 }
 
@@ -841,4 +841,160 @@
    with its own key from the gauge's card, the same in every skin. */
 #fight:not(.folder) .command.no-icon {
 	display: none;
+}
+
+/* The Folder strip in three blocks, each button placed by logic.lua (lay_out_strip): the techniques with their MP,
+   the four stances side by side as one control, then the target, clearing the queue, the bag and fleeing. A technique
+   the partner has not the MP for is greyed with its cost in red before it is pressed, and why shows under it. */
+#command-row.grouped {
+	position: relative;
+	padding: 0;
+}
+
+#command-row.grouped .command {
+	position: absolute;
+	margin: 0;
+	white-space: nowrap;
+}
+
+#command-row.grouped .command.kind-technique {
+	color: #ffd34a;
+}
+
+#command-row.grouped .command.kind-stance {
+	border: 1dp #3a4a5e;
+	border-radius: 0;
+	background-color: #1a2330;
+}
+
+#command-row.grouped .command.kind-stance.current {
+	border: 1dp #6fc3ff;
+	background-color: #24537a;
+	color: #ffffff;
+}
+
+#command-row.grouped .command.short,
+#command-row.grouped .command.short:focus {
+	color: #e0796c;
+	background-color: #2a2228;
+}
+
+#fight.folder #command-name.problem {
+	position: absolute;
+	margin: 0;
+}
+
+/* The stance chip beside the defense bar, red while a broken defense forces it. */
+#folder-stance {
+	margin-left: 8dp;
+	padding: 0 6dp;
+	font-size: 16dp;
+	line-height: 22dp;
+	white-space: nowrap;
+	color: #bfe3ff;
+	border: 1dp #6fc3ff;
+	border-radius: 4dp;
+}
+
+#folder-stance.forced {
+	color: #ff9a8a;
+	border-color: #ff5a48;
+}
+
+/* The active order's five phases (processing, positioning, preparing, executing, recovering), the lock at the start of
+   executing lit once the technique has committed: from there a hit no longer stops it. */
+#folder-phase {
+	display: flex;
+	height: 8dp;
+}
+
+.folder-step {
+	position: relative;
+	flex: 1;
+	height: 100%;
+	margin-right: 2dp;
+	background-color: #2a323d;
+	border-radius: 2dp;
+}
+
+.folder-step.done { background-color: #34587f; }
+.folder-step.now { background-color: #4f9cff; }
+
+#folder-lock {
+	position: absolute;
+	left: -2dp;
+	top: -4dp;
+	width: 4dp;
+	height: 16dp;
+	background-color: #6b7480;
+}
+
+#folder-lock.locked {
+	background-color: #ffd34f;
+}
+
+/* The waiting orders, one numbered chip each with the letter of its foe. */
+.folder-chip {
+	display: inline-block;
+	margin-right: 6dp;
+	padding: 0 6dp;
+	font-size: 16dp;
+	line-height: 22dp;
+	color: #c9d3de;
+	border: 1dp #3a4a5e;
+	border-radius: 4dp;
+}
+
+/* Twin foes carry a letter on their card and over them in the world; the card of the foe the orders aim at is lit, and
+   one an order waits for has an orange edge. */
+.fighter-tag {
+	margin-right: 6dp;
+	padding: 0 5dp;
+	color: #10161e;
+	background-color: #ffd34a;
+	border-radius: 3dp;
+}
+
+.fighter-tag.hidden, .hb-tag.hidden {
+	display: none;
+}
+
+.fighter.enemy.targeted {
+	border: 2dp #6fc3ff;
+}
+
+.fighter.enemy.queued {
+	border-left-width: 6dp;
+	border-left-color: #ffb347;
+}
+
+.hb-tag {
+	position: absolute;
+	width: 24dp;
+	height: 24dp;
+	line-height: 24dp;
+	font-size: 18dp;
+	text-align: center;
+	color: #10161e;
+	background-color: #ffd34a;
+	border-radius: 4dp;
+}
+
+.hb.targeted .hb-tag {
+	background-color: #6fc3ff;
+}
+
+.hb.queued .hb-tag {
+	border: 2dp #ffb347;
+}
+
+/* How full the finisher gauge is, or that it is ready. */
+#finisher-percent {
+	margin-left: 6dp;
+	font-size: 18dp;
+	color: #9aa7b6;
+}
+
+#finisher.ready #finisher-percent {
+	color: #ffd34f;
 }

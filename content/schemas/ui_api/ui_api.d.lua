@@ -475,7 +475,7 @@ battle = {}
 ---@return table
 function battle.state() end
 
---- The fighters, the partner first: name_key, status_key, hp, max_hp, mp, max_mp, fainted and hp_bar.
+--- The fighters, the partner first: name_key, status_key, hp, max_hp, mp, max_mp, fainted, hp_bar, id, tag, targeted and queued.
 ---@return table
 function battle.fighters() end
 
@@ -491,7 +491,7 @@ function battle.commands() end
 ---@return table
 function battle.finisher() end
 
---- The folder battle's order panel: active, move_key, phase, phase_percent, queue (move keys), queue_targets (their foes' name keys), target_key, bar, bar_max, broken and notice (an order that just ended other than done: key, move_key, reason_key; or nil).
+--- The folder battle's order panel: active, move_key, phase, phase_percent, committed, active_target_key, active_tag, queue (move keys), queue_targets (their foes' name keys), queue_tags, target_key, target_tag, stance, bar, bar_max, broken, broken_seconds and notice (an order that just ended other than done: key, move_key, reason_key, by_key; or nil).
 ---@return table
 function battle.folder() end
 

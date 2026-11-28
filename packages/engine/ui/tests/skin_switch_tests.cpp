@@ -384,6 +384,7 @@ TEST_CASE(
         SkinScreenLayout{
             {"box", "modern"}, {"menu", "modern"}, {"pages", "compact"}, {"pool", "current"}});
   CHECK(ui->skins().layoutOf(*devvago, "battle").at("menu") == "modern");
+  CHECK(ui->skins().layoutOf(*devvago, "battle").at("strip") == "icons");
   CHECK(ui->skins().layoutOf(*devvago, "main_menu").at("menu") == "original");
   CHECK(ui->skins().layoutOf(*devvago, "main_menu").at("picture") == "modern");
   // No other skin of the game pack sets the options only devvago uses.

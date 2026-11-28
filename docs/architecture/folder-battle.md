@@ -38,18 +38,31 @@ strip has every entry, whatever its brain, and each entry means something else.
 | Strip entry | Folder |
 |---|---|
 | Technique 1–3, finisher | An order of that technique at the current target, which the order keeps even if Change moves on |
-| Attack, Moderate, Distance, Defend | The Aggressive, Hold, Keep away and Protect stances; the current one is highlighted |
-| Change | Turns to the next foe: the stance follows it and the next orders aim at it |
-| Your call | Drops the waiting orders; the one being executed goes on |
+| Attack, Moderate, Distance, Defend | The Aggressive, Hold, Distance and Guard stances; the current one is highlighted |
+| Change | Turns to the next foe: the stance follows it and the next orders aim at it; the button names it ("Target: Goburimon A") |
+| Your call | Clears the queue: drops the waiting orders; the one being executed goes on |
 | Run | The flee, as in Classic |
 
+The modern skin groups the strip in three blocks: the techniques with their MP cost, the four stances side by side as
+one control, then the target, clearing the queue, the bag and fleeing. The skins with the original's icon strip
+(`strip: icons`) keep its places and tint the stances' frames apart. A technique the partner has not the MP for is
+greyed with its cost in red before it is pressed, and the reason shows under it.
+
+Foes of the same species carry a letter (A, B...) on their card and over them in the world, and every foe's HP bar
+stays on through the battle; the card of the foe the next orders aim at is lit, and one that a waiting order aims at
+has an orange edge.
+
 A plate at the bottom left (`battle.folder()` in the UI API) has four rows of a fixed height, so it never grows over
-the fighters: the partner's defense bar; one message, the break first, else, for five seconds, how the last order
-ended when it did not finish (cancelled, interrupted, invalid or replaced, with the reason: not enough MP, its foe is
-gone, out of reach...), else the partner's altered state; the active order's technique, foe and phase with the timed
-phase's progress, or the foe the next orders aim at while none runs (Change picks it); and the waiting orders. The
-line under the strip says why the focused technique or the finisher cannot be ordered now; in the modern skin, whose
-buttons already name the commands and whose move name shouts when it starts, that line shows only the reason.
+the fighters: the partner's defense bar beside its stance ("Hold · forced 3s" while a break forces it); one message,
+the break first, else, for five seconds, how the last order ended when it did not finish, else the partner's altered
+state; the active order's technique and foe beside its five phases (processing, positioning, preparing, executing,
+recovering), with a lock at the start of executing that lights once the technique has committed, from where a hit no
+longer stops it (or the foe the next orders aim at while none runs); and the waiting orders, one chip each ("1
+Fire Breath > A"). An order ends with a fixed word: replaced (by which move), annulled (the player cleared it),
+cancelled (its foe fell), invalid (not enough MP, out of reach...) or interrupted (a hit). The line under the strip says
+why the focused technique or the finisher cannot be ordered now; in the modern skin, whose buttons already name the
+commands and whose move name shouts when it starts, that line shows only the reason. The finisher gauge shows how full
+it is, or that it is ready.
 
 The plate keeps to its own region so it never covers another box: in the modern skin it sits between the partner's
 card and the key hints, under the enemies' cards; in the original, pixel and DevVago skins it takes the bottom left and

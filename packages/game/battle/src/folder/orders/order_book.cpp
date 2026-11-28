@@ -36,8 +36,11 @@ void remember(FolderFighter& own, const Order& order, OrderEnd end, OrderProblem
   own.lastEnd = end;
   own.lastProblem = problem;
   if (end != OrderEnd::Done) {
-    own.notice =
-        OrderNotice{.order = order, .end = end, .problem = problem, .frames = OrderNoticeFrames};
+    own.notice = OrderNotice{.order = order,
+                             .end = end,
+                             .problem = problem,
+                             .frames = OrderNoticeFrames,
+                             .by = std::nullopt};
   }
 }
 
@@ -116,6 +119,7 @@ core::Result<void> folderOrder(BattleContext& context, std::size_t slot,
   if (own.queue.size() >= OrderQueueSize) {
     const Order replaced = own.queue.back();
     remember(own, replaced, OrderEnd::Replaced, OrderProblem::ByTrainer);
+    own.notice->by = order;
     emitOrder(context, EventKind::OrderReplaced, side, replaced,
               static_cast<std::int32_t>(replaced.id));
     own.queue.back() = order;

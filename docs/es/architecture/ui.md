@@ -689,6 +689,7 @@ layout:                             # opcional: opciones de maquetación que lee
   | `picture` | `main_menu`, `save_slots`, `new_game_rules` | `modern`; `original`, con «imágenes panorámicas» las cajas y el logo van a sus sitios del original sobre la imagen ensanchada (`common/title_picture.lua`) |
   | `bars` | `hud` | `continuous` (por defecto); `pips`, las barras del estado del campo se llenan en los 25 cuadritos del original |
   | `heading` | `save_machine` | `original` (o sin poner), el título de la máquina solo sobre el registro y las ranuras, como el original; `always`, también sobre la pregunta de guardar |
+  | `strip` | `battle` | `text`, botones con nombre, que un combate Folder agrupa en técnicas, posturas y acciones; `icons`, la tira de iconos del original (skins original, pixel y DevVago) |
 
   El moderno declara las suyas, y el original (y el pixel, que lo extiende) las del original. `pages: compact`, `pool`,
   `tabs` y `medals` solo las pone el aspecto DevVago; sin ellas cada pantalla hace lo de siempre (`tabs`, `medals` y

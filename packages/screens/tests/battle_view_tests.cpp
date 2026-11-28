@@ -414,11 +414,42 @@ TEST_CASE("a folder battle's view says why a move cannot be ordered and how an o
   REQUIRE(battle.order(1, 1));
   REQUIRE(battle.cancelOrders());
   view = dwe::screens::battleViewOf(battle, names);
-  CHECK(view.folder->noticeKey == "battle.folder.end.cancelled");
+  CHECK(view.folder->noticeKey == "battle.folder.end.annulled");
   CHECK_FALSE(view.folder->noticeMoveKey.empty());
   CHECK(view.folder->noticeReasonKey.empty());
   const auto settings = dwe::screens::settingsOf(view);
   const auto* notice = settingNamed(settings, dwe::screens::FolderNoticeSetting);
   REQUIRE(notice != nullptr);
-  CHECK(std::get<std::string>(notice->value) == "battle.folder.end.cancelled");
+  CHECK(std::get<std::string>(notice->value) == "battle.folder.end.annulled");
+}
+
+TEST_CASE(
+    "a folder battle's view letters twin foes, marks the aimed ones and names a replacement") {
+  const auto species = fixtureSpecies();
+  const NameKeys names{&species, nullptr, &testCatalog()};
+  BattleSetup setup = duel(evenStats(900, 100), evenStats(700, 80), {"punch", "shot"});
+  setup.system = BattleSystemId::Folder;
+  setup.enemies.push_back(setup.enemies.front());
+  setup.enemies.back().position.x = 600;
+  Battle battle = startBattle(std::move(setup), 3);
+  REQUIRE(battle.order(0, 2));
+  REQUIRE(battle.order(0, 2));
+  REQUIRE(battle.setStance(Stance::Distance));
+  auto view = dwe::screens::battleViewOf(battle, names);
+  REQUIRE(view.fighters.size() == 3);
+  CHECK(view.fighters[0].tag.empty());
+  CHECK(view.fighters[1].tag == "A");
+  CHECK(view.fighters[2].tag == "B");
+  CHECK(view.fighters[2].id == 2);
+  CHECK(view.fighters[2].queued);
+  CHECK_FALSE(view.fighters[1].queued);
+  CHECK(view.folder->queueTargetTags == std::vector<std::string>{"B", "B"});
+  CHECK(view.folder->stance == "distance");
+
+  REQUIRE(battle.order(1, 1));
+  view = dwe::screens::battleViewOf(battle, names);
+  CHECK(view.folder->noticeKey == "battle.folder.end.replaced");
+  CHECK_FALSE(view.folder->noticeByKey.empty());
+  CHECK(view.folder->noticeByKey != view.folder->noticeMoveKey);
+  CHECK(view.fighters[1].queued);
 }

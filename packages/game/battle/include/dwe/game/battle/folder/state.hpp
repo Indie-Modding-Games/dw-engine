@@ -63,6 +63,8 @@ struct OrderNotice {
   OrderEnd end = OrderEnd::Done;
   OrderProblem problem = OrderProblem::None;
   std::int32_t frames = 0;
+  // The order that took a replaced one's place.
+  std::optional<Order> by;
 
   friend bool operator==(const OrderNotice&, const OrderNotice&) = default;
 };
