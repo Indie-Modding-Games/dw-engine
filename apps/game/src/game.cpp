@@ -3176,7 +3176,7 @@ int runGame(const Options& requested) {
             showingMovie ? 1.0F : static_cast<float>(graphics.options().renderScale) / 100.0F,
     });
     phases.mark(FramePhases::Render, platform->nowSeconds());
-    if (softwareNoticeLeft > 0.0) {
+    if (softwareNoticeLeft > 0.0 && !showingMovie) {
       softwareNoticeLeft -= std::clamp(frameSeconds, 0.0, MaxFrameSeconds);
       if (softwareNoticeLeft <= 0.0) {
         (*ui)->hide(SoftwareNoticeDocument);

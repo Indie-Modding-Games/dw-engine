@@ -69,10 +69,11 @@ Están en Opciones > Gráficos en cualquier modo, después de la sincronización
 
 ## El aviso
 
-`ui/software_notice` se ve 12 s al arrancar, encima de todo y sin tomar teclas: "Jugando sin tarjeta gráfica", que el
-procesador dibuja el juego y puede ir lento, que la calidad se ajusta sola y dónde cambiarla, y cómo arreglarlo
-(instalar o actualizar el controlador de la tarjeta gráfica desde la web de su fabricante). Está traducido a los nueve
-idiomas (`localization/<idioma>/software_notice.yaml`). El ajuste `software_mode` dice si aplica.
+`ui/software_notice` se ve 12 s al arrancar (una película no cuenta, así que se ve tras la intro), encima de todo y
+sin tomar teclas: "Jugando sin tarjeta gráfica", que el procesador dibuja el juego y puede ir lento, que la calidad se
+ajusta sola y dónde cambiarla, y cómo arreglarlo (instalar o actualizar el controlador de la tarjeta gráfica desde la
+web de su fabricante). Está traducido a los nueve idiomas (`localization/<idioma>/software_notice.yaml`). El ajuste
+`software_mode` dice si aplica.
 
 ## Mediciones y requisitos mínimos
 

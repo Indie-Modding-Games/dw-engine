@@ -69,10 +69,11 @@ They are in Options > Graphics in every mode, after vertical sync, and saved in 
 
 ## The notice
 
-`ui/software_notice` shows for 12 s at start, over everything and taking no input: "Playing without a graphics
-card", that the processor draws the game so it may be slow, that the quality adjusts itself and where to change it,
-and how to fix it (install or update the graphics card's driver from its maker's site). It is translated into the
-nine languages (`localization/<lang>/software_notice.yaml`). The `software_mode` setting says whether it applies.
+`ui/software_notice` shows for 12 s at start (a movie does not count, so it is seen after the intro), over everything
+and taking no input: "Playing without a graphics card", that the processor draws the game so it may be slow, that the
+quality adjusts itself and where to change it, and how to fix it (install or update the graphics card's driver from
+its maker's site). It is translated into the nine languages (`localization/<lang>/software_notice.yaml`). The
+`software_mode` setting says whether it applies.
 
 ## Measurements and minimum requirements
 
