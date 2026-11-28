@@ -5,6 +5,8 @@
 #include <dwe/game/field/field.hpp>
 #include <dwe/net/peer_link.hpp>
 
+#include <glm/vec3.hpp>
+
 #include <algorithm>
 #include <cstdint>
 #include <map>
@@ -116,6 +118,9 @@ private:
     std::optional<game::coop::HeldPartner> partner;
   };
   std::map<game::coop::PlayerId, OwnerHeld> held_;
+  // Where partners on a course stand on the host's screen this tick: a guest's on the same machine
+  // is drawn beside them (machineSpotBeside).
+  std::vector<glm::vec3> takenSpots_;
   // Guests put in the field on the current map (the others get a correction on the next tick).
   std::set<game::coop::PlayerId> placed_;
   std::optional<std::uint32_t> mapSerial_;
