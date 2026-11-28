@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <format>
 
+#include "vulkan_calls.hpp"
+
 namespace dwe::rhi {
 
 VkFormat toVulkan(Format format) {
@@ -71,7 +73,7 @@ void transitionImage(VkCommandBuffer commands, VkImage image, VkImageAspectFlags
   dependency.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
   dependency.imageMemoryBarrierCount = 1;
   dependency.pImageMemoryBarriers = &barrier;
-  vkCmdPipelineBarrier2(commands, &dependency);
+  sync2().pipelineBarrier2(commands, &dependency);
 }
 
 void recordImageClear(VkCommandBuffer commands, VkImage image) {
@@ -119,7 +121,7 @@ void transitionLevels(VkCommandBuffer commands, VkImage image, std::uint32_t fir
   dependency.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
   dependency.imageMemoryBarrierCount = 1;
   dependency.pImageMemoryBarriers = &barrier;
-  vkCmdPipelineBarrier2(commands, &dependency);
+  sync2().pipelineBarrier2(commands, &dependency);
 }
 
 // Blits every level after the first from the one before it, the image in the transfer destination
@@ -134,9 +136,7 @@ void recordMipChain(VkCommandBuffer commands, VkImage image, Extent extent,
                      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT,
                      VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_BLIT_BIT,
                      VK_ACCESS_2_TRANSFER_READ_BIT);
-    const VkImageBlit2 blit{
-        .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
-        .pNext = nullptr,
+    const VkImageBlit blit{
         .srcSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
                            .mipLevel = level - 1,
                            .baseArrayLayer = 0,
@@ -152,16 +152,8 @@ void recordMipChain(VkCommandBuffer commands, VkImage image, Extent extent,
         .dstOffsets = {{.x = 0, .y = 0, .z = 0},
                        {.x = side(extent.width, level), .y = side(extent.height, level), .z = 1}},
     };
-    const VkBlitImageInfo2 info{.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
-                                .pNext = nullptr,
-                                .srcImage = image,
-                                .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                .dstImage = image,
-                                .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                .regionCount = 1,
-                                .pRegions = &blit,
-                                .filter = VK_FILTER_LINEAR};
-    vkCmdBlitImage2(commands, &info);
+    vkCmdBlitImage(commands, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image,
+                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
   }
   transitionLevels(commands, image, 0, mipLevels - 1, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_PIPELINE_STAGE_2_BLIT_BIT,
@@ -310,8 +302,8 @@ core::Result<void> submitAndWait(Device& device,
   submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
   submit.commandBufferInfoCount = 1;
   submit.pCommandBufferInfos = &commandInfo;
-  if (gpuCheck("vkQueueSubmit2 (upload)", vkQueueSubmit2(gpu.queue, 1, &submit, oneOff.fence)) !=
-      VK_SUCCESS) {
+  if (gpuCheck("vkQueueSubmit2 (upload)",
+               sync2().queueSubmit2(gpu.queue, 1, &submit, oneOff.fence)) != VK_SUCCESS) {
     return core::fail("could not submit an upload");
   }
   if (gpuCheck("vkWaitForFences (upload)",

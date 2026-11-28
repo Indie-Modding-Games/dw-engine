@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "transition.hpp"
+#include "vulkan_calls.hpp"
 #include "vulkan_util.hpp"
 
 namespace dwe::rhi {
@@ -222,7 +223,7 @@ core::Result<void> copyToImage(const NativeHandles& gpu, const TextureDesc& desc
   submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
   submit.commandBufferInfoCount = 1;
   submit.pCommandBufferInfos = &commandInfo;
-  if (vkQueueSubmit2(gpu.queue, 1, &submit, upload.fence) != VK_SUCCESS ||
+  if (sync2().queueSubmit2(gpu.queue, 1, &submit, upload.fence) != VK_SUCCESS ||
       vkWaitForFences(gpu.device, 1, &upload.fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
     return core::fail("could not upload a texture to the GPU");
   }
