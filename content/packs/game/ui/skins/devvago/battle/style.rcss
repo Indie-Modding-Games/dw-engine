@@ -470,6 +470,11 @@
 	display: block;
 }
 
+/* The finisher gauge goes with the fight: only the bars stay for the end. */
+#fight.after #finisher {
+	display: none;
+}
+
 /* A tournament match's clock stays through the winner's pose too (std_main.c: STD_deinitializeCombat removes it after
    STD_removeCommandMenu). */
 #fight.after > #match-clock {

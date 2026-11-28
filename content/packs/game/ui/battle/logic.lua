@@ -1050,46 +1050,137 @@ local function draw_anger(document, intro)
   draw_marks(document, intro.flee, "flee-", max_flee, scale)
 end
 
--- HUD zones that floating things (numbers, enemy bars, shouts) keep out of: under a zone in the
--- window's top half, over it in the bottom half. Rects in dp from the window's corner; a hidden
--- zone has no size.
-local reserved_zones = { "partner-panel", "folder-panel", "commands", "enemies", "allies" }
+-- HUD zones that floating things (numbers, enemy bars, shouts) keep out of, in dp from the
+-- window's corner; a hidden zone has no size.
+local reserved_zones = {
+  "command-row",
+  "command-name",
+  "command-label",
+  "open-bag",
+  "partner-panel",
+  "fighter-0",
+  "fighter-0-hp-row",
+  "fighter-0-mp-row",
+  "finisher",
+  "folder-panel",
+  "speed-plate",
+  "enemies",
+  "fighter-1",
+  "fighter-2",
+  "fighter-3",
+  "allies",
+  "ally-0",
+  "ally-1",
+  "ally-2",
+}
 local zone_gap = 6
 
+-- A skin may place a panel's parts on their own, which leaves the panel without a size or as big as
+-- the window: each part counts, and a box over half the window is a container, not a zone.
 local function hud_zones(document)
   local _, _, width, height = lookup(document, "damage"):rect()
   local zones = {}
-  for _, id in ipairs(reserved_zones) do
-    local x, y, w, h = lookup(document, id):rect()
-    if w > 0 and h > 0 then
+  local function add(id)
+    local element = lookup(document, id)
+    local x, y, w, h = element:rect()
+    if w > 0 and h > 0 and w * h < width * height / 2 and not element:has_class("hidden") then
       zones[#zones + 1] = { left = x, top = y, right = x + w, bottom = y + h }
     end
+  end
+  for _, id in ipairs(reserved_zones) do
+    add(id)
+  end
+  for index = 0, command_count() - 1 do
+    add("command-" .. index)
   end
   return { width = width, height = height, zones = zones }
 end
 
--- An anchor in percent of the window, moved out of the zones by the shorter way out, sideways or
--- up/down; the thing spans `dx`..`dx + w` and `dy`..`dy + h` dp from it. Returns top, then left.
-local function clear_of_hud(hud, x_percent, y_percent, dx, dy, w, h)
+local function hits(boxes, x, y, w, h)
+  for _, box in ipairs(boxes) do
+    local across = x + w >= box.left - zone_gap and x <= box.right + zone_gap
+    local within = y + h >= box.top - zone_gap and y <= box.bottom + zone_gap
+    if across and within then
+      return box
+    end
+  end
+  return nil
+end
+
+-- The nearest spot for a `w` x `h` box at `x`, `y` (dp) clear of the HUD and of `placed`, found by
+-- stepping out of whatever it hits, keeping the nearest tries; where nothing is clear, the try on
+-- screen that overlaps the fewest boxes.
+local function clear_spot(hud, placed, x, y, w, h)
+  local function count_hits(cx, cy)
+    local count = 0
+    for _, boxes in ipairs({ hud.zones, placed }) do
+      for _, box in ipairs(boxes) do
+        if hits({ box }, cx, cy, w, h) then
+          count = count + 1
+        end
+      end
+    end
+    return count
+  end
+  local function on_screen(cx, cy)
+    return cx >= 0 and cy >= 0 and cx + w <= hud.width and cy + h <= hud.height
+  end
+  local function cost(spot)
+    return math.abs(spot[1] - x) + math.abs(spot[2] - y)
+  end
+  local fallback, fallback_hits = { x, y }, math.huge
+  local spots = { { x, y } }
+  for _ = 1, 6 do
+    local next_spots = {}
+    for _, spot in ipairs(spots) do
+      local sx, sy = spot[1], spot[2]
+      if on_screen(sx, sy) then
+        local count = count_hits(sx, sy)
+        if count == 0 then
+          return sx, sy
+        end
+        if count < fallback_hits or (count == fallback_hits and cost(spot) < cost(fallback)) then
+          fallback, fallback_hits = spot, count
+        end
+      end
+      for _, boxes in ipairs({ hud.zones, placed }) do
+        local box = hits(boxes, sx, sy, w, h)
+        if box then
+          next_spots[#next_spots + 1] = { sx, box.top - zone_gap - h - 1 }
+          next_spots[#next_spots + 1] = { sx, box.bottom + zone_gap + 1 }
+          next_spots[#next_spots + 1] = { box.left - zone_gap - w - 1, sy }
+          next_spots[#next_spots + 1] = { box.right + zone_gap + 1, sy }
+        end
+      end
+    end
+    table.sort(next_spots, function(a, b)
+      return cost(a) < cost(b)
+    end)
+    spots = {}
+    for index = 1, math.min(#next_spots, 16) do
+      spots[index] = next_spots[index]
+    end
+  end
+  return fallback[1], fallback[2]
+end
+
+-- An anchor in percent of the window, moved to the nearest spot clear of the HUD and of the boxes
+-- already `placed` (then added to them); the thing spans `dx`..`dx + w` and `dy`..`dy + h` dp from
+-- it. Returns top, then left.
+local function clear_of_hud(hud, x_percent, y_percent, dx, dy, w, h, placed)
   if hud.width <= 0 or hud.height <= 0 then
     return y_percent, x_percent
   end
-  local x = x_percent * hud.width / 100 + dx
-  local y = y_percent * hud.height / 100 + dy
-  for _, zone in ipairs(hud.zones) do
-    local across = x + w >= zone.left - zone_gap and x <= zone.right + zone_gap
-    local within = y + h >= zone.top - zone_gap and y <= zone.bottom + zone_gap
-    if across and within then
-      local to_y = zone.top + zone.bottom < hud.height and zone.bottom + zone_gap
-        or zone.top - zone_gap - h
-      local to_x = zone.left + zone.right > hud.width and zone.left - zone_gap - w
-        or zone.right + zone_gap
-      if to_x >= 0 and to_x + w <= hud.width and math.abs(to_x - x) < math.abs(to_y - y) then
-        x = to_x
-      else
-        y = to_y
-      end
-    end
+  local x, y = clear_spot(
+    hud,
+    placed or {},
+    x_percent * hud.width / 100 + dx,
+    y_percent * hud.height / 100 + dy,
+    w,
+    h
+  )
+  if placed then
+    placed[#placed + 1] = { left = x, top = y, right = x + w, bottom = y + h }
   end
   return (y - dy) * 100 / hud.height, (x - dx) * 100 / hud.width
 end
@@ -1109,43 +1200,6 @@ local function bar_extent(document, id, fallback)
     return fallback[1], fallback[2], fallback[3], fallback[4]
   end
   return left, top, right - left, bottom - top
-end
-
-local function hits(boxes, x, y, w, h)
-  for _, box in ipairs(boxes) do
-    local across = x + w >= box.left - zone_gap and x <= box.right + zone_gap
-    local within = y + h >= box.top - zone_gap and y <= box.bottom + zone_gap
-    if across and within then
-      return box
-    end
-  end
-  return nil
-end
-
--- Close foes' bars would overlap: a later bar moves above the ones already placed, or below them
--- when above would run into the HUD.
-local function clear_of_bars(hud, placed, x_percent, y_percent, dx, dy, w, h)
-  if hud.width <= 0 or hud.height <= 0 then
-    return y_percent
-  end
-  local x = x_percent * hud.width / 100 + dx
-  local start = y_percent * hud.height / 100 + dy
-  local y = start
-  local box = hits(placed, x, y, w, h)
-  while box do
-    y = box.top - zone_gap - h - 1
-    box = hits(placed, x, y, w, h)
-  end
-  if y < 0 or hits(hud.zones, x, y, w, h) then
-    y = start
-    box = hits(placed, x, y, w, h)
-    while box do
-      y = box.bottom + zone_gap + 1
-      box = hits(placed, x, y, w, h)
-    end
-  end
-  placed[#placed + 1] = { left = x, top = y, right = x + w, bottom = y + h }
-  return (y - dy) * 100 / hud.height
 end
 
 -- The numbers over the fighters (packages/screens: damage_numbers.hpp; battle.numbers()): the
@@ -1319,8 +1373,7 @@ local function draw_hp_bars(document)
       local x, y = bar.left, bar.top
       hud = hud or hud_zones(document)
       local ex, ey, ew, eh = bar_extent(document, id, { x * 3 - 36, (y - 9) * 3, 220, 42 })
-      local top, left = clear_of_hud(hud, bar.x, bar.y, ex, ey, ew, eh)
-      top = clear_of_bars(hud, placed, left, top, ex, ey, ew, eh)
+      local top, left = clear_of_hud(hud, bar.x, bar.y, ex, ey, ew, eh, placed)
       set_property(document, id, "left", left .. "%")
       set_property(document, id, "top", top .. "%")
       set_property(document, id .. "-frame", "left", pixels(x))
