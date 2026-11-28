@@ -1285,11 +1285,8 @@
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
-   The Folder battle (not in the original; it follows this skin's boxes): one of the original's boxes (theme.rcss:
-   .original-box) at the bottom left, 10 pixels from the edges as the partner's bars are from theirs. "Guard" in the
-   headings' yellow and the active order in the ink at full size; the foe and the waiting orders in the descriptions'
-   grey at the small size. The bars are this skin's gauge (fishing_hud): a dark track 2 pixels tall, the fill yellow,
-   red once the guard breaks; the phase's in the end box's rising blue. */
+   The Folder battle (not in the original): one of this skin's boxes (theme.rcss: .original-box) at the bottom left,
+   10 pixels from the edges as the partner's bars are; the bars are this skin's gauge (fishing_hud). */
 #folder-panel {
 	left: 30dp;
 	bottom: 30dp;
@@ -1388,7 +1385,6 @@
 	display: none;
 }
 
-/* The Folder plate: a fixed height at the bottom left, four one-line rows. */
 #folder-panel {
 	height: 156dp;
 	box-sizing: border-box;
@@ -1420,7 +1416,6 @@
 	margin: 0;
 }
 
-/* The Folder plate's chips and phases in the boxes' colours; the strip's stance frames tinted apart. */
 #folder-stance {
 	font-size: 20dp;
 	line-height: 26dp;

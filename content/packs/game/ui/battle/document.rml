@@ -152,10 +152,7 @@
 		<div id="match-clock" class="hidden"><div id="mc-side-1" class="mc-side"></div><div id="mc-side-2" class="mc-side"></div><div id="mc-d-0" class="mc-digit hidden"></div><div id="mc-d-1" class="mc-digit hidden"></div></div>
 
 
-		<!-- The Folder battle (battle.folder), four rows of a fixed height: the partner's defense bar and its stance; one
-		     message (the broken defense, else how the last order ended when it did not finish, else an altered state); the
-		     active order and its foe, or the target, beside its five phases and the lock of the commit point; the waiting
-		     orders, one chip each. -->
+		<!-- The Folder battle (battle.folder): four rows of a fixed height. -->
 		<div id="folder-panel" class="hidden">
 			<div class="folder-row"><span class="folder-label" text-key="battle.folder.guard"></span><div class="folder-track"><div class="folder-fill" id="folder-bar-fill"></div></div><span id="folder-stance"></span></div>
 			<p id="folder-message"></p>

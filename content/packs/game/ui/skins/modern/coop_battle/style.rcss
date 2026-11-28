@@ -1,5 +1,3 @@
-/* The co-op battle's end box in the modern look. */
-
 #panel {
 	border: 2dp #f2a93b;
 	border-radius: 12dp;

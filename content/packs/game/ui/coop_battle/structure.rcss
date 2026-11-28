@@ -1,6 +1,5 @@
-/* The end of the host's battle on a co-op guest's screen (apps/game/src/coop_battles.hpp): a box low in the middle
-   with what the end waits on and, for the starter, the button that closes it. This is the plain look; a skin restyles
-   it (skins/<skin>/coop_battle/style.rcss). Over the field, under the interface's own notices. */
+/* The host's battle end box on a co-op guest's screen (apps/game/src/coop_battles.hpp), in the plain look a skin
+   restyles (skins/<skin>/coop_battle/style.rcss). Over the field, under the interface's own notices. */
 body {
 	width: 100%;
 	height: 100%;

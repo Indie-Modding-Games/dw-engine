@@ -169,7 +169,6 @@ local function draw_fighter(document, index)
   panel:set_class("fainted", fighter.fainted)
 end
 
--- An ally's card (co-op), with its revive countdown once it falls.
 local function draw_ally(document, index, ally)
   local prefix = "ally-" .. index
   lookup(document, prefix):set_class("hidden", ally == nil)
@@ -263,7 +262,6 @@ local function command_kind(entry)
   return command_kinds[entry.command] or "action"
 end
 
--- A technique shows its MP cost, the target command the foe the orders aim at.
 local function command_text(entry)
   local label = text(entry.label_key)
   if not folder.active then
@@ -483,7 +481,6 @@ local function draw_command_name(document)
   lookup(document, "fight"):set_class("reach", reach ~= "")
   set_class(document, "command-name", "short", short or problem ~= "")
   set_class(document, "command-name", "problem", problem ~= "")
-  -- A text Folder strip says why and what it reaches below the button.
   if (problem ~= "" or reach ~= "") and folder.active and ui.layout("strip") ~= "icons" then
     for index = 0, command_count() - 1 do
       local button = lookup(document, "command-" .. index)
@@ -1632,7 +1629,6 @@ local function draw_intro(document)
   lookup(document, "fight"):set_class("veiled", intro_step == "anger")
 end
 
--- The Folder battle's panel (battle.folder()).
 local folder_steps = { "processing", "positioning", "preparing", "executing", "recovering" }
 
 local function foe_name(key, tag)

@@ -140,8 +140,7 @@ local option_actions = {
 -- original has nothing like them and they change no game.
 local display_entries = {
   {
-    -- How the game draws and on which device, and why the automatic quality chose the look
-    -- (docs/architecture/graphics-diagnosis.md); nothing to change.
+    -- Read-only: how the game draws and why (docs/architecture/graphics-diagnosis.md).
     id = "graphics-device",
     tab = "graphics",
     label = "pause_menu.graphics_device",

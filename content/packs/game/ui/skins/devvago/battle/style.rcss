@@ -1326,10 +1326,8 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
-   The Folder battle: the charge box's navy panel with its cyan line at the bottom left, as far from the edges as the
-   partner's panel is from the right. "Guard" in the accent yellow and the active order behind the yellow bar of the
-   command's name; the foe and the waiting orders in the small font. The bars sit in the charge bar's sunk well: the
-   guard cyan, light red once it breaks, the phase yellow. */
+   The Folder battle: the charge box's navy panel at the bottom left, as far from the edges as the partner's panel
+   is from the right; its bars sit in the charge bar's sunk well. */
 #folder-panel {
 	left: 30dp;
 	bottom: 30dp;
@@ -1432,7 +1430,6 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 	display: none;
 }
 
-/* The Folder plate: a fixed height at the bottom left, four one-line rows. */
 #folder-panel {
 	height: 156dp;
 	box-sizing: border-box;
@@ -1464,7 +1461,6 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 	margin: 0;
 }
 
-/* The Folder plate's chips and phases in the look's blues; the strip's stance frames tinted apart. */
 #folder-stance {
 	font-size: 22dp;
 	line-height: 26dp;

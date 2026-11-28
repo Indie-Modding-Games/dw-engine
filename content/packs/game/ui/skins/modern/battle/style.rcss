@@ -722,10 +722,8 @@
 }
 
 /* ------------------------------------------------------------------------------------------------------------------
-   The Folder battle (not in the original): the partner's defense bar, the foe the orders aim at, the active order with
-   the phase's progress and the orders that wait, in a card like the fighters' beside the partner's panel at the bottom
-   left. The label and the defense bar share a row; an empty line takes no room. The other skins only change the look
-   and the place. */
+   The Folder battle (not in the original): a card like the fighters' beside the partner's panel at the bottom left; an
+   empty line takes no room. The other skins only change the look and the place. */
 #folder-panel {
 	position: absolute;
 	left: 396dp;
@@ -774,9 +772,7 @@
 	display: none;
 }
 
-/* In the Folder battle the strip's buttons name the commands and the move's name shouts when it starts, so the line
-   under the strip only says why the focused move cannot be ordered now, in a small red pill, and takes no room
-   otherwise. */
+/* The Folder strip's buttons name the commands: the line under the strip only shows why one cannot be ordered. */
 #fight.folder #command-label {
 	display: none;
 }
@@ -832,7 +828,6 @@
 	display: none;
 }
 
-/* The Folder plate: a fixed height at the bottom left, four one-line rows. */
 #folder-panel {
 	width: 470dp;
 	height: 136dp;
@@ -870,9 +865,7 @@
 	display: none;
 }
 
-/* The Folder strip in three blocks, each button placed by logic.lua (lay_out_strip): the techniques with their MP,
-   the four stances side by side as one control, then the target, clearing the queue, the bag and fleeing. A technique
-   the partner has not the MP for is greyed with its cost in red before it is pressed, and why shows under it. */
+/* The Folder strip in three blocks, each button placed by logic.lua (lay_out_strip). */
 /* Grouped buttons are placed against the full-width #commands, not the row: a row sized by them would squeeze them. */
 #command-row.grouped {
 	position: static;
@@ -1051,7 +1044,6 @@
 	top: 480dp;
 }
 
-/* A ready finisher shows its key beside the word. */
 #finisher.ready #finisher-ready {
 	display: inline-block;
 	margin-left: 8dp;
