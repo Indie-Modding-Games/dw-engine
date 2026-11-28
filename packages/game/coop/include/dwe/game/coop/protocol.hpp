@@ -321,7 +321,8 @@ enum class BattlePhase : std::uint8_t { Intro, Fight, Victory, End, Closing };
 // whole seconds its revive countdown shows (0: none shown). A partner's current order, as its ally
 // row names it: in the Classic battle `order` is its command's number (0: none); in a Folder
 // battle its active order's move place plus one (0: none, the row names `stance`, the
-// game::battle::Stance it moves by). `status` is the game::battle::StatusEffect its row shows.
+// game::battle::Stance it moves by). `status` is the game::battle::StatusEffect its row shows, and
+// `hpBarShown` whether its HP bar shows (Battle::hpBarShown: an enemy's only a while after a hit).
 struct BattleFighterState {
   std::int32_t hp = 0;
   std::int32_t mp = 0;
@@ -332,6 +333,7 @@ struct BattleFighterState {
   std::uint8_t order = 0;
   std::uint8_t stance = 0;
   std::uint8_t status = 0;
+  bool hpBarShown = true;
 
   friend bool operator==(const BattleFighterState&, const BattleFighterState&) = default;
 };

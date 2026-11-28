@@ -397,6 +397,8 @@ play on.
 - Task 10, the guest's HUD (protocol 15): a guest's skin battle screen reads the same settings as the host's. The
   ally cards name each partner's order and status, the finisher gauge fills, the Folder plate shows the guest's own
   partner and the foes it targets or has queued (with the twins' letters), and the bag picks the ally an item flies to.
+  Each foe's HP bar shows only when the host's does (`Battle::hpBarShown`: a while after a hit in a Classic wild
+  fight), so a guest sees no bar before the first hit either.
   Not sent yet: the finisher's charge gauge corner, and the menu entries' MP cost and problem.
 - The guest's HUD shows from the host's intro on, without the banner. Its bag opens as the host's does: the HUD learns
   the bag is open before the bag shows, so the battle document never takes the focus back (the guest's own partner

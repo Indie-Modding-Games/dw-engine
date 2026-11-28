@@ -750,10 +750,12 @@ TEST_CASE("a guest that is not in the battle helps; its mirror knows its own id"
   CHECK_FALSE(mirror.pendingAsk());
 }
 
-TEST_CASE("a battle frame carries each partner's revive countdown and an item's target") {
+TEST_CASE("a battle frame carries each partner's revive countdown, a foe's hidden HP bar and an "
+          "item's target") {
   BattleFrame withCountdown = frame(3, 4);
   withCountdown.fighters.front().down = true;
   withCountdown.fighters.front().reviveSeconds = 7;
+  withCountdown.fighters.back().hpBarShown = false;
   roundTrip(withCountdown);
   const auto rejects = [](const Message& message) {
     const auto decoded = decode(encode(message));

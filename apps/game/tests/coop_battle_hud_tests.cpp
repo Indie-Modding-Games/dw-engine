@@ -316,6 +316,34 @@ TEST_CASE("a guest's battle HUD shows its partner's Folder plate as the host rea
   checkSameOrders(seen, host);
 }
 
+TEST_CASE("a guest's battle HUD shows each foe's HP bar only when the host's shows it") {
+  const auto species = speciesTable();
+  const NameKeys names{&species, nullptr, &battle_test::testCatalog()};
+  Battle battle = allyBattle(BattleSystemId::Classic);
+  const FighterId ally = battle.state().allies.front().id;
+  GuestSide guest;
+  guest.begin(beginOf(battle));
+  const auto checkSameBars = [&] {
+    const BattleView host = dwe::screens::battleViewOf(battle, names, ally);
+    const BattleView seen = guest.see(battle, ally, names);
+    REQUIRE(seen.fighters.size() == host.fighters.size());
+    for (std::size_t index = 0; index < host.fighters.size(); ++index) {
+      CHECK(seen.fighters[index].hpBarShown == host.fighters[index].hpBarShown);
+    }
+    return host.fighters.back().hpBarShown;
+  };
+  CHECK_FALSE(checkSameBars());
+  bool hit = false;
+  while (!battle.finished() && battle.state().frame < 20000 && !hit) {
+    const dwe::game::battle::BattleEvents& events = battle.step();
+    hit = std::ranges::any_of(events, [](const dwe::game::battle::BattleEvent& event) {
+      return event.kind == dwe::game::battle::EventKind::AttackHit && event.fighter == 1;
+    });
+  }
+  REQUIRE(hit);
+  CHECK(checkSameBars());
+}
+
 TEST_CASE("a guest picks the partner its items fly to, and its throw names it to the host") {
   const auto species = speciesTable();
   const NameKeys names{&species, nullptr, &battle_test::testCatalog()};

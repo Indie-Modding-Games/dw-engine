@@ -128,6 +128,7 @@ screens::FighterView fighterViewOf(const CoopBattleViewSource& source, std::size
     view.mp = fighter.mp;
     view.maxMp = fighter.maxMp;
     view.fainted = fighter.down;
+    view.hpBarShown = fighter.hpBarShown;
     if (fighter.reviveSeconds > 0) {
       view.reviveSeconds = fighter.reviveSeconds;
     }
@@ -347,6 +348,7 @@ coop::BattleFrame coopBattleFrameOf(const game::battle::Battle& battle, FighterI
                                  .down = fighter.hp <= 0,
                                  .reviveSeconds = clampedTo<std::uint8_t>(revive.value_or(0))});
     shown.status = static_cast<std::uint8_t>(screens::shownStatusOf(fighter.status));
+    shown.hpBarShown = battle.hpBarShown(id);
     addOrderOf(shown, battle, id);
   }
   return frame;

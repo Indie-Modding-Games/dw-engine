@@ -427,8 +427,10 @@ siguen jugando.
   que la del anfitrión. Las tarjetas de los aliados nombran la orden de cada compañero, el indicador del remate se
   llena, la placa Folder enseña al compañero propio del invitado y los enemigos a los que apunta o que tiene en cola (con
   las letras de los gemelos), las tarjetas nombran también el estado de cada compañero, y la bolsa elige el aliado al
-  que vuela un objeto. Aún no se envía: la esquina del indicador de carga del remate, y el coste de PM y el problema de
-  las entradas del menú.
+  que vuela un objeto. La barra de PV de cada enemigo solo se ve cuando se ve la del anfitrión (`Battle::hpBarShown`:
+  un rato tras un golpe en un combate salvaje Classic), así que el invitado tampoco ve ninguna antes del primer golpe.
+  Aún no se envía: la esquina del indicador de carga del remate, y el coste de PM y el problema de las entradas del
+  menú.
 - El HUD del invitado se ve desde la presentación del anfitrión, sin el cartel. Su bolsa se abre como la del anfitrión:
   el HUD sabe que la bolsa está abierta antes de que se vea, así el documento de combate nunca le quita el foco (el
   propio menú del compañero del invitado vuelve a publicar la bolsa en ese tick), y su Usar siempre lanza, aunque la
