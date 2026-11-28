@@ -89,6 +89,17 @@ While a course runs in co-op the world's clock keeps running, but the partner's 
 energy), as the original's stands still for it. When the course ends the partner lives the world's time again. The
 hold is `GameSession::holdForCourse`, set by the gym's field port next to the field hold.
 
+**A session lasts its hour of the world's clock (#411).** A whole session is 1200 course frames, a real minute, so
+the world's clock already runs about an hour through it (measured: 1241 frames from the course's start to its last box,
+against the 1200-frame jump alone). A session cut short ran only seconds: a cancel, or the bonus try's roulette
+stopped early, charged the partner an hour while the world moved a minute or two (measured: 41 frames), so a player
+that skipped ten sessions saw no time pass for anyone. Now, in co-op, the course keeps its actors after the stats box
+until the world's clock has run one hour from the course's start (`GameSession::courseHourRuns`, `GymPorts::hourRuns`;
+the course run waits before `TRAINING_COMPLETE`). The partner's care stays held meanwhile, so it pays exactly the hour
+it was charged, the player's tag still says **Training**, and the next session of a batch starts after it. Sessions of
+several players overlap on the same world hour; none of them moves the clock. Alone nothing waits: the session's jump
+is the original's.
+
 ### 4.3 Who trains
 
 `TrainingStatus` (`0xC1`, both ways, reliable) carries a player and a course id (at most 32 characters, empty when the
@@ -99,8 +110,8 @@ one in the message, and tells every guest the others' courses as they change.
   0.25.0).
 - A player that trains is busy for trades and is not offered as a battle ally; a player in a gym screen cannot be
   pulled into a battle.
-- A player's first course in a co-op game shows a notice once: the world's time keeps running and each session counts
-  its own hour for the partner (`online.coop.training_clock`).
+- A player's first course in a co-op game shows a notice once: the world's time keeps running, each session lasts one
+  hour of it, and a skipped session waits for the rest of its hour (`online.coop.training_clock`).
 
 ### 4.4 Flow
 
@@ -171,6 +182,10 @@ Sleeping skips the night, and the night is the world's. The rules:
 
 ## 8. Tests
 
+- `packages/session/tests/gym_course_tests.cpp`: a whole course on a real field held by the story, alone (the clock
+  stands, then jumps 1200 frames, skipped or not) and in co-op as host and guest (the world runs 1200 to 1300 frames,
+  skipped or not).
+- `packages/game/gym/tests/course_flow_tests.cpp`: a session cut short holds its actors until the hour is over.
 - `packages/game/partner/tests/training_tests.cpp`: a shared-clock session leaves the clock and pays the same gains and
   costs as one alone; one at 23:30 adds no age.
 - `packages/session/tests/shared_clock_tests.cpp`: follow (gap, skip, wait, go back), the teller, alone vs co-op,

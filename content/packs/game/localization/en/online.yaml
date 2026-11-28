@@ -211,7 +211,7 @@ coop.came_home: "Back from {name}'s world: your partner and your bag came home w
 # A player training at the gym, under their tag; and the first course of a co-op game
 # (coop-training.md): the world's clock does not stop for it.
 coop.training: "Training"
-coop.training_clock: "Training in company: the world's time keeps running, and each session counts its own hour for your partner."
+coop.training_clock: "Training in company: the world's time keeps running, and each session lasts one hour of it; a session you skip waits for the rest of its hour."
 coop.sleep_wait: "Asleep until morning: in a shared world your partner wakes when the world's clock reaches its hour, or when the host sleeps too."
 # A guest who brought a save of the other game variant, and the host's notice of it (game-variants.md, "Co-op").
 coop.guest_other_variant: "{name}'s world plays another variant, under its rules. Your partner and bag still go home."

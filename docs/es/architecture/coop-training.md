@@ -94,6 +94,18 @@ ni energía), igual que el reloj del original se queda quieto para él. Al termi
 el tiempo del mundo. La retención es `GameSession::holdForCourse`, que pone el puerto de campo del gimnasio junto a la
 retención del campo.
 
+**Una sesión dura su hora del reloj del mundo (#411).** Una sesión completa son 1200 frames de curso, un minuto real,
+así que el reloj del mundo ya corre más o menos una hora durante ella (medido: 1241 frames del inicio del curso a su
+último recuadro, frente al salto de 1200 a solas). Una sesión cortada corría solo segundos: cancelar, o parar pronto la
+ruleta del intento extra, cobraba una hora al compañero mientras el mundo avanzaba un minuto o dos (medido: 41 frames),
+así que un jugador que saltaba diez sesiones no veía pasar el tiempo para nadie. Ahora, en cooperativo, el curso
+retiene a sus actores tras el recuadro de estadísticas hasta que el reloj del mundo ha corrido una hora desde el inicio
+del curso (`GameSession::courseHourRuns`, `GymPorts::hourRuns`; el curso espera antes de `TRAINING_COMPLETE`). Los
+cuidados del compañero siguen retenidos mientras tanto, así que paga justo la hora que se le cobró, la etiqueta del
+jugador sigue diciendo **Entrenando** y la siguiente sesión de una tanda empieza después. Las sesiones de varios
+jugadores se solapan sobre la misma hora del mundo; ninguna mueve el reloj. A solas nada espera: el salto de la sesión
+es el del original.
+
 ### 4.3 Quién entrena
 
 `TrainingStatus` (`0xC1`, en ambos sentidos, fiable) lleva un jugador y un id de curso (32 caracteres como mucho, vacío
@@ -105,7 +117,8 @@ enlace, nunca el del mensaje, y dice a cada invitado los cursos de los demás cu
 - Un jugador que entrena está ocupado para intercambios y no se ofrece como aliado de combate; a un jugador en el
   gimnasio no se le puede meter en un combate.
 - El primer curso de un jugador en una partida cooperativa muestra un aviso una vez: el tiempo del mundo sigue
-  corriendo y cada sesión cuenta su propia hora para el compañero (`online.coop.training_clock`).
+  corriendo, cada sesión dura una hora de ese tiempo y una sesión saltada espera el resto de su hora
+  (`online.coop.training_clock`).
 
 ### 4.4 Flujo
 
@@ -177,6 +190,10 @@ Dormir salta la noche, y la noche es del mundo. Las reglas:
 
 ## 8. Pruebas
 
+- `packages/session/tests/gym_course_tests.cpp`: un curso entero en un campo real retenido por la historia, a solas (el
+  reloj se queda quieto y luego salta 1200 frames, saltado o no) y en cooperativo como anfitrión e invitado (el mundo
+  corre de 1200 a 1300 frames, saltado o no).
+- `packages/game/gym/tests/course_flow_tests.cpp`: una sesión cortada retiene a sus actores hasta que acaba la hora.
 - `packages/game/partner/tests/training_tests.cpp`: una sesión con reloj compartido no mueve el reloj y paga las mismas
   ganancias y costes que a solas; una a las 23:30 no suma edad.
 - `packages/session/tests/shared_clock_tests.cpp`: seguir (diferencia, salto, esperar, volver), el aviso, a solas

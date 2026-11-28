@@ -39,6 +39,7 @@ public:
   explicit GymFieldPorts(const GymFieldPortsDesc& desc);
 
   void setTraining(bool training) override;
+  [[nodiscard]] bool hourRuns() override;
   void animate(game::gym::Actor actor, std::int32_t animation) override;
   void holdInPlace(game::gym::Actor actor, bool held) override;
   void face(game::gym::Actor actor, std::int32_t angle) override;
