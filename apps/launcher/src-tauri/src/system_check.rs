@@ -12,6 +12,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
+use crate::diagnosis::{self, Advice, Diagnosis, Meanwhile};
 use crate::launch::GraphicsFlags;
 use crate::log_line;
 use crate::store::Game;
@@ -57,6 +58,8 @@ pub struct Probe {
     /// The GPU passed only the Vulkan 1.2 compatible floor ("floor=1.2"); the game then uses that
     /// mode on its own.
     pub compatible: bool,
+    /// Why, as the game found it (diagnosis.rs); None from a game older than that.
+    pub diagnosis: Option<Diagnosis>,
 }
 
 /// Reads what `dwe-game --check-system` printed; None when it is not that (a game older than
@@ -90,7 +93,14 @@ pub fn parse(text: &str) -> Option<Probe> {
         api: text("api"),
         driver: text("driver"),
     });
-    Some(Probe { result, detail: text("detail"), devices: text("devices").parse().unwrap_or(0), gpu, compatible: text("floor") == "1.2" })
+    Some(Probe {
+        result,
+        detail: text("detail"),
+        devices: text("devices").parse().unwrap_or(0),
+        gpu,
+        compatible: text("floor") == "1.2",
+        diagnosis: values.get("diagnosis").and_then(|json| diagnosis::parse(json)),
+    })
 }
 
 /// How the game will draw.
@@ -167,6 +177,8 @@ pub fn driver_page(vendor: Vendor) -> Option<&'static str> {
 
 /// Windows' own updates, which also bring GPU drivers.
 pub const WINDOWS_UPDATE: &str = "ms-settings:windowsupdate";
+/// Settings › System › Display › Graphics, where Windows picks the GPU per program.
+pub const WINDOWS_GRAPHICS: &str = "ms-settings:display-advancedgraphics";
 
 /// The package's software driver manifest, when this game has one (Linux and Windows packages).
 pub fn software_manifest(game: &Game) -> Option<PathBuf> {
@@ -247,7 +259,7 @@ pub fn run_probe(program: &Path, extra_args: &[&str], env: &[(OsString, OsString
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
         command.creation_flags(CREATE_NO_WINDOW);
     }
-    let mut child = match command.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::null()).spawn() {
+    let mut child = match command.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn() {
         Ok(child) => child,
         Err(error) => {
             log_line!("the system check did not start: {error}");
@@ -255,9 +267,17 @@ pub fn run_probe(program: &Path, extra_args: &[&str], env: &[(OsString, OsString
         }
     };
     let start = Instant::now();
-    loop {
+    let mut stderr = child.stderr.take();
+    let errors = std::thread::spawn(move || {
+        let mut text = String::new();
+        if let Some(pipe) = stderr.as_mut() {
+            let _ = pipe.take(64 * 1024).read_to_string(&mut text);
+        }
+        text
+    });
+    let status = loop {
         match child.try_wait() {
-            Ok(Some(_)) => break,
+            Ok(Some(status)) => break status,
             Ok(None) if start.elapsed() < timeout => std::thread::sleep(Duration::from_millis(50)),
             _ => {
                 let _ = child.kill();
@@ -266,10 +286,17 @@ pub fn run_probe(program: &Path, extra_args: &[&str], env: &[(OsString, OsString
                 return None;
             }
         }
-    }
+    };
     let mut output = String::new();
     child.stdout.take()?.read_to_string(&mut output).ok()?;
-    parse(&output)
+    let errors = errors.join().unwrap_or_default();
+    parse(&output).or_else(|| {
+        diagnosis::loader_missing(&errors, status.code()).then(|| {
+            let detail = errors.lines().next().unwrap_or("the Vulkan loader is missing").to_string();
+            log_line!("the system check could not start: {detail}");
+            Probe { result: ProbeResult::NoVulkan, detail: detail.clone(), devices: 0, gpu: None, compatible: false, diagnosis: Some(diagnosis::no_loader(&detail)) }
+        })
+    })
 }
 
 /// What the game's GPU check found, with the probe the decision rests on.
@@ -288,12 +315,31 @@ pub struct GraphicsCheck {
     /// The extra environment the game starts with (the software driver's), not for the page.
     #[serde(skip)]
     pub env: Vec<(OsString, OsString)>,
+    /// Why, most actionable first, as the page shows it (diagnosis.rs).
+    pub advice: Vec<Advice>,
+    pub meanwhile: Option<Meanwhile>,
+    /// What "Copy details" copies.
+    pub report: String,
+    #[serde(skip)]
+    pub diagnosis: Option<Diagnosis>,
 }
 
 impl GraphicsCheck {
     /// No answer: the game starts as before.
     pub fn unknown() -> Self {
-        Self { graphics: Graphics::Unknown, gpu: None, vendor: Vendor::Other, reason: None, detail: String::new(), compat_rescues: false, env: Vec::new() }
+        Self {
+            graphics: Graphics::Unknown,
+            gpu: None,
+            vendor: Vendor::Other,
+            reason: None,
+            detail: String::new(),
+            compat_rescues: false,
+            env: Vec::new(),
+            advice: Vec::new(),
+            meanwhile: None,
+            report: String::new(),
+            diagnosis: None,
+        }
     }
 
     /// The GPU offers Vulkan 1.4, so --vulkan13 is a step of its own.
@@ -323,6 +369,13 @@ pub fn check_graphics(game: &Game, compatibility: bool) -> GraphicsCheck {
     let graphics = decide(system.as_ref(), compat_rescues, fallback.as_ref());
     let gpu = if compat_rescues { rescue.as_ref() } else { system.as_ref() }.and_then(|p| p.gpu.clone());
     let reason = system.as_ref().filter(|p| p.result != ProbeResult::Ok || p.compatible).map(|p| p.result);
+    let found = system.as_ref().and_then(|p| p.diagnosis.clone());
+    let reasons = match (&found, system.as_ref()) {
+        (Some(d), _) => d.reasons.clone(),
+        (None, Some(probe)) => diagnosis::legacy(probe),
+        (None, None) => Vec::new(),
+    };
+    let advice = diagnosis::advise_all(&reasons, std::env::consts::OS, false);
     let check = GraphicsCheck {
         graphics,
         vendor: vendor(gpu.as_ref().map_or(0, |g| g.vendor_id)),
@@ -331,6 +384,10 @@ pub fn check_graphics(game: &Game, compatibility: bool) -> GraphicsCheck {
         detail: system.as_ref().map(|p| p.detail.clone()).unwrap_or_default(),
         compat_rescues,
         env: if graphics == Graphics::Fallback { env } else { Vec::new() },
+        report: diagnosis::report(found.as_ref(), &advice, &[]),
+        advice,
+        meanwhile: diagnosis::meanwhile(graphics),
+        diagnosis: found,
     };
     log_line!(
         "system check: {:?} ({}{})",
@@ -338,6 +395,9 @@ pub fn check_graphics(game: &Game, compatibility: bool) -> GraphicsCheck {
         check.gpu.as_ref().map_or("no GPU".to_string(), |g| format!("{}, {}", g.name, g.driver)),
         check.reason.map_or(String::new(), |r| format!(", {r:?}: {}", check.detail)),
     );
+    if !check.advice.is_empty() {
+        log_line!("graphics reasons: {}", check.advice.iter().map(|a| a.code.as_str()).collect::<Vec<_>>().join(", "));
+    }
     check
 }
 

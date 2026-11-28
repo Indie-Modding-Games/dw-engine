@@ -303,6 +303,16 @@ Settings › General › Computer requirements.
 | Graphics card | `dwe-game --check-system` of the installed game (below), first with the computer's drivers. | If it works, the card, its driver and the Vulkan version it reports (`api`); the game itself picks the 1.3 or 1.4 path when it starts. If the card works only in the 1.2 compatible mode (an old driver), the game uses that mode on its own: a "Compatible graphics mode" notice that says nothing needs changing and offers the maker's driver page, and a "Compatible graphics" label at the top. If no card works, the game starts anyway in **compatibility mode** (below): a notice that closes with "Got it", a "Compatibility mode" label at the top and the maker's driver button. |
 | Nothing can run the game | Neither the computer's cards nor the package's software driver (or the package does not carry it: macOS for now). | "Your graphics card cannot run the game": what to do, the button to the maker's driver page (NVIDIA, AMD or Intel, according to the card's `vendor`; all three if unknown), on Windows also "Open Windows Update", and "Check again". Pressing "Play" still tries to start: the game writes the reason to its log and the launcher shows the end. |
 
+**Why, in the player's words.** Every graphics notice, the requirements page and the dialog after a failed start
+show the [graphics diagnosis](../../architecture/graphics-diagnosis.md) instead of a general text: the exact reason
+with the real names (card, driver installed and required, the overlay in the way, the unused dedicated card of a
+laptop), whether a driver fixes it or the card cannot, numbered steps with buttons to the right page (the maker's
+drivers, Windows Update, Windows graphics settings), what the game does meanwhile, the other reasons found, and the
+technical details behind "Show technical details" with "Copy details" for a ready report. A card that works but is
+integrated, short of memory or not the laptop's dedicated one gets a "Your graphics card works, with a tip" notice
+once per card. The probe's line `diagnosis=<json>` and the game's log line `dwe-diagnosis 1 <json>` carry it;
+`DWE_GRAPHICS_REASON` passes the first reason to the game's own notice.
+
 **`dwe-game --check-system`** (`packages/engine/rhi/include/dwe/rhi/system_check.hpp`) creates a Vulkan instance and picks a
 GPU with the same version (1.3) and the same features as `Device::create` (`renderer_requirements.hpp`), with no window,
 no content and without creating the device; it takes less than a second with a normal driver. It writes to standard

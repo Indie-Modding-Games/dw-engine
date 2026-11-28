@@ -8,6 +8,7 @@ pub mod auto_update;
 pub mod beta_key;
 pub mod content;
 pub mod custom_images;
+pub mod diagnosis;
 pub mod disc;
 pub mod failure;
 pub mod graphics_step;

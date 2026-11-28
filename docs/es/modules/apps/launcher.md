@@ -307,6 +307,17 @@ Ajustes › General › Requisitos del equipo.
 | Tarjeta gráfica | `dwe-game --check-system` del juego instalado (abajo), primero con los controladores del equipo. | Si sirve, la tarjeta, su controlador y la versión de Vulkan que informa (`api`); el juego mismo elige la ruta 1.3 o 1.4 al arrancar. Si la tarjeta solo sirve en el modo compatible 1.2 (un controlador antiguo), el juego usa ese modo por su cuenta: un aviso «Modo gráfico compatible» que dice que no hay que cambiar nada y ofrece la página de controladores del fabricante, y una etiqueta «Gráficos compatibles» arriba. Si ninguna tarjeta sirve, el juego arranca igual en **modo de compatibilidad** (abajo): un aviso que se cierra con «Entendido», una etiqueta «Modo de compatibilidad» arriba y el botón del controlador del fabricante. |
 | Nada puede mover el juego | Ni las tarjetas del equipo ni el controlador por software del paquete (o el paquete no lo trae: macOS por ahora). | «Tu tarjeta gráfica no puede mover el juego»: qué hacer, el botón de la página de controladores del fabricante (NVIDIA, AMD o Intel, según el `vendor` de la tarjeta; las tres si no se sabe), en Windows también «Abrir Windows Update», y «Comprobar de nuevo». Pulsar «Jugar» sigue intentando arrancar: el juego escribe el motivo en su registro y el lanzador muestra el final. |
 
+**El porqué, en palabras del jugador.** Todos los avisos gráficos, la página de requisitos y el diálogo tras un
+arranque fallido muestran el [diagnóstico gráfico](../../architecture/graphics-diagnosis.md) en vez de un texto
+general: la razón exacta con los nombres reales (tarjeta, controlador instalado y necesario, el overlay que estorba, la
+tarjeta dedicada sin usar de un portátil), si lo arregla un controlador o la tarjeta no puede, pasos numerados con
+botones a la página correcta (controladores del fabricante, Windows Update, configuración de gráficos de Windows), qué
+hace el juego mientras tanto, las otras razones encontradas y los detalles técnicos tras «Mostrar detalles técnicos»
+con «Copiar detalles» para un informe listo. Una tarjeta que funciona pero es integrada, con poca memoria o no es la
+dedicada del portátil recibe una vez por tarjeta el aviso «Tu tarjeta gráfica funciona, con un consejo». Lo llevan la
+línea `diagnosis=<json>` de la sonda y la línea `dwe-diagnosis 1 <json>` del registro del juego; `DWE_GRAPHICS_REASON`
+pasa la primera razón al aviso del propio juego.
+
 **`dwe-game --check-system`** (`packages/engine/rhi/include/dwe/rhi/system_check.hpp`) crea una instancia de Vulkan y elige
 GPU con la misma versión (1.3) y las mismas funciones que `Device::create` (`renderer_requirements.hpp`), sin ventana,
 sin contenido y sin crear el dispositivo; tarda menos de un segundo con un controlador normal. Escribe en la salida
