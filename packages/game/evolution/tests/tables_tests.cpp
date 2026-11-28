@@ -80,6 +80,33 @@ TEST_CASE("the developer's evolve skips a form with a row of its own but no mode
   CHECK(tables.cheatTargets().size() == FixtureForms.size() - 1);
 }
 
+TEST_CASE("a form with no model is no chart's target and is drawn as the form it comes from") {
+  // A tester's partner became WereGarurumon (no bones, no model) and the field kept drawing the
+  // form before. No chart leads to such a form, and a partner already saved as one is drawn as the
+  // form its chart comes from whose name ends its own (WereGarurumon: Garurumon).
+  TableFixture fixture;
+  fixture.form("mtet").boneCount = 0;
+  fixture.form("mtet").name = "WereGarurumon";
+  fixture.form("veda").name = "Leomon";
+  fixture.form("ggdr").name = "Garurumon";
+  fixture.setPath("veda", {"mtet", "ggdr"});
+  auto& cutRow =
+      fixture.evolution.paths.at(static_cast<std::size_t>(TableFixture::index("mtet")) - 1);
+  cutRow.from = {std::string{"veda"}, std::string{"ggdr"}};
+  const EvolutionTables tables = fixture.build();
+  const auto cut = TableFixture::index("mtet");
+  CHECK_FALSE(tables.drawable(cut));
+  CHECK(std::ranges::equal(tables.pathTargets(TableFixture::index("veda")),
+                           std::vector{TableFixture::index("ggdr")}));
+  CHECK(tables.drawnAs(cut) == TableFixture::index("ggdr"));
+  CHECK(tables.drawnAs(TableFixture::index("agum")) == TableFixture::index("agum"));
+
+  cutRow.from = {std::string{"veda"}};
+  CHECK(fixture.build().drawnAs(cut) == TableFixture::index("veda"));
+  cutRow.from = {};
+  CHECK(fixture.build().drawnAs(cut) == cut);
+}
+
 TEST_CASE("the developer's evolve reaches every form with a model, borrowing the stats it lacks") {
   TableFixture fixture;
   fixture.gains("agum").hp = 1234;

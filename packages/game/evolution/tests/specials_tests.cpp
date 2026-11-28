@@ -432,4 +432,16 @@ TEST_CASE("quirk evolution_item_sticks: after an item, later evolutions give no 
   CHECK_FALSE(valueOf(result).evolutionItemUsed);
 }
 
+TEST_CASE("no evolution makes the partner a form with no model") {
+  TableFixture fixture;
+  fixture.form("species_b").boneCount = 0;
+  const Evolution evolution = fixture.makeEvolution();
+  const auto result = evolution.evolveByScript(inputsOf("agum"), EvolutionState{},
+                                               TableFixture::index("species_b"));
+  CHECK_FALSE(result.has_value());
+  CHECK(
+      evolution.evolveByScript(inputsOf("agum"), EvolutionState{}, TableFixture::index("species_d"))
+          .has_value());
+}
+
 } // namespace dwe::game::evolution

@@ -646,6 +646,10 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
     const auto* row = species_ ? species_->find(species) : nullptr;
     return row != nullptr ? static_cast<float>(row->radius) : 0.0F;
   });
+  scene_->attachDrawnSpecies([this](std::string_view species) {
+    return game_.systems.evolution != nullptr ? game_.systems.evolution->drawnSpecies(species)
+                                              : std::string{species};
+  });
   const ruleset::SpeciesExtra extra = speciesExtraOf(session);
   scene_->attachSpeciesClips([extra](std::string_view species) {
     const ruleset::SpeciesPatch* patch = extra.find(species);

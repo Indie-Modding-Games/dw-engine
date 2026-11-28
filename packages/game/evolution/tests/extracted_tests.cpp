@@ -179,6 +179,29 @@ TEST_CASE("the user's disc, extracted: every form runs every evolution check wit
   }
 }
 
+TEST_CASE("the user's disc, extracted: only WereGarurumon and the empty slot have no model") {
+  const assets::DiskFileSystem disk;
+  const auto vfs = mountContent(disk);
+  if (!vfs) {
+    MESSAGE(Skipping);
+    return;
+  }
+  const auto evolution = loadOriginal(*vfs);
+  const EvolutionTables& tables = evolution.tables();
+  std::vector<std::string_view> undrawable;
+  for (const Species species : tables.allSpecies()) {
+    if (!tables.drawable(species)) {
+      undrawable.push_back(tables.idOf(species));
+    }
+    for (const Species target : tables.pathTargets(species)) {
+      CHECK_MESSAGE(tables.drawable(target), tables.idOf(target));
+    }
+  }
+  CHECK(undrawable == std::vector<std::string_view>{"weag", "taka"});
+  CHECK(tables.idOf(tables.drawnAs(idOf(evolution, "weag"))) == "garu");
+  CHECK(tables.drawnAs(idOf(evolution, "taka")) == idOf(evolution, "taka"));
+}
+
 TEST_CASE("the user's disc, extracted: the known paths of the original") {
   const assets::DiskFileSystem disk;
   const auto vfs = mountContent(disk);

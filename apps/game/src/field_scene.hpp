@@ -526,6 +526,10 @@ public:
   // models/partner's animations, which are the same ids for every partner; nothing changes if it is
   // drawn so already. On a failure the partner keeps its model.
   core::Result<void> showPartnerSpecies(std::string_view species);
+  // The species whose model draws a partner of this species (attachDrawnSpecies).
+  [[nodiscard]] std::string drawnSpeciesOf(std::string_view species) const {
+    return drawnSpecies_ ? drawnSpecies_(species) : std::string{species};
+  }
   // The radius of a species in the species table, 0 when unknown: it sizes the partner on the field
   // (showPartnerSpecies). Without it the field keeps the radius of field/rules.
   void attachSpeciesRadius(std::function<float(std::string_view)> radius) {
@@ -536,6 +540,12 @@ public:
   using ClipStandIns = std::map<std::uint32_t, std::uint32_t>;
   void attachSpeciesClips(std::function<ClipStandIns(std::string_view)> clips) {
     speciesClips_ = std::move(clips);
+  }
+  // The species whose model draws a partner of this one (EvolutionAdapter::drawnSpecies): a form
+  // with no model of its own (WereGarurumon) is drawn as the one it comes from. Without it every
+  // species is drawn as itself.
+  void attachDrawnSpecies(std::function<std::string(std::string_view)> drawn) {
+    drawnSpecies_ = std::move(drawn);
   }
   // The size a species' partner is drawn at in the field, 1 for the original's (a ruleset's species
   // patches: field_scale); its radius scales with it.
@@ -1306,6 +1316,7 @@ private:
   // the pack has none or they do not read.
   std::optional<std::optional<assets::PartnerClipBook>> partnerClipBook_;
   std::function<float(std::string_view)> speciesScale_;
+  std::function<std::string(std::string_view)> drawnSpecies_;
   MapNpcsHook mapNpcs_;
   // The partner species' size (attachSpeciesScale), times the scenes' partnerScale.
   float partnerSpeciesScale_ = 1.0F;

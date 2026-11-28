@@ -33,6 +33,37 @@ Quedan fuera, con su razón:
 
 Los jefes entran (`vand`, `muge`): sus modelos tienen los clips de combate.
 
+## Especies sin modelo
+
+Dos de las 180 filas de la tabla de especies no tienen huesos ni modelo en el disco, en ninguna forma (compañero,
+enemigo o personaje), así que no hay otro modelo suyo que tomar:
+
+- `weag`, WereGarurumon (62): una forma recortada del disco. Conserva sus filas de evolución (requisitos, estadísticas
+  de referencia, una tabla que viene de Leomon, Garurumon, Frigimon y Mojyamon y no lleva a ninguna parte, y el objeto
+  Espejo lunar), pero su lista de ataques es de relleno (16 veces Torre de fuego) y su textura es la del jugador.
+- `taka` (114): un hueco vacío, sin nombre ni filas.
+
+Ninguna puede ser compañero:
+
+- Ninguna evolución convierte al compañero en una especie sin modelo (`Evolution::evolve` rechaza el destino, sea cual
+  sea el motivo: natural, objeto, especial, guion de evento o paso a Mega) y ninguna tabla lleva a una
+  (`EvolutionTables::pathTargets` la deja fuera), tampoco la de un conjunto de reglas o un paquete. El menú de
+  desarrollo no las lista y `evolve` las rechaza (`EvolutionTables::cheatTargets`). La partida original no cambia:
+  ninguna tabla del original lleva a WereGarurumon y el Espejo lunar no encuentra una forma una etapa más arriba
+  (WereGarurumon no tiene etapa).
+- Un compañero ya guardado como una de ellas (una partida guardada antes de esta guarda) conserva su especie y sus
+  estadísticas, pero el campo ya no deja el modelo anterior: él y el retrato del estado dibujan la forma de la que viene su tabla cuyo nombre termina
+  el suyo, si no la primera de ellas con modelo (`EvolutionTables::drawnAs`, `EvolutionAdapter::drawnSpecies`), con el
+  tamaño y los clips de esa forma, y el registro lo dice (`game: weag has no model of its own; the partner is drawn as
+  garu`). WereGarurumon se dibuja como Garurumon. Sus técnicas siguen siendo la lista de relleno. `taka` no tiene tabla
+  y se queda con el modelo de compañero del paquete del juego.
+
+Los modelos propios desde paquetes aún no están soportados. Un paquete tendría que traer `digimon/<id>/model.glb` y su
+textura, dar huesos a la especie en su fila (`bone_count`), los clips de compañero (propios o una receta en
+`animations/partner_clips.yaml`) y una lista de ataques real; con eso las guardas de arriba la dejan pasar solas. Falta
+comprobar ese modelo al cargar el paquete (esqueleto contra clips) y una forma de que un paquete parchee una fila de la
+tabla de especies base.
+
 ## Rulesets
 
 La opción son tres rulesets más, uno por cada combinación que ya ofrece la pantalla de reglas:
@@ -239,6 +270,9 @@ original hasta 5 orígenes y 6 destinos; los caminos de más existen pero no se 
   combate avanzan paso a paso como los del donante y cada técnica se suelta en el mismo fotograma.
 - `an upright body moves forward where it would lean` (`clip_synthesis_tests.cpp`) y `a species drawn at another size
   fights with its body at that size` (`packages/session/tests/battle_adapter_tests.cpp`).
+- `a form with no model is no chart's target and is drawn as the form it comes from` (`tables_tests.cpp`), `no
+  evolution makes the partner a form with no model` (`specials_tests.cpp`) y `the developer's evolve refuses a form
+  with no model and keeps the partner as it was` (`packages/session/tests/evolution_adapter_tests.cpp`).
 - `a form only a ruleset's wake-up special leads to gets its cell` (`apps/game/tests/player_chart_tests.cpp`).
 - Ruta `route-all-species.yaml` ([prueba vertical](../../guides/vertical-slice.md)): la opción encendida por defecto,
   el árbol con 121 casillas y `tane` → `otam` → `geco` en el juego. Las rutas del contenido oculto, del paso Mega y de

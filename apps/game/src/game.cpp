@@ -3108,7 +3108,7 @@ int runGame(const Options& requested) {
       // The portrait follows the partner's form ahead of the status page: loaded on that page's
       // first frame, its model and textures stalled the menu (#221). A new form comes in as the
       // game starts (under its fade in) or evolves.
-      const std::string species{flow.playing()->partnerSpecies()};
+      const std::string species = flow.playing()->drawnPartnerSpecies();
       if (species != portraitSpecies) {
         portraitSpecies = species;
         (*portrait)->clear();
