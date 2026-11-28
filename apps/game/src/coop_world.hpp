@@ -12,6 +12,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "coop_world_state.hpp"
@@ -137,7 +138,20 @@ public:
   // Before the guest's field tick, with the field and whether it still goes to the map the last
   // move asked for: the move to make now, if any. Once the player stands where the host said, the
   // reports carry that correction's epoch.
+  // A move to another map the host led to waits ZoneLeadTicks first, so the zone notice shows
+  // before this game's fade (#356).
   [[nodiscard]] std::optional<Move> apply(const game::field::Field& field, bool moving);
+  static constexpr std::uint32_t ZoneLeadTicks = 45;
+  // The host led the group to another map: once per change, when its lead starts.
+  struct ZoneChange {
+    std::string map;
+    std::uint16_t epoch = 0;
+  };
+  [[nodiscard]] std::optional<ZoneChange> takeZoneChange() {
+    return std::exchange(zoneChange_, {});
+  }
+  // Whether this game waits out the lead before following the host to another map.
+  [[nodiscard]] bool leadingToZone() const { return zoneLead_.has_value(); }
   // After the field tick `tick` (it counts the guest's ticks): the state to report, every few
   // ticks, while the player stands on the map the host put it on.
   [[nodiscard]] std::optional<game::coop::PlayerState>
@@ -177,6 +191,8 @@ private:
   bool asked_ = false;
   // The map the newest correction placed this player on.
   std::string placedOn_;
+  std::optional<std::uint32_t> zoneLead_;
+  std::optional<ZoneChange> zoneChange_;
   // The host's map edits that came while this game was loading their map, for once it stands there.
   std::vector<game::coop::WorldEdit> heldEdits_;
   std::string heldMap_;

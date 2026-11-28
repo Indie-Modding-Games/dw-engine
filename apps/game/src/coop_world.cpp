@@ -294,6 +294,7 @@ std::optional<CoopGuestWorld::Move> CoopGuestWorld::apply(const game::field::Fie
       field.mapId() == correction.mapId) {
     core::logInfo("coop: the host loaded {} again: this game loads it again too", correction.mapId);
     asked_ = true;
+    zoneLead_.reset();
     move.reload = true;
     return move;
   }
@@ -306,13 +307,26 @@ std::optional<CoopGuestWorld::Move> CoopGuestWorld::apply(const game::field::Fie
     placedOn_ = correction.mapId;
     pending_.reset();
     asked_ = false;
+    zoneLead_.reset();
     if (field.mapId() == move.map &&
         glm::distance(field.player().position, move.at.position) > 1.0F) {
       return move;
     }
     return std::nullopt;
   }
+  if (!asked_ && epoch_ != 0 && placedOn_ != correction.mapId &&
+      field.mapId() != correction.mapId) {
+    if (!zoneLead_) {
+      zoneLead_ = ZoneLeadTicks;
+      zoneChange_ = ZoneChange{.map = correction.mapId, .epoch = correction.epoch};
+    }
+    if (*zoneLead_ > 0) {
+      --*zoneLead_;
+      return std::nullopt;
+    }
+  }
   // Not there yet: ask for it (again, when a story warp of the guest's own took it elsewhere).
+  zoneLead_.reset();
   asked_ = true;
   if (field.mapId() != correction.mapId) {
     core::logInfo("coop: the host leads to {}", correction.mapId);

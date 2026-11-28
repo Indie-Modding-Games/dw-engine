@@ -501,6 +501,14 @@ salida y el punto de aparición del anfitrión, y llega justo allí. Los estados
 rechazan, y el invitado no informa nada mientras viaja. Cada jugador sigue teniendo su propio mapa actual: un jugador
 remoto en otro mapa no se dibuja ni se mueve, y vuelve a mostrarse cuando llega.
 
+**El aviso de zona (#356).** Antes de seguir al anfitrión a otro mapa, el juego del invitado espera
+`CoopGuestWorld::ZoneLeadTicks` (45 ticks, 0,75 s) con el aviso `online.coop.host_changed_zone` («{name} cambió de
+zona», el nombre del anfitrión) en pantalla, y luego hace el fundido. La espera empieza una vez por cambio
+(`CoopGuestWorld::takeZoneChange` da el mapa y la época de la corrección, para una skin que quiera su propio aspecto) y
+aguarda mientras corre un cambio de mapa propio del invitado. Unirse, un reinicio de sala en el mismo mapa y volver
+tras un salto de historia propio del invitado no muestran aviso ni esperan. El invitado no informa nada durante la
+espera, igual que durante el viaje.
+
 **Interpolación.** Los jugadores remotos se dibujan desde un búfer corto de estados con hora (`PoseTrack`): 100 ms por
 detrás del más nuevo, mezclando los dos que rodean ese momento. Los estados tardíos nunca hacen retroceder una pista,
 un hueco corto se extrapola como mucho 100 ms y luego se queda quieto, un paso de más de 800 unidades (un salto de

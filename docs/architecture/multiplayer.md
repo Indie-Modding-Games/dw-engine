@@ -411,6 +411,13 @@ host's spawn spot, and arrives there exactly. States from the old map or epoch a
 nothing while it travels. Each player still has its own current map: a remote player on another map is neither drawn
 nor driven, and is shown again when it arrives.
 
+**The zone notice (#356).** Before a guest follows the host to another map, its game waits
+`CoopGuestWorld::ZoneLeadTicks` (45 ticks, 0.75 s) with the notice `online.coop.host_changed_zone` ("{name} went to
+another area", the host's name) up, then fades. The lead starts once per change (`CoopGuestWorld::takeZoneChange`
+gives the map and the correction's epoch for a skin that wants its own look) and waits while the guest's own map
+change runs. Joining, a room reset on the same map and being brought back after a guest's own story warp show no
+notice and do not wait. The guest reports nothing during the lead, as during the trip.
+
 **Interpolation.** Remote players are drawn from a short buffer of timed states (`PoseTrack`): 100 ms behind the
 newest one, blending between the two around that moment. Late states never move a track back, a short gap
 extrapolates for at most 100 ms and then holds, a step longer than 800 units (a warp or a correction) is drawn as a

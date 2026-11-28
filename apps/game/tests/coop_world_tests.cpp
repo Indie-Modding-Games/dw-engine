@@ -279,8 +279,20 @@ TEST_CASE("a guest follows the host's corrections and reports with their epoch")
                                        .y = 0,
                                        .z = 0,
                                        .yaw = 0});
+  // The zone notice comes first, and the move waits for its lead (#356 UX).
+  for (std::uint32_t tick = 0; tick < CoopGuestWorld::ZoneLeadTicks; ++tick) {
+    REQUIRE_FALSE(guest.apply(field, false));
+    CHECK(guest.leadingToZone());
+    CHECK_FALSE(guest.report(field, false, 9));
+  }
+  const auto zone = guest.takeZoneChange();
+  REQUIRE(zone);
+  CHECK(zone->map == "next");
+  CHECK(zone->epoch == 2);
+  CHECK_FALSE(guest.takeZoneChange());
   const auto change = guest.apply(field, false);
   REQUIRE(change);
+  CHECK_FALSE(guest.leadingToZone());
   CHECK(change->map == "next");
   CHECK(change->exit == 1);
   CHECK_FALSE(guest.report(field, false, 9));
@@ -337,6 +349,75 @@ TEST_CASE("a room the host's warp reset is loaded again by the guest, not kept a
   const auto back = guest.apply(field, false);
   REQUIRE(back);
   CHECK_FALSE(back->reload);
+  // A room reset is no change of zone.
+  CHECK_FALSE(guest.takeZoneChange());
+}
+
+TEST_CASE("only the host's lead to another map tells the guest the zone changed (#356)") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F));
+  CoopGuestWorld guest{coop::GuestPlayerId};
+  const auto correction = [](std::uint16_t epoch, std::string map,
+                             std::optional<std::int32_t> exit) {
+    return coop::PlayerCorrection{.player = coop::GuestPlayerId,
+                                  .epoch = epoch,
+                                  .mapId = std::move(map),
+                                  .exit = exit,
+                                  .x = 0,
+                                  .y = 0,
+                                  .z = 0,
+                                  .yaw = 0};
+  };
+  // Joining on another map than the one it shows: no notice, no wait.
+  guest.receive(correction(1, "room2", 0));
+  REQUIRE(guest.apply(field, false));
+  CHECK_FALSE(guest.takeZoneChange());
+  field.enterMapAt(roomMap("room2"), at(0.0F, 0.0F));
+  CHECK_FALSE(guest.apply(field, false));
+
+  // The guest's own story warp took it elsewhere: the host brings it back to the group's map
+  // without a notice.
+  field.enterMapAt(roomMap("elsewhere"), at(0.0F, 0.0F));
+  guest.receive(correction(2, "room2", std::nullopt));
+  REQUIRE(guest.apply(field, false));
+  CHECK_FALSE(guest.takeZoneChange());
+  CHECK_FALSE(guest.leadingToZone());
+  field.enterMapAt(roomMap("room2"), at(0.0F, 0.0F));
+  CHECK_FALSE(guest.apply(field, false));
+
+  // The host leads on while the guest's own map change runs: the lead waits for it, then counts.
+  guest.receive(correction(3, "room3", 1));
+  CHECK_FALSE(guest.apply(field, true));
+  CHECK_FALSE(guest.takeZoneChange());
+  for (std::uint32_t tick = 0; tick < CoopGuestWorld::ZoneLeadTicks; ++tick) {
+    REQUIRE_FALSE(guest.apply(field, false));
+  }
+  REQUIRE(guest.takeZoneChange());
+  // A newer lead during the wait neither restarts it nor tells the change twice.
+  guest.receive(correction(4, "room4", 2));
+  const auto move = guest.apply(field, false);
+  REQUIRE(move);
+  CHECK(move->map == "room4");
+  CHECK_FALSE(guest.takeZoneChange());
+  field.enterMapAt(roomMap("room4"), at(0.0F, 0.0F));
+  CHECK_FALSE(guest.apply(field, false));
+
+  // The host comes back during the lead: this game loads the map again as the host did, and the
+  // next lead counts from the start.
+  guest.receive(correction(5, "room5", 0));
+  CHECK_FALSE(guest.apply(field, false));
+  REQUIRE(guest.takeZoneChange());
+  guest.receive(correction(6, "room4", 0));
+  const auto again = guest.apply(field, false);
+  REQUIRE(again);
+  CHECK(again->reload);
+  CHECK_FALSE(guest.leadingToZone());
+  field.enterMapAt(roomMap("room4"), at(0.0F, 0.0F));
+  CHECK_FALSE(guest.apply(field, false));
+  guest.receive(correction(7, "room6", 0));
+  CHECK_FALSE(guest.apply(field, false));
+  CHECK(guest.takeZoneChange());
 }
 
 TEST_CASE("a guest keeps the newest roster and knows who is in the session") {

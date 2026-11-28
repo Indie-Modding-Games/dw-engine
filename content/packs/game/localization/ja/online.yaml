@@ -179,6 +179,7 @@ coop.rejoining: "接続が切れました。元の席にもどっています…
 coop.joined: "{name}がゲームに参加しました。"
 coop.item_gone: "おそかった！ほかの人が取りました。"
 coop.waiting_host: "{name}を待っています…"
+coop.host_changed_zone: "{name}が別のエリアへ移動しました。"
 coop.guest_not_saved: "ここは{name}の世界です。パートナーと持ち物はきみといっしょに帰り、ほかはここに残ります。"
 coop.went_home: "{name}の世界からもどりました。パートナーと持ち物はきみのセーブデータにあります。"
 coop.home_failed: "パートナーと持ち物を持ち帰れませんでした。セーブデータは元のままです。"
