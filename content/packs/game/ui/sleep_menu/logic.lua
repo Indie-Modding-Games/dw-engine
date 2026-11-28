@@ -1,8 +1,7 @@
 -- The sleep menu, once the partner slept (docs/architecture/save-and-load.md, 3.6): sleep on, or
 -- save to the playthrough's slot first. It sends sleep_only or sleep_and_save. Like the original,
 -- it cannot be cancelled: the night has already passed. A co-op guest asleep ahead of the world
--- sees the wait for the world's morning instead (sleep_menu.waiting, sleep_menu.wait_seconds),
--- which menu or cancel end with sleep_wake (docs/architecture/coop-training.md, 4.5).
+-- waits for its morning instead (sleep_menu.waiting), which menu or cancel end with sleep_wake.
 
 local function waiting()
   return ui.setting("sleep_menu.waiting") == true

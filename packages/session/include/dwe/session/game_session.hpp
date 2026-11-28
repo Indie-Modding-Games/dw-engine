@@ -396,8 +396,8 @@ public:
   [[nodiscard]] const game::randomizer::Randomizer& randomizer() const;
   // The species of the partner's raise rows, by id: what a randomized run picks wild enemies from.
   [[nodiscard]] std::vector<std::string> roster() const;
-  // The battle system its battles play (game::modes::ClassicBattle or FolderBattle): the new game's
-  // (SessionDesc::battle) or the loaded save's. The next battle plays the one set.
+  // ClassicBattle or FolderBattle: the new game's or the loaded save's; the next battle plays the
+  // one set.
   [[nodiscard]] const std::string& battleSystem() const;
   core::Result<void> setBattleSystem(std::string_view battle);
   // The game events mods handle (game_hooks.hpp); they fire once ModScripts bound them.

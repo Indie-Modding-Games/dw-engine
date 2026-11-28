@@ -54,7 +54,6 @@ std::optional<FighterId> nearestFoe(const BattleContext& context, FighterId id) 
   return nearest;
 }
 
-// The foe a strip order aims at: the one Change picked, kept by the order from then on.
 std::optional<FighterId> aimOf(const BattleContext& context, FighterId side) {
   const std::optional<FighterId> target = context.fighter(side).target;
   return validFoe(context, side, target) ? target : std::nullopt;

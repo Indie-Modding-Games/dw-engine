@@ -31,7 +31,6 @@ std::optional<std::int32_t> beaten(const FolderRules& rules, std::int32_t specia
   return rules.beats[static_cast<std::size_t>(special)];
 }
 
-// Vaccine beats Virus, Virus beats Data, Data beats Vaccine.
 bool typeBeats(DigimonType attacker, DigimonType defender) {
   return (attacker == DigimonType::Vaccine && defender == DigimonType::Virus) ||
          (attacker == DigimonType::Virus && defender == DigimonType::Data) ||

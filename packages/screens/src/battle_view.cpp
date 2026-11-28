@@ -223,7 +223,6 @@ std::string_view stanceName(battle::Stance stance) {
   return "aggressive";
 }
 
-// The letter of a foe that shares its species with another foe, by their order in the battle.
 std::string foeTagOf(const battle::BattleState& state, battle::FighterId own,
                      battle::FighterId id) {
   if (id >= state.fighters.size() || !state.foes(own, id)) {

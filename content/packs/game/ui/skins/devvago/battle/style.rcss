@@ -1158,7 +1158,6 @@
 	background-color: #0b1c2dc9;
 }
 
-/* The panel's head: the partner's name and, on its right, an altered state. */
 .partner .fighter-head {
 	display: block;
 	height: 26dp;
@@ -1432,8 +1431,7 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 	display: none;
 }
 
-/* The Folder plate keeps a fixed height at the bottom left, four rows of one line each: the defense bar, the message
-   (a broken defense, else how an order ended, else an altered state), the active order beside its phase, the queue. */
+/* The Folder plate: a fixed height at the bottom left, four one-line rows. */
 #folder-panel {
 	height: 156dp;
 	box-sizing: border-box;
@@ -1465,8 +1463,7 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 	margin: 0;
 }
 
-/* The Folder plate's stance chip, phases and queue chips in the look's blues; the stances' frames on the strip tinted
-   apart from the techniques and the actions. The finisher's word already fills as its gauge does. */
+/* The Folder plate's chips and phases in the look's blues; the strip's stance frames tinted apart. */
 #folder-stance {
 	font-size: 22dp;
 	line-height: 26dp;
@@ -1519,8 +1516,7 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 	max-width: 100%;
 }
 
-/* A Folder battle names its foes by letter: a compact list at the left under the strip, as the bars hanging from a foe
-   high in the field can sit past the screen's top. */
+/* A Folder battle lists its foes by letter at the left under the strip: bars of high foes can sit past the top. */
 #fight.folder #enemies {
 	display: block;
 	position: absolute;

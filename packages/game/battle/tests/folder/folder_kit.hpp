@@ -13,7 +13,6 @@
 
 #include "../fixture.hpp"
 
-// What the Folder battle's tests share: its rules, a Folder duel and the events of a run.
 namespace folder_test {
 
 using namespace dwe::game::battle;

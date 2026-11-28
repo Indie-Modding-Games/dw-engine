@@ -160,8 +160,7 @@ void flee(BattleContext& context, FighterId id) {
   }
 }
 
-// What keeps the order from going on this frame: a reaction, a faint, the end of the foes, a
-// finisher's freeze or a status. True when one did.
+// What holds the order this frame: a reaction, a faint, no foes, a finisher's freeze or a status.
 bool heldThisFrame(BattleContext& context, FighterId id) {
   BattleState& state = *context.state;
   Fighter& self = context.fighter(id);

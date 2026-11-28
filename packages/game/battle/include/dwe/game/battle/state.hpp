@@ -240,8 +240,8 @@ struct Fighter {
   // The clips of its model (motion.hpp); none for a fighter the battle has no model for, which then
   // walks at the ruleset's walk speed and keeps the ruleset's animation lengths.
   std::shared_ptr<const FighterClips> clips;
-  // Its walking speed in percent of its clips' or the ruleset's: 100 but in the Folder battle,
-  // where VEL sets it (combat-design.md §6.4).
+  // Walking speed in percent of its clips' or the ruleset's: 100 but in a Folder battle, where VEL
+  // sets it (§6.4).
   std::int32_t moveScalePercent = 100;
   // The root motion's fraction of a unit, in 1 / FacingScale (anim.c: anim.locX, locZ, which keep
   // 15 bits below the location): x's from 0 up, z's from 0 down (world z runs against the
@@ -445,7 +445,6 @@ struct BattleState {
   std::vector<AllyState> allies;
   // The enemies' count, which the allies follow in the fighters.
   std::size_t enemies = 0;
-  // Only in the Folder battle: the orders, stances and defense bars (folder/state.hpp).
   std::optional<FolderState> folder;
 
   [[nodiscard]] Fighter& partner() { return fighters.front(); }

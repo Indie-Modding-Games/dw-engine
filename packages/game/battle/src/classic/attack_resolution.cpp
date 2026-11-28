@@ -64,9 +64,8 @@ bool tryCounter(BattleContext& context, FighterId id, FighterId attacker) {
   return false;
 }
 
-// The damage strategy's damage of a hit, with the difficulty's share for the partner (an engine
-// improvement, damage.partner_dealt_percent and partner_taken_percent; both 100 in the original's
-// ruleset), kept within the formula's min and max.
+// The damage strategy's damage of a hit, with the difficulty's partner share (an engine
+// improvement; 100 in the original's ruleset), kept within the formula's min and max.
 std::int32_t damageOf(BattleContext& context, const AttackInFlight& attack) {
   const DamageRules& rules = context.rules->damage;
   std::int32_t damage = context.strategies->damage->damage(context.view(), attack.attacker,

@@ -518,8 +518,7 @@
 	color: #93a6bc;
 }
 
-/* The Folder plate keeps a fixed height at the bottom left, four rows of one line each: the defense bar, the message
-   (a broken defense, else how an order ended, else an altered state), the active order beside its phase, the queue. */
+/* The Folder plate: a fixed height at the bottom left, four one-line rows. */
 #folder-panel {
 	left: 30dp;
 	bottom: 30dp;
@@ -554,7 +553,6 @@
 	margin: 0;
 }
 
-/* The Folder plate's phases taller than the defense bar's frame, in the concept's blues. */
 #folder-phase {
 	height: 8dp;
 }

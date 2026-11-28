@@ -13,7 +13,6 @@ namespace dwe::game::battle {
 // order_book.cpp: the queue and the end of an order.
 void emitOrder(const BattleContext& context, EventKind kind, FighterId id, const Order& order,
                std::int32_t amount);
-// The fighter's active order enters `phase` for `frames`.
 void enterPhase(const BattleContext& context, FighterId id, OrderPhase phase, std::int32_t frames);
 // The last order that ended; one that did not finish becomes the HUD's notice (§10.4).
 void remember(FolderFighter& own, const Order& order, OrderEnd end, OrderProblem problem);

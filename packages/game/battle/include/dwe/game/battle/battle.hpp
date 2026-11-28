@@ -93,8 +93,7 @@ struct BattleSetup {
   // is commanded as the partner is (Battle::command with its id), throws its own player's items
   // and gets its own result (Battle::allyResults).
   std::vector<AllySetup> allies;
-  // The battle system it plays (docs/architecture/folder-battle.md): the original's, or Folder's
-  // orders, stances and defense bars. A versus match is always Classic.
+  // Classic or Folder (docs/architecture/folder-battle.md); a versus match is always Classic.
   BattleSystemId system = BattleSystemId::Classic;
   // A co-op battle's difficulty (docs/architecture/coop-difficulty.md): the enemies' HP, MP,
   // offense and finisher grow with the partners that fight (the starter's and the allies) and the
@@ -199,27 +198,25 @@ public:
 
   [[nodiscard]] BattleSystemId system() const;
 
-  // The player picks a command of the menu (battle_tick.c: handleCommands). In the Folder battle
-  // only the flee command is one; the rest are orders.
+  // The player picks a menu command (battle_tick.c: handleCommands); in a Folder battle only flee
+  // is one.
   core::Result<void> command(Command command);
   // The same for a commanded side: PartnerId, or RivalId in a versus match (vs_combat.c:
   // VS___tickVSInput: the command takes no delay; the finisher only once its gauge is full).
   core::Result<void> command(Command command, FighterId side);
-  // The Folder battle (combat-design.md §2): the trainer of `side` orders the technique in `slot`
-  // (FinisherSlot: the finisher, once its gauge is full) against `target`; it waits in the queue of
-  // OrderQueueSize, the newest replacing the last waiting one when the queue is full. A move that
-  // needs no target ignores it; none aims at the side's current target.
+  // Folder (combat-design.md §2): orders the technique in `slot` (FinisherSlot once the gauge is
+  // full); a full queue replaces its last waiting order. No target: the side's current one, if the
+  // move needs one.
   core::Result<void> order(std::size_t slot, std::optional<FighterId> target,
                            FighterId side = PartnerId);
   // Drops every waiting order of `side`; the one being executed goes on.
   core::Result<void> cancelOrders(FighterId side = PartnerId);
   // The stance `side` moves by from the next moment it positions itself (§2.9).
   core::Result<void> setStance(Stance stance, FighterId side = PartnerId);
-  // Points `side` at `target` without ordering anything: its stance follows it, and the orders that
-  // name no target aim at it (§2.2, tactical change).
+  // Points `side` at `target` without ordering: its stance follows it and untargeted orders aim at
+  // it (§2.2).
   core::Result<void> setTarget(FighterId target, FighterId side = PartnerId);
-  // Why an order of `slot` would not go on now (OrderProblem::None: it would), for the menu to
-  // show the reason (§10.3).
+  // Why an order of `slot` would not go on now (None: it would), for the menu (§10.3).
   [[nodiscard]] OrderProblem orderProblem(std::size_t slot, FighterId side = PartnerId) const;
   // The Folder state of a fighter; nothing in the Classic battle.
   [[nodiscard]] const FolderFighter* folderOf(FighterId fighter) const;
@@ -382,7 +379,6 @@ private:
   void scaleEnemies();
   // The frame's context, with its events going to `events`.
   BattleContext contextOf(BattleEvents& events);
-  // Whether the trainer of `side` can give it a command or an order now.
   [[nodiscard]] core::Result<void> commandable(FighterId side) const;
   // The events not yet returned by step(): those of the last frame are dropped once returned.
   BattleEvents& pending();
