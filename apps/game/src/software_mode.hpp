@@ -18,9 +18,8 @@ inline constexpr std::string_view SoftwareNoticeDocument = "software_notice";
 inline constexpr std::string_view SoftwareModeSetting = "software_mode";
 inline constexpr double SoftwareNoticeSeconds = 12.0;
 
-// Why the game plays without the graphics card, or in the compatible mode
-// (docs/architecture/graphics-diagnosis.md): the launcher passes its first reason in this variable
-// as "code|key=value|...", and the notice names it with the values below.
+// The launcher's first reason for the processor or compatible mode, as "code|key=value|..."
+// (docs/architecture/graphics-diagnosis.md).
 inline constexpr std::string_view GraphicsReasonVariable = "DWE_GRAPHICS_REASON";
 inline constexpr std::string_view NoticeKindSetting = "software_notice.kind";
 inline constexpr std::string_view NoticeReasonSetting = "software_notice.reason";

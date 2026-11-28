@@ -529,8 +529,7 @@ std::string decodeDriverVersion(std::uint32_t vendorId, std::uint32_t driverId, 
 std::optional<std::string> minimumDriverFor13(std::uint32_t vendorId, std::uint32_t driverId,
                                               OsKind os) {
   // First drivers with Vulkan 1.3, from the makers' notes (checked 2026-11-27):
-  //  - NVIDIA: 511.65 on Windows (release notes, 2022-02-01), 510.47.03 on Linux (production
-  //  branch,
+  //  - NVIDIA: 511.65 on Windows, 510.47.03 on Linux (release notes, production branch,
   //    2022-02-01); developer.nvidia.com/vulkan-driver had 473.11 and 470.62.22 betas before.
   //  - Intel on Windows: 30.0.101.1660 (geeks3d, 2022-04-01; Intel's own notes were not reachable).
   //  - Mesa (RADV, ANV): 22.0.0 (docs.mesa3d.org/relnotes/22.0.0.html, 2022-03-09).

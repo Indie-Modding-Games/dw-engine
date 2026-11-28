@@ -13,9 +13,7 @@
 namespace dwe::rhi {
 
 // Why a computer cannot run the game on its graphics card, or runs it worse than it could
-// (docs/architecture/graphics-diagnosis.md). gatherSystemFacts reads the facts; diagnose turns them
-// into reason codes, most actionable first; diagnosisJson writes both for the launcher, which turns
-// each code into a message in the player's language.
+// (docs/architecture/graphics-diagnosis.md).
 
 // What a GPU offers of what the renderer asks (requireRendererFeatures).
 struct DeviceCaps {
@@ -97,7 +95,6 @@ struct SystemFacts {
 
 enum class Severity : std::uint8_t { Blocker, Warning, Info };
 
-// What would fix it: a newer driver, nothing short of other hardware, a setting, or unknown.
 enum class Fix : std::uint8_t { Driver, Hardware, Settings, Unknown };
 
 struct Reason {
@@ -161,7 +158,6 @@ enum class GpuFamilySupport : std::uint8_t { Unknown, NoVulkan, UpTo12, Full };
 void noteStartFailure(StartFailure failure);
 [[nodiscard]] std::optional<StartFailure> lastStartFailure();
 
-// The line the game writes to its log for the launcher: "dwe-diagnosis 1 <json>".
 inline constexpr std::string_view DiagnosisLogPrefix = "dwe-diagnosis 1 ";
 
 } // namespace dwe::rhi

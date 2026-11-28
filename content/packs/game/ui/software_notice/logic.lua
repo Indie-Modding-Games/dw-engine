@@ -1,7 +1,5 @@
--- The notice that the game draws without a graphics card, or with it in the compatible mode
--- (docs/architecture/software-mode.md, docs/architecture/graphics-diagnosis.md): the game shows it
--- once a run and hides it after a few seconds; it takes no input. The reason, when the launcher or
--- the game knows it, replaces the general advice.
+-- Shown once a run, without input, when the game draws on the processor or in the compatible
+-- mode (docs/architecture/software-mode.md, docs/architecture/graphics-diagnosis.md).
 
 local values = { "gpu", "adapter", "dedicated", "driver", "minimum", "api" }
 local cards = { gpu = true, adapter = true, dedicated = true }

@@ -1,9 +1,6 @@
-//! Why the graphics card cannot run the game, in the player's terms. The game finds the reasons
-//! (`dwe-game --check-system` prints them as `diagnosis=<json>`, and a failed start writes them to
-//! its log as `dwe-diagnosis 1 <json>`; rhi/gpu_diagnosis.hpp); this module turns each reason into
-//! the steps and the buttons the page shows, adds the cases only the launcher sees (no Vulkan loader
-//! at all, a game older than the diagnosis) and writes the report "Copy details" copies. The page
-//! (ui/js/app.js) puts the words in the player's language from the codes.
+//! The game's graphics diagnosis (rhi/gpu_diagnosis.hpp; `diagnosis=<json>` from --check-system,
+//! `dwe-diagnosis 1 <json>` in a failed start's log) as the page's steps and buttons, plus the
+//! cases only the launcher sees (no Vulkan loader, a game older than the diagnosis).
 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -13,8 +10,7 @@ use crate::graphics_step::GraphicsStep;
 use crate::system_check::{Graphics, Probe, ProbeResult};
 
 pub const LOG_PREFIX: &str = "dwe-diagnosis 1 ";
-/// What the launcher hands the game, so its own notice can say why it runs on the processor
-/// (the game then sees only the software driver): `code|key=value|...`.
+/// Lets the game's notice say why it runs on the processor: `code|key=value|...`.
 pub const REASON_ENV: &str = "DWE_GRAPHICS_REASON";
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -144,7 +140,6 @@ pub fn legacy(probe: &Probe) -> Vec<Reason> {
     vec![found]
 }
 
-/// What the game does meanwhile: the card, the compatible mode, the processor or nothing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Meanwhile {
@@ -295,7 +290,7 @@ pub fn reason_env(advice: &[Advice]) -> Option<String> {
     Some(text)
 }
 
-/// The text "Copy details" copies: enough to answer a report without asking back.
+/// The text "Copy details" copies.
 pub fn report(diagnosis: Option<&Diagnosis>, advice: &[Advice], log: &[String]) -> String {
     let mut lines = Vec::new();
     if let Some(d) = diagnosis {

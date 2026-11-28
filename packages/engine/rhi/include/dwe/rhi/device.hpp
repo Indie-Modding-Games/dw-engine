@@ -124,7 +124,6 @@ public:
   [[nodiscard]] NativeHandles nativeHandles() const;
 
   [[nodiscard]] VulkanPath vulkanPath() const;
-  // Every pipeline is built through it, so a pipeline built once is quick to build again.
   [[nodiscard]] VkPipelineCache pipelineCache() const;
   // Writes the cache to DeviceDesc::pipelineCacheFile when it grew; the device also does it when
   // it is destroyed.

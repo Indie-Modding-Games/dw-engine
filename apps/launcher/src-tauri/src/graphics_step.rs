@@ -1,8 +1,5 @@
-//! The graphics step Play starts the game on. A start that fails to make the device (exit 114), or
-//! that loses the GPU or hangs right away, moves the next start one step down without asking:
-//! the card with what the game picks (1.4 or 1.3), the card on Vulkan 1.3, the card in the 1.2
-//! compatible mode, then the package's software driver. The player goes back to the card from the
-//! settings, and a new GPU driver puts it back on its own.
+//! The graphics step Play starts on: an early failure (exit 114, a device lost or a hang) moves
+//! the next start one step down; the settings or a new GPU driver put it back on the card.
 
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -28,7 +25,6 @@ pub enum GraphicsStep {
 /// crash during play.
 pub const EARLY_FAILURE: Duration = Duration::from_secs(90);
 
-/// What this game and computer can step down to.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct StepOptions {
     /// The game knows --vulkan13 and the GPU offers 1.4 (otherwise the card already runs 1.3).
@@ -52,7 +48,6 @@ pub fn next_step(step: GraphicsStep, options: StepOptions) -> Option<GraphicsSte
         .find(|&candidate| candidate > step && open(candidate))
 }
 
-/// Whether the run's end says that the step it ran on does not work here.
 pub fn failed_early(reason: Option<ExitReason>, ran: Duration) -> bool {
     match reason {
         Some(ExitReason::GraphicsStart) => true,
@@ -67,7 +62,6 @@ pub fn gpu_key(gpu: Option<&Gpu>) -> String {
     gpu.map(|g| format!("{} | {}", g.name, g.driver)).unwrap_or_default()
 }
 
-/// Whether a saved step still holds for the GPU the check found now.
 pub fn still_holds(step: GraphicsStep, saved_key: &str, gpu: Option<&Gpu>) -> bool {
     step == GraphicsStep::Card || gpu.is_none() || gpu_key(gpu) == saved_key
 }

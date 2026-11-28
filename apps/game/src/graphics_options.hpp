@@ -44,9 +44,8 @@ inline constexpr std::string_view TextureFilterSetting = "texture_filter";
 inline constexpr std::string_view RenderScaleSetting = "render_scale";
 inline constexpr std::string_view FrameLimitSetting = "frame_limit";
 inline constexpr std::string_view AutoQualitySetting = "auto_quality";
-// Options › Graphics (docs/architecture/software-mode.md#presets): the preset in use ("custom" when
-// none matches), how the game draws (card, compatible or processor) and on which device, and why
-// the automatic quality picked what it did (empty when it is not choosing).
+// Options › Graphics (docs/architecture/software-mode.md#presets); the preset is "custom" when
+// none matches, and the reason is empty when the automatic quality is not choosing.
 inline constexpr std::string_view GraphicsPresetSetting = "graphics_preset";
 inline constexpr std::string_view GraphicsModeSetting = "graphics.mode";
 inline constexpr std::string_view GraphicsGpuSetting = "graphics.gpu";
@@ -128,7 +127,6 @@ struct GraphicsOptions {
 // Quality is the default look.
 [[nodiscard]] GraphicsOptions withPreset(GraphicsOptions options, GraphicsPreset preset,
                                          GraphicsKnobs knobs);
-// The preset the options match, if any.
 [[nodiscard]] std::optional<GraphicsPreset> presetOf(const GraphicsOptions& options);
 
 // The low-performance preset (--low-performance, docs/architecture/render.md): every heavy option
