@@ -686,6 +686,7 @@ layout:                             # optional: layout options that scripts read
   | `picture` | `main_menu`, `save_slots`, `new_game_rules` | `modern`; `original`, with "widescreen images" the boxes and the logo go to their places from the original over the widened image (`common/title_picture.lua`) |
   | `bars` | `hud` | `continuous` (by default); `pips`, the field status bars fill in the original's 25 squares |
   | `heading` | `save_machine` | `original` (or unset), the machine's title only over the record and the slots, like the original; `always`, also over the save question |
+  | `strip` | `battle` | `text`, named buttons, which a Folder battle groups into techniques, stances and actions; `icons`, the original's icon strip (the original, pixel and DevVago skins) |
 
   The modern skin declares its own, and the original (and the pixel one, which extends it) those of the original. `pages: compact`, `pool`,
   `tabs` and `medals` are only set by the DevVago skin; without them each screen does what it always did (`tabs`, `medals` and

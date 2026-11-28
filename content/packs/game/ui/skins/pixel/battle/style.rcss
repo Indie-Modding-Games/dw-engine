@@ -465,14 +465,12 @@
 }
 
 #folder-bar-fill,
-#folder-bar-fill.broken,
-#folder-phase-fill {
+#folder-bar-fill.broken {
 	background-color: transparent;
 }
 
 #folder-bar-fill { decorator: image(nb-fill-gd); }
 #folder-bar-fill.broken { decorator: image(nb-fill-rd); }
-#folder-phase-fill { decorator: image(nb-fill-mp); }
 
 #folder-phase {
 	height: 4dp;
@@ -518,8 +516,8 @@
 #folder-queue { color: #93a6bc; }
 
 #folder-active {
-	flex: 0 1 auto;
-	max-width: 75%;
+	flex: 0 0 auto;
+	max-width: 60%;
 	margin-right: 10dp;
 }
 
@@ -527,3 +525,14 @@
 	flex: 1;
 	margin: 0;
 }
+
+/* The Folder plate's phases taller than the defense bar's frame, in the concept's blues. */
+#folder-phase {
+	height: 8dp;
+}
+
+.folder-step { background-color: #0b1424; }
+.folder-step.done { background-color: #2a4d78; }
+.folder-step.now { background-color: #4fa3ff; }
+.folder-chip { border-color: #4a79a8; }
+.command-frame.kind-stance { image-color: #9cc2ff; }

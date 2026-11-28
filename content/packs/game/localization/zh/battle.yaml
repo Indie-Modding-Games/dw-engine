@@ -66,9 +66,17 @@ folder.phase.recovering: "恢复中"
 folder.broken: "防御崩溃！"
 folder.guard: "防御"
 folder.end.interrupted: "已中断"
-folder.end.invalid: "无法继续"
+folder.end.invalid: "无效"
 folder.end.cancelled: "已取消"
 folder.end.replaced: "已替换"
+# A Folder order's endings told apart: the trainer's own cancel and the move that replaced one.
+folder.end.annulled: "已撤回"
+folder.end.replaced_by: "已替换为{move}"
+# The stance chip while the break holds it, and its countdown.
+folder.forced: "强制"
+folder.seconds: "{seconds}秒"
+# The finisher gauge once it is full.
+finisher_ready: "就绪！"
 folder.problem.empty_slot: "没有招式"
 folder.problem.not_enough_mp: "MP不足"
 folder.problem.finisher_not_ready: "必杀技未就绪"

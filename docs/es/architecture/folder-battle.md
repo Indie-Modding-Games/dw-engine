@@ -40,19 +40,31 @@ cada luchador comandado tiene todas las entradas, sea cual sea su cerebro, y cad
 | Entrada de la tira | Folder |
 |---|---|
 | Técnica 1–3, remate | Una orden de esa técnica al objetivo actual, que la orden conserva aunque Cambiar pase a otro |
-| `Attack`, `Moderate`, `Distance`, `Defend` | Las posturas Agresiva, Mantener posición, Alejarse y Protegerse; la actual aparece resaltada |
-| `Change` | Pasa al siguiente enemigo: la postura lo sigue y las órdenes siguientes lo apuntan |
-| `YourCall` | Descarta las órdenes en espera; la que se está ejecutando continúa |
+| `Attack`, `Moderate`, `Distance`, `Defend` | Las posturas Agresiva, Mantener, Alejarse y Protegerse; la actual aparece resaltada |
+| `Change` | Pasa al siguiente enemigo: la postura lo sigue y las órdenes siguientes lo apuntan; el botón lo nombra («Objetivo: Goburimon A») |
+| `YourCall` | Anula la cola: descarta las órdenes en espera; la que se está ejecutando continúa |
 | `Run` | La huida, como en Classic |
 
+La skin moderna agrupa la tira en tres bloques: las técnicas con su coste de MP, las cuatro posturas juntas como un solo
+control, y después el objetivo, anular la cola, la bolsa y la huida. Las skins con la tira de iconos del original
+(`strip: icons`) conservan sus sitios y tiñen aparte los marcos de las posturas. Una técnica para la que el partner no
+tiene MP se ve gris con el coste en rojo antes de pulsarla, y el motivo sale debajo.
+
+Los enemigos de la misma especie llevan una letra (A, B...) en su tarjeta y sobre ellos en el mundo, y la barra de vida
+de cada enemigo se ve todo el combate; la tarjeta del enemigo al que apuntan las próximas órdenes se ilumina, y la de
+uno al que apunta una orden en espera tiene un borde naranja.
+
 Una placa abajo a la izquierda (`battle.folder()` en la API de la interfaz) tiene cuatro filas de altura fija, así que
-nunca crece sobre los luchadores: la barra de defensa del partner; un mensaje, primero la ruptura, si no, durante cinco
-segundos, cómo terminó la última orden cuando no se completó (anulada, interrumpida, inválida o reemplazada, con el
-motivo: MP insuficientes, su enemigo ya no está, fuera de alcance...), y si no, el estado alterado del partner; la
-técnica, el enemigo y la fase de la orden activa con el progreso de la fase temporizada, o el enemigo al que apuntan las
-próximas órdenes mientras no corre ninguna (Cambiar lo elige); y las órdenes en espera. La línea bajo la tira dice por
-qué la técnica enfocada o el remate no se pueden ordenar ahora; en la skin moderna, cuyos botones ya nombran los
-comandos y cuyo nombre de técnica se anuncia al empezar, esa línea solo muestra el motivo.
+nunca crece sobre los luchadores: la barra de defensa del partner junto a su postura («Mantener · forzada 3 s» mientras
+una ruptura la fuerza); un mensaje, primero la ruptura, si no, durante cinco segundos, cómo terminó la última orden
+cuando no se completó, y si no, el estado alterado del partner; la técnica y el enemigo de la orden activa junto a sus
+cinco fases (procesar, posicionarse, preparar, ejecutar, recuperar), con un candado al empezar a ejecutar que se
+enciende cuando la técnica ya se ha comprometido y un golpe ya no la para (o el enemigo al que apuntan las próximas
+órdenes mientras no corre ninguna); y las órdenes en espera, una ficha cada una («1 Escupefuego > A»). Una orden
+termina con una palabra fija: reemplazada (y por cuál), anulada (por el jugador), cancelada (su enemigo cayó), inválida
+(sin MP, fuera de alcance...) o interrumpida (un golpe). La línea bajo la tira dice por qué la técnica enfocada o el
+remate no se pueden ordenar ahora; en la skin moderna, cuyos botones ya nombran los comandos y cuyo nombre de técnica
+se anuncia al empezar, esa línea solo muestra el motivo. El medidor del remate dice cuánto lleva o que está listo.
 
 La placa se queda en su propia región para no tapar nunca otro recuadro: en la skin moderna está entre la tarjeta del
 partner y las ayudas de teclas, bajo las tarjetas de los enemigos; en las skins original, pixel y DevVago ocupa la

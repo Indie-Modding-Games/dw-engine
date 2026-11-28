@@ -1347,7 +1347,6 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 
 #folder-bar-fill { background-color: #36bce8; }
 #folder-bar-fill.broken { background-color: #ff7775; }
-#folder-phase-fill { background-color: #ffe64a; }
 
 #folder-phase {
 	height: 3dp;
@@ -1419,12 +1418,61 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 #folder-queue { color: #a8c7d9; }
 
 #folder-active {
-	flex: 0 1 auto;
-	max-width: 75%;
+	flex: 0 0 auto;
+	max-width: 60%;
 	margin-right: 10dp;
 }
 
 #folder-phase {
 	flex: 1;
 	margin: 0;
+}
+
+/* The Folder plate's stance chip, phases and queue chips in the look's blues; the stances' frames on the strip tinted
+   apart from the techniques and the actions. The finisher's word already fills as its gauge does. */
+#folder-stance {
+	font-size: 22dp;
+	line-height: 26dp;
+	color: #72c7ff;
+	border: 2dp #72c7ff;
+	border-radius: 0;
+}
+
+#folder-stance.forced {
+	color: #ff7775;
+	border-color: #ff7775;
+}
+
+#folder-phase {
+	height: 8dp;
+}
+
+.folder-step {
+	border-radius: 0;
+	background-color: #071522;
+}
+
+.folder-step.done { background-color: #1d5a80; }
+.folder-step.now { background-color: #ffe64a; }
+#folder-lock.locked { background-color: #ffd51e; }
+
+.folder-chip {
+	font-size: 22dp;
+	line-height: 26dp;
+	color: #d8f1ff;
+	border: 2dp #2a5a80;
+	border-radius: 0;
+}
+
+.command-frame.kind-stance {
+	image-color: #9cd8ff;
+}
+
+.hb-tag {
+	border-radius: 0;
+	font-size: 20dp;
+}
+
+#finisher-percent {
+	display: none;
 }
