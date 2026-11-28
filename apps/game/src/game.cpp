@@ -595,7 +595,7 @@ int runGame(const Options& requested) {
                                               .forceVulkan13 = options.forceVulkan13});
   if (!device) {
     core::logError("{}", device.error().message);
-    return EXIT_FAILURE;
+    return GraphicsStartExitCode;
   }
   core::logInfo("game: validation layer {}, vsync {}",
                 validationState((*device)->validationEnabled()), display.vsync ? "on" : "off");
