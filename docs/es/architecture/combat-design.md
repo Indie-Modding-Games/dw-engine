@@ -392,7 +392,7 @@ Estas situaciones deben distinguirse:
 - **Cancelación:** la orden deja de ser válida o se cancela mediante una regla del sistema.
 - **Reemplazo:** el entrenador emite una nueva orden que sustituye la anterior, según las reglas de prioridad.
 
-El tratamiento de animaciones, recuperación, coste de MP, penalizaciones y posibilidad de retomar queda pendiente de especificación por técnica y pruebas.
+El tratamiento de animaciones, recuperación, coste de MP, penalizaciones y posibilidad de retomar queda pendiente de especificación por técnica y pruebas. Decidido por ahora: un golpe interrumpe una técnica solo hasta que se compromete, en el punto de compromiso del original (cuando su efecto ya lanzó la parte que golpea); el daño continuo como el veneno nunca interrumpe.
 ## 4.6 Orden inválida o imposible
 
 Si una orden no puede ejecutarse (MP insuficiente, técnica no disponible, objetivo inválido, bloqueo, alcance imposible u otra condición), el Digimon deberá salir del intento y entrar en un estado válido. No deberá repetir indefinidamente el mismo movimiento, cambiar de técnica ni escoger un objetivo alternativo sin autorización.

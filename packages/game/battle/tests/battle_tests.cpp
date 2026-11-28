@@ -582,7 +582,8 @@ AttackInFlight kickOnEnemy(const Bench& bench) {
           .facingTarget = {},
           .aim = std::nullopt,
           .laterContacts = {11, 12, 13},
-          .contacted = false};
+          .contacted = false,
+          .committed = std::nullopt};
 }
 
 } // namespace
@@ -1309,7 +1310,8 @@ TEST_CASE("with the original's rolls a hit draws its spark after the damage roll
                                          .facingTarget = {},
                                          .aim = std::nullopt,
                                          .laterContacts = {},
-                                         .contacted = false});
+                                         .contacted = false,
+                                         .committed = std::nullopt});
     BattleContext context = sparks ? bench.originalContext() : bench.context();
     tickAttackHits(context);
     return std::pair{bench.random, bench.fighter(1).pendingDamage};

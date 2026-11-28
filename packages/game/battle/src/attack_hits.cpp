@@ -159,11 +159,19 @@ void cancelFinisherOf(BattleContext& context, FighterId id) {
 }
 
 // battle_main.c: BTL_removeMoveEffect, which BTL_tickAttackHits calls on each fighter an attack
-// reaches: the fighter's own technique stops, so what of it is still on its way (a projectile its
-// effect has not yet brought to a fighter) reaches no one.
-void stopOwnTechnique(BattleContext& context, FighterId id) {
-  std::erase_if(context.state->inFlight,
-                [id](const AttackInFlight& flying) { return flying.attacker == id; });
+// reaches, stops only the sub-effect of the fighter's technique that BTL_startEFE returned: what of
+// it that sub-effect would still bring to a fighter reaches no one, but a part it already spawned
+// (a fireball on its way) runs on and lands. The effects run after this in the frame, so the
+// spawn of the frame the age counts last is already done.
+bool stopOwnTechnique(BattleContext& context, FighterId id) {
+  const auto committed = [](const AttackInFlight& flying) {
+    return flying.committed && flying.age && *flying.age > *flying.committed;
+  };
+  std::erase_if(context.state->inFlight, [id, &committed](const AttackInFlight& flying) {
+    return flying.attacker == id && !committed(flying);
+  });
+  return std::ranges::any_of(context.state->inFlight,
+                             [id](const AttackInFlight& flying) { return flying.attacker == id; });
 }
 
 bool counteringAttacker(const BattleContext& context, const Fighter& fighter, FighterId attacker) {
@@ -392,6 +400,7 @@ bool refreshLanding(const BattleContext& context, AttackInFlight& attack, std::i
   attack.touch = touchOf(*landing);
   attack.facingTarget = landing->facingTarget;
   attack.laterContacts = landing->laterContacts;
+  attack.committed = landing->committed;
   return true;
 }
 
@@ -433,7 +442,8 @@ AttackInFlight flightOf(const BattleContext& context, FighterId id, FighterId de
                         .facingTarget = {},
                         .aim = std::nullopt,
                         .laterContacts = {},
-                        .contacted = false};
+                        .contacted = false,
+                        .committed = std::nullopt};
   if (!travels) {
     return flight;
   }
@@ -454,6 +464,7 @@ AttackInFlight flightOf(const BattleContext& context, FighterId id, FighterId de
     flight.touch = touchOf(*landing);
     flight.facingTarget = landing->facingTarget;
     flight.laterContacts = landing->laterContacts;
+    flight.committed = landing->committed;
     return flight;
   }
   const std::int64_t distance =
@@ -498,8 +509,10 @@ void strikeDown(BattleContext& context, FighterId id) {
   if (fighter.fainted) {
     return;
   }
-  // BTL_tickAttackHits, for the fighter an attack reaches: its technique and its finisher stop.
-  stopOwnTechnique(context, id);
+  // BTL_tickAttackHits, for the fighter an attack reaches: its technique and its finisher stop. The
+  // debug blow also drops what of it was committed, so nothing of it lands after the win (#326).
+  std::erase_if(context.state->inFlight,
+                [id](const AttackInFlight& flying) { return flying.attacker == id; });
   fighter.knockedBack = false;
   fighter.attack.reset();
   fighter.planned = false;

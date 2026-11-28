@@ -854,7 +854,8 @@ bool EffectRunner::touchOp(Slot& slot, std::string_view name,
     const bool onBody = !box && source.has_value();
     touched_.push_back({.fighter = fighter,
                         .at = onBody ? bodyPointToward(*body, source->location) : at,
-                        .onBody = onBody});
+                        .onBody = onBody,
+                        .committed = self.detached});
     any = true;
     // BTL_applyBoxAttackHit stops at the first fighter it hits.
     if (box) {
