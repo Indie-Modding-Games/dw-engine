@@ -525,6 +525,17 @@ net::Bytes encode(const Message& message) {
           out.put(std::string_view{body.mapId});
         } else if constexpr (std::is_same_v<T, ClaimAnswer>) {
           out.put(ClaimAnswerKind).put(body.claim).put(body.granted);
+        } else if constexpr (std::is_same_v<T, PoopPiles>) {
+          out.put(PoopPilesKind).put(std::string_view{body.mapId}).put(body.restart);
+          out.put(static_cast<std::uint8_t>(body.piles.size()));
+          for (const PileEntry& pile : body.piles) {
+            out.put(pile.x).put(pile.y).put(pile.size);
+          }
+        } else if constexpr (std::is_same_v<T, PileAsk>) {
+          out.put(PileAskKind).put(body.ask).put(body.action).put(std::string_view{body.mapId});
+          out.put(body.x).put(body.y).put(body.size);
+        } else if constexpr (std::is_same_v<T, PileAnswer>) {
+          out.put(PileAnswerKind).put(body.ask).put(body.granted).put(body.size);
         } else if constexpr (std::is_same_v<T, Leave>) {
           out.put(LeaveKind).put(body.reason);
         } else if constexpr (std::is_same_v<T, BattleAsk>) {
@@ -1121,6 +1132,51 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     ClaimAnswer answer{.claim = in.get<std::uint32_t>(), .granted = in.get<bool>()};
     if (!in.ok() || answer.claim == 0) {
       return core::fail("invalid cooperative claim answer");
+    }
+    message = answer;
+    break;
+  }
+  case PoopPilesKind: {
+    PoopPiles piles{.mapId = in.text(), .restart = in.get<bool>(), .piles = {}};
+    const std::uint8_t count = in.get<std::uint8_t>();
+    if (!in.ok() || piles.mapId.size() > MaxPileMapText || count > MaxMapPiles ||
+        (piles.mapId.empty() && (!piles.restart || count != 0))) {
+      return core::fail("invalid cooperative poop piles");
+    }
+    for (std::uint8_t i = 0; i < count && in.ok(); ++i) {
+      PileEntry pile{
+          .x = in.get<std::int16_t>(), .y = in.get<std::int16_t>(), .size = in.get<std::int32_t>()};
+      if (pile.size <= 0) {
+        return core::fail("invalid cooperative poop pile");
+      }
+      piles.piles.push_back(pile);
+    }
+    message = std::move(piles);
+    break;
+  }
+  case PileAskKind: {
+    PileAsk ask{.ask = in.get<std::uint32_t>(), .action = PileAction::Leave, .mapId = {}};
+    const std::uint8_t action = in.get<std::uint8_t>();
+    ask.mapId = in.text();
+    ask.x = in.get<std::int16_t>();
+    ask.y = in.get<std::int16_t>();
+    ask.size = in.get<std::int32_t>();
+    if (!in.ok() || ask.ask == 0 || action > static_cast<std::uint8_t>(PileAction::Eat) ||
+        ask.mapId.empty() || ask.mapId.size() > MaxPileMapText) {
+      return core::fail("invalid cooperative pile ask");
+    }
+    ask.action = static_cast<PileAction>(action);
+    if (ask.action == PileAction::Leave && ask.size <= 0) {
+      return core::fail("cooperative pile ask leaves no pile");
+    }
+    message = std::move(ask);
+    break;
+  }
+  case PileAnswerKind: {
+    PileAnswer answer{
+        .ask = in.get<std::uint32_t>(), .granted = in.get<bool>(), .size = in.get<std::int32_t>()};
+    if (!in.ok() || answer.ask == 0 || (answer.granted && answer.size <= 0)) {
+      return core::fail("invalid cooperative pile answer");
     }
     message = answer;
     break;

@@ -71,7 +71,10 @@ void CoopGameplayBridge::poll(net::Millis now) {
                std::holds_alternative<game::coop::WorldSync>(*message) ||
                std::holds_alternative<game::coop::GroundItems>(*message) ||
                std::holds_alternative<game::coop::ItemClaim>(*message) ||
-               std::holds_alternative<game::coop::ClaimAnswer>(*message)) {
+               std::holds_alternative<game::coop::ClaimAnswer>(*message) ||
+               std::holds_alternative<game::coop::PoopPiles>(*message) ||
+               std::holds_alternative<game::coop::PileAsk>(*message) ||
+               std::holds_alternative<game::coop::PileAnswer>(*message)) {
       world_.push_back(std::move(*message));
     } else if (isBattleMessage(*message)) {
       battles_.push_back(std::move(*message));

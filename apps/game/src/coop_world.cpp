@@ -130,6 +130,10 @@ void CoopHostWorld::receive(coop::PlayerId from, const coop::Message& message, n
     claims_.emplace_back(from, *claim);
     return;
   }
+  if (const auto* pile = std::get_if<coop::PileAsk>(&message)) {
+    pileAsks_.emplace_back(from, *pile);
+    return;
+  }
   const auto* state = std::get_if<coop::PlayerState>(&message);
   if (state == nullptr) {
     return;
@@ -308,6 +312,10 @@ void CoopGuestWorld::receive(const coop::Message& message) {
     ground_.receive(*ground);
   } else if (const auto* answer = std::get_if<coop::ClaimAnswer>(&message)) {
     answers_.push_back(*answer);
+  } else if (const auto* piles = std::get_if<coop::PoopPiles>(&message)) {
+    pilesIn_.push_back(*piles);
+  } else if (const auto* pileAnswer = std::get_if<coop::PileAnswer>(&message)) {
+    pileAnswers_.push_back(*pileAnswer);
   } else if (std::holds_alternative<coop::WorldChange>(message) ||
              std::holds_alternative<coop::WorldSync>(message)) {
     worldIn_.push_back(message);

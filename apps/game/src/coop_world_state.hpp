@@ -4,16 +4,22 @@
 #include <dwe/game/coop/protocol.hpp>
 #include <dwe/game/coop/world_state.hpp>
 #include <dwe/game/field/field_items.hpp>
+#include <dwe/game/partner/poop_piles.hpp>
 #include <dwe/game/story/story_state.hpp>
+#include <dwe/ruleset/random.hpp>
 
 #include <cstdint>
+#include <functional>
+#include <map>
 #include <optional>
 #include <span>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 #include "field_item_claim.hpp"
+#include "field_pile_share.hpp"
 
 namespace dwe::app {
 
@@ -36,6 +42,13 @@ struct CoopWorldView {
   game::coop::WorldScope shared;
   // A guest's item notice's take waiting for the host (FieldItemsScreen::claim); none on the host.
   FieldItemClaim* claim = nullptr;
+  // The partners' poop piles of every map, and the dice that move a guest's pile a step aside on
+  // the host when its tile is taken.
+  game::partner::PoopPiles* piles = nullptr;
+  ruleset::Random* random = nullptr;
+  // A guest's piles its partner left and its partner's eat waiting for the host
+  // (FieldPoop::pileShare); none on the host.
+  FieldPileShare* pileShare = nullptr;
 };
 
 // A shared fact changed in this game, by another player or by its own scripts, with the value it
@@ -121,6 +134,30 @@ private:
   // What show() laid, by slot (0 for none), and on which map load.
   std::vector<std::uint32_t> shown_;
   std::optional<std::uint32_t> shownSerial_;
+};
+
+// The piles of a map as the wire names them.
+[[nodiscard]] game::coop::PoopPiles pileList(const game::partner::PoopPiles& piles,
+                                             std::string_view map);
+
+// Lays the host's list on this game's piles: that map's become the host's, and with `restart`
+// every other map's go first.
+void applyPileList(game::partner::PoopPiles& piles, const game::coop::PoopPiles& list);
+
+// The host's piles as the guests last got them, by map: a map's list goes to every guest when its
+// piles change.
+class CoopPileTracker {
+public:
+  // The map's list when it differs from the one last sent.
+  [[nodiscard]] std::optional<game::coop::PoopPiles> update(const game::partner::PoopPiles& piles,
+                                                            std::string_view map);
+  // Every map's piles for a guest that joins or follows the host to a new map: the host's map's
+  // list first, restarting the guest's piles, then each other map that has some.
+  [[nodiscard]] static std::vector<game::coop::PoopPiles>
+  sync(const game::partner::PoopPiles& piles, std::string_view hostMap);
+
+private:
+  std::map<std::string, std::vector<game::coop::PileEntry>, std::less<>> sent_;
 };
 
 } // namespace dwe::app

@@ -7,6 +7,7 @@
 
 #include <cstdint>
 
+#include "field_pile_share.hpp"
 #include "field_scene.hpp"
 
 namespace dwe::app {
@@ -26,6 +27,11 @@ public:
 
   [[nodiscard]] bool active() const { return step_ != Step::None; }
 
+  // A co-op guest's piles are the host's: what its partner leaves goes to the host too, and an eat
+  // waits for the host's word (pileShare()).
+  void setCoopGuest(bool guest) { coopGuest_ = guest; }
+  [[nodiscard]] FieldPileShare& pileShare() { return share_; }
+
   // Keeps the pause menu shut during a scene; false for any other command.
   [[nodiscard]] bool handle(const ui::UiCommand& command) const;
 
@@ -40,13 +46,14 @@ public:
   void show();
 
 private:
-  enum class Step : std::uint8_t { None, RunUp, Squat, After, ToPile, Eat };
+  enum class Step : std::uint8_t { None, RunUp, Squat, After, ToPile, Eat, EatAsked };
 
   void placeOne();
   void checkEating();
   void finish();
   void leavePile();
   void endScene();
+  bool settleEat(float seconds);
 
   session::GameSession* session_;
   session::PoopAdapter* poop_;
@@ -54,6 +61,9 @@ private:
   Step step_ = Step::None;
   // The tile of the pile the partner goes to eat.
   game::partner::Tile pileTile_{};
+  bool coopGuest_ = false;
+  FieldPileShare share_;
+  float eatWait_ = 0.0F;
 };
 
 } // namespace dwe::app

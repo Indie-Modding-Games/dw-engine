@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <ostream>
+#include <vector>
 
 #include "partner_fixture.hpp"
 
@@ -285,6 +286,23 @@ TEST_CASE("care.md toilet: a map holds 16 piles and the world 100; past that the
   restored.restore({piles.slots().begin(), piles.slots().end()}, piles.cursor());
   CHECK(std::ranges::equal(restored.slots(), piles.slots()));
   CHECK(restored.cursor() == piles.cursor());
+}
+
+TEST_CASE("multiplayer.md shared piles: a map's piles become the host's list, the others stay") {
+  OriginalRuleset original;
+  const PartnerRules rules = original.rules();
+  PoopPiles piles(rules.care.toilet);
+  ruleset::Random random(1);
+  const Tile own = piles.placeAt("map", {.x = 5, .y = 5}, 8, random);
+  CHECK(own == Tile{.x = 5, .y = 5});
+  CHECK(piles.placeAt("map", {.x = 5, .y = 5}, 8, random) != own);
+  piles.placeAt("other", {.x = 1, .y = 1}, 4, random);
+  const std::vector<PoopPile> host{{.map = "map", .tile = {.x = 9, .y = 2}, .size = 12}};
+  piles.replaceMap("map", host);
+  CHECK(piles.onMap("map") == host);
+  CHECK(piles.onMap("other").size() == 1);
+  piles.replaceMap("map", {});
+  CHECK(piles.onMap("map").empty());
 }
 
 } // namespace dwe::game::partner

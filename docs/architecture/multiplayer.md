@@ -386,7 +386,7 @@ registry), the map the group is on and every player's newest valid transform.
 | A guest's own position | the guest, checked by the host | `PlayerState`, refused or corrected when impossible |
 | The host's position, NPCs, story, clock, battles | host | snapshots (§5.1) and events |
 | How a remote player is drawn | each game, locally | interpolation (below); it never writes the authority |
-| What players change in the world (chests, triggers, doors, ground items) | host | `WorldChange`, `WorldSync`, `GroundItems` (§5.8) |
+| What players change in the world (chests, triggers, doors, ground items, poop piles) | host | `WorldChange`, `WorldSync`, `GroundItems`, `PoopPiles` (§5.8) |
 
 **Messages.** Three kinds join the table of §5.5 and take the place of its `OwnPose` and `PoseFix` sketch (protocol
 version 4):
@@ -502,7 +502,7 @@ applies a shared interaction to the world; the others' games ask, and are told t
 | The canyon shop's job: customers served, the tally and its meter, each turn's result, the halfway line (#423) | story variables and a trigger (`player_own_variables`, `player_own_triggers`), the tally and the haggle | local: each player runs its own job; one player opening the shop never moves the other's meter | never sent |
 | What a script hands to the engine's routines right before the call: a map object and its animation, a mood bubble's character and face, the bird's map and entrance (variables 247 and 248); the scratch roll in 110 (the Toy Mansion's doors roll it on map entry, scripts 142 to 144) | story variables (`player_own_variables`) | local: no script reads them back, so another player's call never changes them under a running script | never sent |
 | The bag, bits, the partner and its care, menus, dialogs on screen, the camera | session systems | local | never sent (battles: §6.1) |
-| Poop piles the partners leave on the field | each game's `poop_piles` | local for now: a guest's game starts with the host's piles of the moment it joined; after that each game shows only the piles its own partner leaves (and eats), and a guest's piles end with the session (its save keeps only its partner and bag). They should be shared as world objects, like the ground items; that needs a pile message from the host (open) | never sent |
+| Poop piles the partners leave on the field | the host's `poop_piles`, every map's | shared: every game shows the host's piles of the map it stands on, a pile any partner leaves shows in every game on that map, and a pile is eaten once; what leaving or eating one does to the partner and its stats stays its player's own | `PoopPiles` from the host; a guest's pile left or eaten is a `PileAsk`, an eat answered by `PileAnswer` |
 
 The local facts come from the story rules (`StoryAdapter::playerOwnTrigger` and `playerOwnVariable`): a ruleset that
 moves the freeze or the talk facing to another number moves them too.
@@ -530,6 +530,19 @@ gets the same notice. On a map the host is not on, a guest's ground is its own a
 claims. The host's ground list replaces the guest's ground but keeps its length, so the slot a guest's open notice holds
 stays readable after the host's list dropped its item (a granted take of the last item used to read past the ground and
 crash the guest, #414).
+
+**Poop piles.** The host's world holds every map's piles, as in single player (`poop_piles`, the care rules' limits).
+The host's partner leaves and eats piles at once, as in single player. A guest's partner leaves its pile on its own
+screen at once (with the cloud) and its game sends a `PileAsk`: the host puts the pile on that tile of that map, or a
+random step away if one lies there already. A guest's partner that eats piles walks to one and plays its eat clip as
+usual; then its game asks the host (`PileAsk`) and holds the partner until the `PileAnswer`. Only a granted answer
+eats: the partner gets the host's pile's size (its care effects, `handleEatingPoop`, on its own stats); refused (another
+partner ate it first, the host's within the same round trip included) or with no answer for ten seconds, the partner
+eats nothing. The host answers each guest's asks in order and once. Whenever a map's piles change on the host, every
+guest gets that map's list (`PoopPiles`), which replaces that map's piles in its game; each game draws only the piles of
+the map it stands on. A guest that joins, and every guest when the host enters a map, gets a list that restarts its piles
+first and then one for each map that has some, so a pile its copy of the world kept from before is gone. The piles are
+the host's world, so they are in its save and never in a guest's. Single player is unchanged.
 
 **Events start once (#417).** Each game runs its own story, so two players who talk to the same NPC used to both
 play its event, each with their own name, and both start its battle. While a player's game plays an NPC's event (a
@@ -568,6 +581,9 @@ host does. Nothing of the world goes into the guest's own save: only its partner
 | `0x93` | `GroundItems` | reliable | host → client | The host's map and map load, and each item on the ground: id, slot, item, cell and place. |
 | `0x94` | `ItemClaim` | reliable | client → host | The guest's claim number, chest or ground item, the chest's trigger or the item's slot and id, the map. |
 | `0x95` | `ClaimAnswer` | reliable | host → client | The claim number and whether it was granted. |
+| `0x96` | `PoopPiles` | reliable | host → client | A map, whether it restarts the guest's piles (protocol version 15), and each pile on it: tile and size. |
+| `0x97` | `PileAsk` | reliable | client → host | The guest's ask number, left or eaten, the map, the tile, and a left pile's size (protocol version 15). |
+| `0x98` | `PileAnswer` | reliable | host → client | The ask number, whether the eat was granted, and the pile's size (protocol version 15). |
 
 **World changes shown at once.** A map's head section decides on load which characters stand on it, from the story's
 triggers and variables (a recruited character is gone, its helper stands in its place, a shop keeper comes by day). The
@@ -602,7 +618,10 @@ guests over encoded messages), `apps/game/tests/coop_npc_presence_tests.cpp` (a 
 `packages/game/field/tests/npc_spawns_tests.cpp`, `apps/dwx/tests/script_warps_command_tests.cpp` (the spawns derived
 from the Lua, a mod's patch included), the MAPHEAD case of
 `packages/formats/tests/script_guarded_walk_tests.cpp`, the co-op case of
-`packages/game/field/tests/field_items_tests.cpp` and of `packages/session/tests/story_adapter_tests.cpp`.
+`packages/game/field/tests/field_items_tests.cpp` and of `packages/session/tests/story_adapter_tests.cpp`; the piles:
+`apps/game/tests/coop_poop_piles_tests.cpp` (a host and two guests over real links: piles left on either side, one
+pile eaten by two partners at once, a late joiner and a new map) and the shared piles case of
+`packages/game/partner/tests/toilet_tests.cpp`.
 ### 5.9 Rooms of four and the sync diagnostics
 
 What #352 and #359 add (protocol version 7, kinds `0xA0`–`0xA2`).
@@ -898,7 +917,7 @@ What is built, by ticket (the issues #351 to #362 are the player stories; they s
 |---|---|
 | Saves never touched by co-op (#350) | §5.6 |
 | Authority, players, maps, interpolation (#353 to #356, #358) | §5.7 |
-| Shared world: triggers, chests, ground items, doors, NPCs shown at once (#357) | §5.8 |
+| Shared world: triggers, chests, ground items, poop piles, doors, NPCs shown at once (#357) | §5.8 |
 | Rooms of four, sync diagnostics (#352, #359) | §5.9, [room browser](coop-browser-4p.md) |
 | Joining and rejoining a game in progress (#352, #356) | §5.10 |
 | Battles with every partner (#351, #362) and co-op difficulty (#361) | §6.1, [co-op combat](coop-combat.md), [co-op difficulty](coop-difficulty.md) |

@@ -95,6 +95,24 @@ TEST_CASE("the shared world's messages round trip within one datagram") {
         ClaimAnswer{.claim = 4, .granted = true});
   CHECK(roundTrip(ClaimAnswer{.claim = 5, .granted = false}) ==
         ClaimAnswer{.claim = 5, .granted = false});
+
+  const PoopPiles piles{.mapId = std::string(MaxPileMapText, 'p'),
+                        .restart = true,
+                        .piles =
+                            std::vector<PileEntry>(MaxMapPiles, {.x = -3, .y = 99, .size = 40})};
+  CHECK(roundTrip(piles) == piles);
+  const PoopPiles between{.mapId = {}, .restart = true, .piles = {}};
+  CHECK(roundTrip(between) == between);
+  const PileAsk left{
+      .ask = 2, .action = PileAction::Leave, .mapId = "START", .x = 5, .y = 7, .size = 12};
+  CHECK(roundTrip(left) == left);
+  const PileAsk eat{
+      .ask = 3, .action = PileAction::Eat, .mapId = "START", .x = 5, .y = 7, .size = 0};
+  CHECK(roundTrip(eat) == eat);
+  CHECK(roundTrip(PileAnswer{.ask = 3, .granted = true, .size = 12}) ==
+        PileAnswer{.ask = 3, .granted = true, .size = 12});
+  CHECK(roundTrip(PileAnswer{.ask = 4, .granted = false, .size = 0}) ==
+        PileAnswer{.ask = 4, .granted = false, .size = 0});
 }
 
 TEST_CASE("damaged shared world messages are refused") {
@@ -123,6 +141,21 @@ TEST_CASE("damaged shared world messages are refused") {
   CHECK_FALSE(decode(encode(
       Message{ItemClaim{.claim = 1, .kind = ClaimKind::Chest, .key = -1, .id = 0, .mapId = "M"}})));
   CHECK_FALSE(decode(encode(Message{ClaimAnswer{.claim = 0, .granted = true}})));
+
+  CHECK_FALSE(decode(encode(
+      Message{PoopPiles{.mapId = "M", .restart = false, .piles = {{.x = 1, .y = 1, .size = 0}}}})));
+  CHECK_FALSE(decode(encode(Message{PoopPiles{.mapId = {}, .restart = false, .piles = {}}})));
+  CHECK_FALSE(decode(
+      encode(Message{PoopPiles{.mapId = "M",
+                               .restart = false,
+                               .piles = std::vector<PileEntry>(MaxMapPiles + 1, {.size = 1})}})));
+  CHECK_FALSE(decode(encode(Message{
+      PileAsk{.ask = 0, .action = PileAction::Eat, .mapId = "M", .x = 0, .y = 0, .size = 0}})));
+  CHECK_FALSE(decode(encode(Message{
+      PileAsk{.ask = 1, .action = PileAction::Leave, .mapId = "M", .x = 0, .y = 0, .size = 0}})));
+  CHECK_FALSE(decode(encode(Message{
+      PileAsk{.ask = 1, .action = PileAction::Eat, .mapId = {}, .x = 0, .y = 0, .size = 0}})));
+  CHECK_FALSE(decode(encode(Message{PileAnswer{.ask = 1, .granted = true, .size = 0}})));
 }
 
 TEST_CASE("the host numbers its own shared changes and keeps a player's own facts out") {

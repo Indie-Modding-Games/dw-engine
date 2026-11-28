@@ -272,6 +272,16 @@ TEST_CASE(
   CHECK(host.send(Message{ClaimAnswer{.claim = 1, .granted = true}}));
   CHECK_FALSE(guest.send(change));
   CHECK_FALSE(host.send(claim));
+  // The poop piles too: a guest's pile left or eaten to the host, the host's lists and answers
+  // back.
+  const Message pileAsk{
+      PileAsk{.ask = 1, .action = PileAction::Eat, .mapId = "m", .x = 1, .y = 2, .size = 0}};
+  const Message piles{PoopPiles{.mapId = "m", .restart = false, .piles = {}}};
+  CHECK(guest.send(pileAsk));
+  CHECK(host.send(piles));
+  CHECK(host.send(Message{PileAnswer{.ask = 1, .granted = false, .size = 0}}));
+  CHECK_FALSE(guest.send(piles));
+  CHECK_FALSE(host.send(pileAsk));
 }
 
 TEST_CASE("cooperative decoder ignores foreign message kinds and rejects damaged frames") {

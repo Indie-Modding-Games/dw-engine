@@ -62,7 +62,8 @@ bool directionAllowed(Side receiver, const Message& message) {
     if (std::holds_alternative<Ready>(message) || std::holds_alternative<SyncReport>(message))
       return true;
     // What the guest's game changed of the shared world, and its takes, asked of the host (#357).
-    if (std::holds_alternative<WorldAsk>(message) || std::holds_alternative<ItemClaim>(message))
+    if (std::holds_alternative<WorldAsk>(message) || std::holds_alternative<ItemClaim>(message) ||
+        std::holds_alternative<PileAsk>(message))
       return true;
     // A battle the guest's partner fights, its part in any battle and whether its partner can join
     // the host's.
@@ -96,7 +97,9 @@ bool directionAllowed(Side receiver, const Message& message) {
       std::holds_alternative<SyncWatch>(message))
     return true;
   if (std::holds_alternative<WorldChange>(message) || std::holds_alternative<WorldSync>(message) ||
-      std::holds_alternative<GroundItems>(message) || std::holds_alternative<ClaimAnswer>(message))
+      std::holds_alternative<GroundItems>(message) ||
+      std::holds_alternative<ClaimAnswer>(message) || std::holds_alternative<PoopPiles>(message) ||
+      std::holds_alternative<PileAnswer>(message))
     return true;
   if (std::holds_alternative<BattleBegin>(message) ||
       std::holds_alternative<BattleRefused>(message) ||

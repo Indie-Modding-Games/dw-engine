@@ -433,6 +433,8 @@ core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext
                                        : session::ClockShare::Own);
   // Co-op (#357): a guest's chest or ground take waits for the host's word.
   play->fieldItemsScreen_.setCoop(start.coop(), start.coopGuest());
+  // Co-op: the poop piles are the host's; a guest's partner leaves and eats them through it.
+  play->fieldPoop_.setCoopGuest(start.coopGuest());
   if (cleared) {
     // main.c: main, MAIN_STATE 2: a game saved after the ending plays ED2 before its field.
     core::logDebug("[port:save] main (main.c:3474): a finished game, its movie first");
@@ -2324,7 +2326,10 @@ CoopWorldView PlaySession::takeCoopWorld() {
       .settled = !field.mapId().empty() && !field.mapChangePending(),
       .mapEdits = std::exchange(coopMapEdits_, {}),
       .shared = {},
-      .claim = coopGuest_ ? &fieldItemsScreen_.claim() : nullptr};
+      .claim = coopGuest_ ? &fieldItemsScreen_.claim() : nullptr,
+      .piles = game_.systems.poop != nullptr ? game_.systems.poop->piles() : nullptr,
+      .random = &game_.session->random(),
+      .pileShare = coopGuest_ ? &fieldPoop_.pileShare() : nullptr};
   if (const session::StoryAdapter* story = game_.systems.story; story != nullptr) {
     view.shared = [story](const game::coop::WorldEdit& edit) {
       switch (edit.kind) {

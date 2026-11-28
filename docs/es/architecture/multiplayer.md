@@ -475,7 +475,7 @@ nombra un segundo jugador fijo.
 | La posición propia de un invitado | el invitado, revisada por el anfitrión | `PlayerState`, rechazado o corregido si es imposible |
 | La posición del anfitrión, NPCs, historia, reloj, batallas | anfitrión | instantáneas (§5.1) y eventos |
 | Cómo se dibuja un jugador remoto | cada partida, en local | interpolación (abajo); nunca escribe la autoridad |
-| Lo que los jugadores cambian en el mundo (cofres, triggers, puertas, objetos del suelo) | anfitrión | `WorldChange`, `WorldSync`, `GroundItems` (§5.8) |
+| Lo que los jugadores cambian en el mundo (cofres, triggers, puertas, objetos del suelo, cacas) | anfitrión | `WorldChange`, `WorldSync`, `GroundItems`, `PoopPiles` (§5.8) |
 
 **Mensajes.** Tres tipos se suman a la tabla de §5.5 y ocupan el lugar de su esbozo `OwnPose` y `PoseFix` (versión 4
 del protocolo):
@@ -601,7 +601,7 @@ el resultado.
 | El trabajo de la tienda del cañón: los clientes atendidos, la cuenta y su medidor, el resultado de cada turno, la frase de la mitad (#423) | variables de historia y un trigger (`player_own_variables`, `player_own_triggers`), la cuenta y el regateo | local: cada jugador hace su propio trabajo; que un jugador abra la tienda nunca mueve el medidor del otro | nunca se envían |
 | Lo que un script pasa a las rutinas del motor justo antes de llamarlas: un objeto del mapa y su animación, el personaje y la cara de una burbuja de humor, el mapa y la entrada del pájaro (variables 247 y 248); la tirada de trabajo en 110 (las puertas de la Mansión de juguetes la tiran al entrar al mapa, scripts 142 a 144) | variables de historia (`player_own_variables`) | local: ningún script las vuelve a leer, así que la llamada de otro jugador nunca las cambia bajo un script en marcha | nunca se envían |
 | La bolsa, los bits, el compañero y sus cuidados, los menús, los diálogos en pantalla, la cámara | sistemas de la sesión | local | nunca se envían (batallas: §6.1) |
-| Las cacas que los compañeros dejan en el campo | el `poop_piles` de cada partida | local por ahora: la partida de un invitado empieza con las cacas del anfitrión del momento en que se unió; después cada partida muestra solo las que deja (y se come) su propio compañero, y las de un invitado terminan con la sesión (su guardado solo conserva su compañero y su bolsa). Deberían compartirse como objetos del mundo, como los objetos del suelo; hace falta un mensaje de cacas del anfitrión (pendiente) | nunca se envían |
+| Las cacas que los compañeros dejan en el campo | el `poop_piles` del anfitrión, el de cada mapa | compartida: cada partida muestra las cacas del anfitrión del mapa en el que está, la que deja cualquier compañero se ve en todas las partidas de ese mapa, y una caca se come una sola vez; lo que dejar o comerse una hace al compañero y a sus estadísticas sigue siendo de su jugador | `PoopPiles` del anfitrión; la caca que deja o se come el compañero de un invitado es un `PileAsk`, y comerse una se responde con `PileAnswer` |
 
 Los hechos locales salen de las reglas de la historia (`StoryAdapter::playerOwnTrigger` y `playerOwnVariable`): un
 ruleset que mueve la congelación o el encarar a otro número los mueve también.
@@ -632,6 +632,21 @@ suelo de un invitado es suyo y no hace falta reclamar. La partida de un jugador 
 reemplaza el suelo del invitado pero conserva su largo, así que el hueco que sostiene el aviso abierto de un invitado se
 sigue pudiendo leer cuando la lista del anfitrión ya no trae su objeto (tomar el último objeto con permiso leía fuera
 del suelo y cerraba el juego del invitado, #414).
+
+**Cacas.** El mundo del anfitrión guarda las cacas de cada mapa, como en la partida de un jugador (`poop_piles`, con los
+límites de las reglas de cuidado). El compañero del anfitrión deja y se come cacas al momento, como en la partida de un
+jugador. El compañero de un invitado deja su caca en la pantalla del invitado al momento (con la nube) y su partida envía
+un `PileAsk`: el anfitrión pone la caca en esa casilla de ese mapa, o a un paso al azar si ya hay una. El compañero de
+un invitado que come cacas va hasta una y juega su clip de comer como siempre; luego su partida pregunta al anfitrión
+(`PileAsk`) y retiene al compañero hasta el `PileAnswer`. Solo una respuesta concedida come: el compañero recibe el
+tamaño de la caca del anfitrión (sus efectos de cuidado, `handleEatingPoop`, sobre sus propias estadísticas); rechazada
+(otro compañero se la comió antes, el del anfitrión dentro del mismo viaje de ida y vuelta incluido) o sin respuesta en
+diez segundos, el compañero no come nada. El anfitrión responde las peticiones de cada invitado en orden y una sola vez.
+Cada vez que cambian las cacas de un mapa en el anfitrión, cada invitado recibe la lista de ese mapa (`PoopPiles`), que
+reemplaza las cacas de ese mapa en su partida; cada partida dibuja solo las cacas del mapa en el que está. Un invitado
+que entra, y todos los invitados cuando el anfitrión entra en un mapa, reciben una lista que primero reinicia sus cacas
+y luego una por cada mapa que tiene alguna, así que una caca que su copia del mundo conservaba de antes desaparece. Las
+cacas son del mundo del anfitrión: están en su guardado y nunca en el de un invitado. La partida de un jugador no cambia.
 
 **Los eventos empiezan una vez (#417).** Cada partida ejecuta su propia historia, así que dos jugadores que hablaban
 con el mismo NPC jugaban los dos su evento, cada uno con su nombre, y empezaban los dos su combate. Mientras la partida
@@ -674,6 +689,9 @@ vuelven a casa su compañero y su bolsa (§5.6).
 | `0x93` | `GroundItems` | fiable | anfitrión → cliente | El mapa del anfitrión y su carga, y cada objeto del suelo: id, ranura, objeto, celda y lugar. |
 | `0x94` | `ItemClaim` | fiable | cliente → anfitrión | El número de reclamación del invitado, cofre u objeto del suelo, el trigger del cofre o la ranura y el id del objeto, el mapa. |
 | `0x95` | `ClaimAnswer` | fiable | anfitrión → cliente | El número de reclamación y si se concedió. |
+| `0x96` | `PoopPiles` | fiable | anfitrión → cliente | Un mapa, si reinicia las cacas del invitado (versión 15 del protocolo), y cada caca en él: casilla y tamaño. |
+| `0x97` | `PileAsk` | fiable | cliente → anfitrión | El número de petición del invitado, dejada o comida, el mapa, la casilla, y el tamaño de una caca dejada (versión 15 del protocolo). |
+| `0x98` | `PileAnswer` | fiable | anfitrión → cliente | El número de petición, si se concedió comerla, y el tamaño de la caca (versión 15 del protocolo). |
 
 **Cambios del mundo al momento.** La sección de cabecera de un mapa decide al cargarlo qué personajes están en él, a
 partir de los triggers y variables de la historia (un personaje reclutado ya no está, su ayudante ocupa su lugar, un
@@ -710,7 +728,10 @@ sobre un `CoopLink` real, el ayudante propio de quien recluta y un visitante que
 `packages/game/field/tests/npc_spawns_tests.cpp`, `apps/dwx/tests/script_warps_command_tests.cpp` (los NPC sacados
 del Lua, con el parche de un mod), el caso MAPHEAD de
 `packages/formats/tests/script_guarded_walk_tests.cpp`, el caso cooperativo de
-`packages/game/field/tests/field_items_tests.cpp` y el de `packages/session/tests/story_adapter_tests.cpp`.
+`packages/game/field/tests/field_items_tests.cpp` y el de `packages/session/tests/story_adapter_tests.cpp`; las cacas:
+`apps/game/tests/coop_poop_piles_tests.cpp` (un anfitrión y dos invitados con enlaces reales: cacas dejadas en cada
+lado, una caca que se comen dos compañeros a la vez, uno que entra tarde y un mapa nuevo) y el caso de cacas compartidas
+de `packages/game/partner/tests/toilet_tests.cpp`.
 ### 5.9 Salas de cuatro y el diagnóstico de sincronía
 
 Lo que añaden #352 y #359 (versión 7 del protocolo, tipos `0xA0`–`0xA2`).
@@ -1165,7 +1186,7 @@ Lo hecho, por ticket (las issues #351 a #362 son las historias de jugador; sigue
 |---|---|
 | Partidas que el cooperativo nunca toca (#350) | §5.6 |
 | Autoridad, jugadores, mapas, interpolación (#353 a #356, #358) | §5.7 |
-| Mundo compartido: triggers, cofres, objetos del suelo, puertas, NPCs al momento (#357) | §5.8 |
+| Mundo compartido: triggers, cofres, objetos del suelo, cacas, puertas, NPCs al momento (#357) | §5.8 |
 | Salas de cuatro, diagnóstico de sincronía (#352, #359) | §5.9, [buscador de salas](coop-browser-4p.md) |
 | Unirse y volver a una partida en curso (#352, #356) | §5.10 |
 | Combates con todos los compañeros (#351, #362) y dificultad cooperativa (#361) | §6.1, [combate cooperativo](coop-combat.md), [dificultad cooperativa](coop-difficulty.md) |

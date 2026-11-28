@@ -96,6 +96,8 @@ public:
   [[nodiscard]] std::vector<game::partner::PoopPile> onMap(std::string_view map) const;
   // Takes a pile off a tile (eaten); its size, if there was one.
   std::optional<std::int32_t> remove(std::string_view map, game::partner::Tile tile);
+  // Every map's piles (none without the care rules), for co-op to share.
+  [[nodiscard]] game::partner::PoopPiles* piles() { return piles_ ? &*piles_ : nullptr; }
 
 private:
   class Serializer;

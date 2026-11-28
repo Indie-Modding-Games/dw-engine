@@ -80,7 +80,9 @@ public:
   // guests' asks taken (applied here, then sent to everyone) or left out, the guests' claims on
   // chests and ground items answered (the first claim on an item still there gets it), the whole
   // story to a guest that joined and to everyone when the map changed, and the ground's list
-  // whenever it changed. The host's own takes need no claim: its game is the world.
+  // whenever it changed. The host's own takes need no claim: its game is the world. The poop
+  // piles likewise: the guests' piles left and eaten are taken (an eat answered), and a map's
+  // list goes to everyone when it changed, every map's to a guest that joined and on a new map.
   [[nodiscard]] CoopWorldShare share(CoopWorldView& view);
   [[nodiscard]] const game::coop::WorldLedger& ledger() const { return ledger_; }
 
@@ -98,11 +100,16 @@ private:
   // Whether a claim's item is still there; taking it off the world (and telling the guests) if so.
   bool grant(CoopWorldView& view, const game::coop::ItemClaim& claim, CoopWorldShare& share,
              bool& chestsMayChange);
+  // The guests' piles left and eaten, in the order they came, each once.
+  void takePileAsks(CoopWorldView& view, CoopWorldShare& share);
 
   game::coop::WorldAuthority authority_;
   game::coop::WorldLedger ledger_;
   CoopStoryBaseline facts_;
   CoopGroundTracker ground_;
+  CoopPileTracker piles_;
+  std::vector<std::pair<game::coop::PlayerId, game::coop::PileAsk>> pileAsks_;
+  std::map<game::coop::PlayerId, std::uint32_t> lastPileAsk_;
   std::vector<std::pair<game::coop::PlayerId, game::coop::WorldAsk>> asks_;
   std::vector<std::pair<game::coop::PlayerId, game::coop::ItemClaim>> claims_;
   // Each guest's last claim answered: a claim sent again is answered once.
@@ -188,13 +195,17 @@ public:
   // After the tick, the world's interactions (#357): what this game changed of the shared world
   // goes to the host as an ask, and the item notice's take as a claim; the host's changes and
   // syncs are applied once each, in order; on the host's map the ground is the host's; the host's
-  // answer to the claim goes to the notice.
+  // answer to the claim goes to the notice. The piles its partner leaves and eats go to the host,
+  // and its piles are the host's lists.
   [[nodiscard]] CoopWorldShare share(CoopWorldView& view);
   [[nodiscard]] std::uint32_t worldRevision() const { return replica_.revision(); }
 
 private:
   // Sends the notice's take to the host (an item of this game's own ground is granted at once).
   void claim(const CoopWorldView& view, CoopWorldShare& share);
+  // Sends the piles this game's partner left and its eat to the host, lays the host's lists on
+  // this game's piles and gives the eat the host's answer.
+  void sharePiles(CoopWorldView& view, CoopWorldShare& share);
 
   game::coop::PlayerId self_;
   game::coop::WorldReplica replica_;
@@ -204,6 +215,9 @@ private:
   std::vector<game::coop::Message> worldIn_;
   std::uint32_t claims_ = 0;
   std::vector<game::coop::ClaimAnswer> answers_;
+  std::vector<game::coop::PoopPiles> pilesIn_;
+  std::vector<game::coop::PileAnswer> pileAnswers_;
+  std::uint32_t pileAsks_ = 0;
   // The newest correction applied: states carry it so the host drops ones from before.
   std::uint16_t epoch_ = 0;
   std::optional<game::coop::PlayerCorrection> pending_;

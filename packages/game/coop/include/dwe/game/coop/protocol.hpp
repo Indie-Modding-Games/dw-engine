@@ -35,7 +35,9 @@ inline constexpr std::size_t MaxPlayers = 4;
 // difficulty in the lobby (#351, #361, #352). 13: the folder battle mode. 14: a guest's world ask
 // says the host revision it had seen (#422), scripted clips, held partners, partner forms and the
 // host's map NPCs ride the snapshots (#412, #420, #419), and NPC events are held per player (#417).
-inline constexpr std::uint32_t ProtocolVersion = 14;
+// 15: the partners' poop piles are the host's world: its lists of each map's piles, a guest's pile
+// left or eaten asked of the host, and its answer to an eat.
+inline constexpr std::uint32_t ProtocolVersion = 15;
 
 [[nodiscard]] constexpr bool validPlayer(PlayerId id) {
   return id < MaxPlayers;
@@ -648,6 +650,56 @@ struct ClaimAnswer {
   friend bool operator==(const ClaimAnswer&, const ClaimAnswer&) = default;
 };
 
+// A poop pile on a map of the host's world: its tile and its size (partner_impl.c: WORLD_POOP).
+struct PileEntry {
+  std::int16_t x = 0;
+  std::int16_t y = 0;
+  std::int32_t size = 0;
+
+  friend bool operator==(const PileEntry&, const PileEntry&) = default;
+};
+
+inline constexpr std::size_t MaxMapPiles = 64;
+inline constexpr std::size_t MaxPileMapText = 64;
+
+// The poop piles on one map of the host's world, sent to every guest when they change: every
+// game shows the host's piles. A guest that joins, and every guest on a map change, gets a list
+// with `restart` first: its piles on every map go, and the lists after it bring back the maps that
+// have some. A restart's map may be empty (the host between maps).
+struct PoopPiles {
+  std::string mapId;
+  bool restart = false;
+  std::vector<PileEntry> piles;
+
+  friend bool operator==(const PoopPiles&, const PoopPiles&) = default;
+};
+
+// What a guest's partner did with a pile: left one (`size` its size) or ate one.
+enum class PileAction : std::uint8_t { Leave, Eat };
+
+// A guest's partner left a pile on a tile or ate the one there: the host puts it in its world or
+// takes it out. `ask` is the guest's own count; an eat waits for the host's answer (PileAnswer),
+// so two partners never eat one pile.
+struct PileAsk {
+  std::uint32_t ask = 0;
+  PileAction action = PileAction::Leave;
+  std::string mapId;
+  std::int16_t x = 0;
+  std::int16_t y = 0;
+  std::int32_t size = 0;
+
+  friend bool operator==(const PileAsk&, const PileAsk&) = default;
+};
+
+// The host's answer to an eat: granted with the pile's size, or refused (it was gone).
+struct PileAnswer {
+  std::uint32_t ask = 0;
+  bool granted = false;
+  std::int32_t size = 0;
+
+  friend bool operator==(const PileAnswer&, const PileAnswer&) = default;
+};
+
 // Item trades between two players of the session (#360; docs/architecture/multiplayer.md, "Item
 // trades"). A player asks another on its map, the other accepts or refuses, both put items of
 // their own bag on the table and confirm; the host referees it (trade.hpp) and has each side swap
@@ -900,7 +952,7 @@ using Message =
                  GroundItems, ItemClaim, ClaimAnswer, BattleOffer, Lobby, SyncWatch, SyncReport,
                  TradeAsk, TradeAnswer, TradeOffer, TradeConfirm, TradeCancel, TradeState,
                  TradePrepare, TradeCommit, TradeRevert, TradeReply, TradeClosed, WorldClock,
-                 TrainingStatus, PartnerForm, EventStatus>;
+                 TrainingStatus, PartnerForm, EventStatus, PoopPiles, PileAsk, PileAnswer>;
 
 inline constexpr std::uint8_t HelloKind = 0x60;
 inline constexpr std::uint8_t WelcomeKind = 0x61;
@@ -931,6 +983,9 @@ inline constexpr std::uint8_t WorldSyncKind = 0x92;
 inline constexpr std::uint8_t GroundItemsKind = 0x93;
 inline constexpr std::uint8_t ItemClaimKind = 0x94;
 inline constexpr std::uint8_t ClaimAnswerKind = 0x95;
+inline constexpr std::uint8_t PoopPilesKind = 0x96;
+inline constexpr std::uint8_t PileAskKind = 0x97;
+inline constexpr std::uint8_t PileAnswerKind = 0x98;
 // Players and diagnostics (#352, #359): 0xA0-0xAF.
 inline constexpr std::uint8_t LobbyKind = 0xA0;
 inline constexpr std::uint8_t SyncWatchKind = 0xA1;
