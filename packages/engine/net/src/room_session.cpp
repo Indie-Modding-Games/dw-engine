@@ -79,7 +79,7 @@ bool RoomSession::enter(RoomPhase next) {
 }
 
 void RoomSession::notify(std::string state) {
-  if (!desc_.hosting || token_.empty() || desc_.server.empty() || !desc_.open) {
+  if (!desc_.hosting || !listed() || desc_.server.empty() || !desc_.open) {
     return;
   }
   notices_.push_back(std::move(state));
