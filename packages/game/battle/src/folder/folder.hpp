@@ -4,6 +4,7 @@
 #include <dwe/game/battle/folder/state.hpp>
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <optional>
 
@@ -26,6 +27,10 @@ void folderCancelOrders(BattleContext& context, FighterId side);
                                              const BattleRules& rules,
                                              const PartnerCondition& condition, FighterId id,
                                              std::size_t slot);
+// techniques/techniques.cpp, costo-mp.md: what a technique costs a commanded fighter, with a sick
+// or injured partner's surcharge.
+[[nodiscard]] std::int32_t folderMpCost(const BattleRules& rules, const MoveCatalog& moves,
+                                        MoveRef move, const PartnerCondition& condition);
 // stances/stances.cpp
 void folderSetStance(BattleContext& context, Stance stance, FighterId side);
 

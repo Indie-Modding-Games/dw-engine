@@ -366,6 +366,16 @@ Un mod lo ajusta como cualquier otra sección; `overrides` permite que un pack t
 
 Todo corre en el anfitrión: los invitados nunca calculan factores, así que no hay nada que desincronizar.
 
+### 9.4 Combates Folder
+
+El escalado corre al empezar el combate sea cual sea el sistema, así que un combate [Folder](folder-battle.md) recibe
+los mismos enemigos escalados (test "co-op difficulty scales a folder battle's enemies as it scales a classic one's").
+Dos diferencias importan para el balance: Folder suma el ATK al daño a `attack_percent`, así que la columna de ofensiva
+pesa algo más allí, y las técnicas ofensivas de área de los partners golpean a los aliados cercanos (fuego amigo), que
+las tablas no cuentan. Un factor de daño plano por jugador se aplicaría al resultado del daño de Folder de un atacante
+enemigo, después de la DEF y la cobertura y antes del tope; folder-battle.md, "Dificultad del co-op en Folder", tiene
+los detalles.
+
 ## 10. Escenarios de prueba
 
 ### 10.1 Unitarias (doctest, `packages/game/battle/tests`)

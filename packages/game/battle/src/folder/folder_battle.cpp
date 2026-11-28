@@ -1,6 +1,9 @@
 #include <dwe/game/battle/folder/formulas.hpp>
 
+#include <cstdint>
 #include <memory>
+#include <utility>
+#include <vector>
 
 #include "core/battle_system.hpp"
 #include "folder/defense/defense.hpp"
@@ -9,6 +12,7 @@
 #include "folder/orders/orders.hpp"
 #include "folder/stances/stances.hpp"
 #include "folder/strip.hpp"
+#include "folder/techniques/techniques.hpp"
 #include "mechanics/decisions/decisions.hpp"
 
 namespace dwe::game::battle {
@@ -61,6 +65,22 @@ public:
     for (FighterId id = 0; id < context.state->fighters.size(); ++id) {
       tickDefense(context, id);
     }
+  }
+
+  [[nodiscard]] std::int32_t commandedMpCost(const BattleContext& context, FighterId id,
+                                             MoveRef move) const override {
+    return folderMpCost(*context.rules, *context.moves, move, context.conditionOf(id));
+  }
+
+  [[nodiscard]] std::vector<FighterId> reached(const BattleContext& context, FighterId id,
+                                               MoveRef move,
+                                               std::vector<FighterId> shared) const override {
+    return folderReached(context, id, move, std::move(shared));
+  }
+
+  [[nodiscard]] bool touches(const BattleContext& context, FighterId attacker, FighterId other,
+                             MoveRef move) const override {
+    return folderTouches(context, attacker, other, move);
   }
 };
 

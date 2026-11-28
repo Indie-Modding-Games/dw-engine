@@ -339,8 +339,8 @@ void addBystanderFlights(BattleContext& context, FighterId id,
   const FighterId aim = attack.target.value_or(reached.front());
   const std::optional<std::int32_t> clip = moveClipOf(context, context.fighter(id), attack.move);
   for (FighterId other = 0; other < context.state->fighters.size(); ++other) {
-    if (!context.state->foes(id, other) || context.fighter(other).fainted ||
-        std::ranges::contains(reached, other)) {
+    if (!context.system->touches(context, id, other, attack.move) ||
+        context.fighter(other).fainted || std::ranges::contains(reached, other)) {
       continue;
     }
     AttackInFlight flight = flightOf(context, id, other, false);
@@ -426,9 +426,10 @@ void releaseAttack(BattleContext& context, FighterId id) {
     return;
   }
   // A followed melee move reaches its target as a shot does: its effect decides the touch.
-  const std::vector<FighterId> reached = attack.followed && attack.target
-                                             ? std::vector{*attack.target}
-                                             : reachedBy(context, id, move, attack.target);
+  const std::vector<FighterId> reached = context.system->reached(
+      context, id, attack.move,
+      attack.followed && attack.target ? std::vector{*attack.target}
+                                       : reachedBy(context, id, move, attack.target));
   if (reached.empty()) {
     context.emit({.kind = EventKind::AttackMissed,
                   .fighter = id,

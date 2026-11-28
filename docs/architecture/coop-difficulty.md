@@ -353,6 +353,15 @@ A mod tunes it like any other section; `overrides` lets a pack treat a specific 
 
 Everything runs on the host: guests never compute factors, so there is nothing to desync.
 
+### 9.4 Folder battles
+
+The scaling runs at battle start whatever the battle system, so a [Folder](folder-battle.md) battle gets the same
+scaled enemies (test "co-op difficulty scales a folder battle's enemies as it scales a classic one's"). Two differences
+matter for balance: Folder adds ATK to the damage at `attack_percent`, so the offense column weighs a little more there,
+and partners' offensive area techniques hit nearby allies (friendly fire), which the tables do not count. A flat damage
+factor per player would apply to the Folder damage result of an enemy attacker, after DEF and cover and before the cap;
+folder-battle.md, "Co-op difficulty in Folder", has the details.
+
 ## 10. Test scenarios
 
 ### 10.1 Unit (doctest, `packages/game/battle/tests`)

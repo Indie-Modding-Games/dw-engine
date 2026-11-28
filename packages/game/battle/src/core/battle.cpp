@@ -529,6 +529,18 @@ std::int32_t Battle::defenseBarCapacity(FighterId fighter) const {
       *rules_->folder, own->broken() ? folder::brokenStat(*rules_->folder, defense) : defense);
 }
 
+std::optional<folder::Technique> Battle::folderTechnique(std::size_t slot, FighterId side) const {
+  if (system() != BattleSystemId::Folder || !rules_->folder || slot >= EquippedSlots ||
+      side >= state_.fighters.size()) {
+    return std::nullopt;
+  }
+  const std::optional<MoveRef>& ref = state_.fighters[side].moves.at(slot);
+  if (!ref) {
+    return std::nullopt;
+  }
+  return folder::techniqueOf(*rules_->folder, *moves_, *ref);
+}
+
 void Battle::defeatEnemies() {
   BattleContext context = contextOf(pending());
   for (FighterId enemy = 1; enemy <= state_.enemyCount(); ++enemy) {
@@ -637,6 +649,9 @@ std::optional<std::int32_t> Battle::partnerMoveCost(std::size_t slot, FighterId 
   }
   const AllyState* ally = state_.allyOf(id);
   const PartnerCondition& condition = ally != nullptr ? ally->condition : setup_.condition;
+  if (system() == BattleSystemId::Folder) {
+    return folderMpCost(*rules_, *moves_, *ref, condition);
+  }
   const bool unwell = condition.sick || condition.injured;
   return partnerMpCost(*rules_, moves_->at(*ref).mpCost, fighter.stats.brain, unwell,
                        MpCostUse::Payment);

@@ -125,13 +125,15 @@ void handleFolderAttack(BattleContext& context, const AttackInFlight& attack) {
   }
   const FolderFighter& own = folderFighter(context, id);
   const BattleState& state = *context.state;
-  // §2.9: Guard always covers; any other stance covers with DEF's chance. A broken defense never
-  // does.
+  // §2.9: Guard always covers; any other stance covers with DEF's chance, plus the bonus for the
+  // attacker's distance (§7.4). A broken defense never does.
+  const FolderRules& rules = folderRules(context);
   const bool guarding = state.commanded(id) && own.stance == Stance::Guard;
-  const bool covered =
-      !own.broken() && (guarding || context.random->below(Hundred) <
-                                        folder::coverPercent(folderRules(context),
-                                                             folderStats(context, id).defense));
+  const std::int32_t chance =
+      folder::coverPercent(rules, folderStats(context, id).defense) +
+      folder::coverDistanceBonus(rules,
+                                 integerSqrt(distanceSquared(attack.origin, fighter.position)));
+  const bool covered = !own.broken() && (guarding || context.random->below(Hundred) < chance);
   const std::int32_t damage = damageOf(context, attack, covered);
   if (!covered || !fighter.attack) {
     if (stopOwnTechnique(context, id) && fighter.attack) {
@@ -144,8 +146,8 @@ void handleFolderAttack(BattleContext& context, const AttackInFlight& attack) {
     cancelFinisherOf(context, id);
   }
   // §2.4, §11.3: a commanded fighter keeps the target its trainer gave it; an enemy may turn to
-  // whoever hit it, as in the original.
-  if (!state.commanded(id)) {
+  // whoever hit it, as in the original, but never to an ally whose friendly fire caught it (§2.8).
+  if (!state.commanded(id) && state.isPlayerSide(id) != state.isPlayerSide(attack.attacker)) {
     selectTarget(context, id, attack.attacker, true);
   }
   fillDefenseBar(context, id, damage);
