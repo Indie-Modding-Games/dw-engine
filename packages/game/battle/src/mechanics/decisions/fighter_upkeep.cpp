@@ -31,8 +31,6 @@ std::size_t randomIndex(ruleset::Random& random, std::size_t count) {
   return static_cast<std::size_t>(random.below(static_cast<std::int32_t>(count)));
 }
 
-// The obedience roll, the cooldown and the speed reserve of a frame, which a finisher's freeze
-// stops.
 void tickTimers(BattleContext& context, FighterId id, std::int32_t discipline) {
   Fighter& fighter = context.fighter(id);
   if (context.strategies->obedience->disobeys(context.view(), id, discipline)) {

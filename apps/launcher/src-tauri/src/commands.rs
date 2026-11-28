@@ -12,6 +12,7 @@ use tauri_plugin_updater::UpdaterExt;
 
 use crate::auto_update::{self, Action, LastCheck};
 use crate::content::{self, Identity};
+use crate::diagnosis::{self, Advice, Meanwhile};
 use crate::disc::{self, Pick};
 use crate::failure::{code, Failure, Result};
 use crate::graphics_step::{self, GraphicsStep, StepOptions};
@@ -99,6 +100,10 @@ struct GameExit {
     /// The step the next start takes after this one failed early (graphics_step.rs).
     next_step: Option<GraphicsStep>,
     log: Vec<String>,
+    /// Why it failed, most actionable first (diagnosis.rs), and what the next start does.
+    advice: Vec<Advice>,
+    meanwhile: Option<Meanwhile>,
+    report: String,
 }
 
 #[derive(Serialize)]
@@ -628,6 +633,7 @@ pub fn open_driver_page(app: AppHandle, page: String) -> Result<()> {
         "amd" => system_check::driver_page(system_check::Vendor::Amd),
         "intel" => system_check::driver_page(system_check::Vendor::Intel),
         "windows-update" if cfg!(windows) => Some(system_check::WINDOWS_UPDATE),
+        "windows-graphics" if cfg!(windows) => Some(system_check::WINDOWS_GRAPHICS),
         _ => None,
     }
     .ok_or_else(|| Failure::new(code::IO, page.clone()))?;
@@ -711,6 +717,11 @@ pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
         step
     };
     let gpu_key = graphics_step::gpu_key(graphics.gpu.as_ref());
+    if on_software || ran_on == GraphicsStep::Compatible {
+        if let Some(reason) = diagnosis::reason_env(&graphics.advice) {
+            env.push((diagnosis::REASON_ENV.into(), reason.into()));
+        }
+    }
     env.extend(extra_env);
     let mut child = match launch::start(&game, &data, own, &env, flags, &extra_args) {
         Ok(child) => child,
@@ -734,7 +745,8 @@ pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
         let failed = code != Some(0);
         log_line!("the game ended (exit {code:?})");
         let reason = launch::exit_reason(&exited, code);
-        let next_step = if auto && graphics_step::failed_early(reason, started.elapsed()) {
+        let written = if failed { diagnosis::from_log_file(&log) } else { None };
+        let next_step = if auto && !diagnosis::keeps_the_step(written.as_ref()) && graphics_step::failed_early(reason, started.elapsed()) {
             graphics_step::next_step(ran_on, options)
         } else {
             None
@@ -754,7 +766,11 @@ pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
             let _ = window.set_focus();
         }
         let tail = if failed { launch::tail(&log, 30) } else { Vec::new() };
-        let _ = app.emit("game-exited", GameExit { code, failed, reason, offer_software, offer_compatible, next_step, log: tail });
+        let graphics_failure = matches!(reason, Some(launch::ExitReason::GraphicsStart) | Some(launch::ExitReason::DeviceLost));
+        let advice = diagnosis::exit_advice(written.as_ref(), &graphics.advice, graphics_failure, std::env::consts::OS);
+        let meanwhile = if advice.is_empty() { None } else { diagnosis::exit_meanwhile(next_step, graphics_failure) };
+        let report = diagnosis::report(written.as_ref().or(graphics.diagnosis.as_ref()), &advice, &tail);
+        let _ = app.emit("game-exited", GameExit { code, failed, reason, offer_software, offer_compatible, next_step, log: tail, advice, meanwhile, report });
     });
     Ok(())
 }

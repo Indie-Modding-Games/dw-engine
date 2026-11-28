@@ -361,6 +361,15 @@ local descriptors = {
   },
   -- Graphics tab.
   {
+    name = "graphics_preset",
+    label = "pause_menu.graphics_preset",
+    values = { "performance", "balanced", "quality" },
+    texts = "pause_menu.graphics_preset",
+    default = "quality",
+    tab = "graphics",
+    help = "pause_menu.help.graphics_preset",
+  },
+  {
     name = "auto_quality",
     label = "pause_menu.auto_quality",
     default = false,

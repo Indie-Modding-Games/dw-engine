@@ -8,6 +8,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -33,6 +34,9 @@ struct DeviceDesc {
   bool compatibleMode = false;
   // Stays on the Vulkan 1.3 path even when the driver offers 1.4 (--vulkan13).
   bool forceVulkan13 = false;
+  // Where the compiled pipelines are kept between runs (empty: not kept). A file another GPU or
+  // driver wrote is ignored.
+  std::filesystem::path pipelineCacheFile{};
 };
 
 struct HostImageCopy {
@@ -120,6 +124,11 @@ public:
   [[nodiscard]] NativeHandles nativeHandles() const;
 
   [[nodiscard]] VulkanPath vulkanPath() const;
+  // Every pipeline is built through it, so a pipeline built once is quick to build again.
+  [[nodiscard]] VkPipelineCache pipelineCache() const;
+  // Writes the cache to DeviceDesc::pipelineCacheFile when it grew; the device also does it when
+  // it is destroyed.
+  void savePipelineCache();
   // The Vulkan 1.4 host copy entry points, when images of this format and usage can be written
   // from the CPU without a staging buffer.
   [[nodiscard]] std::optional<HostImageCopy> hostImageCopy(VkFormat format,

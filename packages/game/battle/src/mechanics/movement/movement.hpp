@@ -21,17 +21,15 @@ Point wholeUnits(std::int64_t x, std::int64_t z);
 // `toward`, where a radius or line check hits it.
 Point bodyPointToward(Point at, Point toward, std::int32_t radius);
 void lookAt(Fighter& fighter, Point point);
-// battle_main.c: BTL_handleHitReaction: a fighter hit from the front (within a quarter turn of
-// where it looks) or while flattened turns to the attack; one hit from behind turns its back to it.
-// True for the latter.
+// battle_main.c: BTL_handleHitReaction: hit from the front (within a quarter turn) or while
+// flattened it turns to the attack; hit from behind it turns its back to it, and returns true.
 bool turnForHit(Fighter& fighter, Point attack);
 // The walks stop at whatever the step would run into (map.c: entityCheckCollision): the combat
 // area, the map and the other fighters. battle_main.c: BTL_moveTowardLocation: blocked, the fighter
 // keeps its facing and turns a little toward a free way (collisionGrace).
 void walkToward(BattleContext& context, FighterId id, Point point);
-// battle_main.c: BTL_tickMeleeAttack walks up to the target: its step is not held, but if the
-// collision test blocks it the fighter keeps its old facing (and collisionGrace, without the
-// target, may turn it).
+// battle_main.c: BTL_tickMeleeAttack walks up to the target: its step is not held, but a blocked
+// one keeps the old facing (and collisionGrace, without the target, may turn it).
 void approach(BattleContext& context, FighterId id, FighterId target);
 // battle_main.c: BTL_backAwayFromTarget: turns its back on the target and walks away.
 void backAwayFrom(BattleContext& context, FighterId id, FighterId target);
@@ -41,7 +39,6 @@ void backAwayFrom(BattleContext& context, FighterId id, FighterId target);
 void keepDistance(BattleContext& context, FighterId id, FighterId target);
 // battle_main.c: BTL_confusedRotate: a confused fighter turns at random.
 void turnAtRandom(BattleContext& context, Fighter& fighter);
-// Walks the way it faces.
 void walkForward(BattleContext& context, FighterId id);
 bool isWalking(const Fighter& fighter);
 // battle_main.c: BTL_tickFighterAction: a fighter with clips holds this frame's root step when the
@@ -54,7 +51,6 @@ void tickRootMotion(BattleContext& context);
 // the rectangle of width x height pixels around the screen's centre, moving further out.
 bool leavesScreenArea(const BattleGround& ground, const TimingRules& timing, Point from, Point to,
                       std::int32_t radius, std::int32_t width, std::int32_t height);
-// The integer square root, rounded down.
 std::int64_t integerSqrt(std::int64_t value);
 
 } // namespace dwe::game::battle

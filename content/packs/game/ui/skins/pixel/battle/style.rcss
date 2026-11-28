@@ -117,6 +117,15 @@
 	decorator: none;
 }
 
+/* Each label in its bar's colour: in the small font the M reads close to an H. */
+#fighter-0-hp-label {
+	color: #8fe08a;
+}
+
+#fighter-0-mp-label {
+	color: #7cc4ff;
+}
+
 .partner .bar {
 	left: 46dp;
 	top: 3dp;
@@ -421,21 +430,21 @@
 
 .ally .fighter-name {
 	font-family: "Pixel Small";
-	font-size: 22dp;
+	font-size: 26dp;
 	color: #f2f0e1;
 	font-effect: shadow(2dp 2dp #050c1a);
 }
 
 .ally-revive {
 	font-family: "Pixel Small";
-	font-size: 22dp;
+	font-size: 26dp;
 	color: #ffe64a;
 	font-effect: shadow(2dp 2dp #050c1a);
 }
 
 .ally-order {
 	font-family: "Pixel Small";
-	font-size: 18dp;
+	font-size: 24dp;
 	color: #9cc2ff;
 	font-effect: shadow(2dp 2dp #050c1a);
 }
@@ -502,8 +511,14 @@
 	color: #e2483d;
 }
 
-/* The Folder plate keeps a fixed height at the bottom left, four rows of one line each: the defense bar, the message
-   (a broken defense, else how an order ended, else an altered state), the active order beside its phase, the queue. */
+#command-reach {
+	display: block;
+	font-family: "Pixel Small";
+	font-size: 24dp;
+	color: #93a6bc;
+}
+
+/* The Folder plate: a fixed height at the bottom left, four one-line rows. */
 #folder-panel {
 	left: 30dp;
 	bottom: 30dp;
@@ -538,7 +553,6 @@
 	margin: 0;
 }
 
-/* The Folder plate's phases taller than the defense bar's frame, in the concept's blues. */
 #folder-phase {
 	height: 8dp;
 }

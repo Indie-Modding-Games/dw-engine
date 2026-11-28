@@ -67,7 +67,9 @@ between game versions.
 
 | Version | Changes |
 |---|---|
-| 0.33.0 | The Folder battle's order panel: `battle.folder()` and its `battle.folder.*` settings (the active order, its phase, the waiting orders, the target, each waiting order's foe, the defense bar and the break, the stance, the commit point, the foes' letters and which foes the orders aim at, the move that replaced an order), and the `battle_system` option and the `strip` skin layout option ([Folder battle](../architecture/folder-battle.md)); each co-op ally's current order (`order_key` in `battle.allies()`) and the ally a guest's next item flies to (`throw_target`) |
+| 0.35.0 | The ally a co-op guest's next item flies to: `battle.ally.<n>.throw_target` and `throw_target` in `battle.allies()` (Q and E pick it while the guest's battle bag is open) |
+| 0.34.0 | The graphics notice's reason: `software_notice.kind`, `software_notice.reason` and its values `software_notice.<value>` ([graphics diagnosis](../architecture/graphics-diagnosis.md)) |
+| 0.33.0 | The Folder battle's order panel: `battle.folder()` and its `battle.folder.*` settings (the active order, its phase, the waiting orders, the target, each waiting order's foe, the defense bar and the break, the stance, the commit point, the foes' letters and which foes the orders aim at, the move that replaced an order), and the `battle_system` option and the `strip` skin layout option ([Folder battle](../architecture/folder-battle.md)); each co-op ally's current order (`order_key` in `battle.allies()`) |
 | 0.32.0 | Software mode ([software mode](../architecture/software-mode.md)): the options `auto_quality`, `render_scale` and `frame_limit`, and the `software_notice` notice with the `software_mode` setting |
 | 0.31.0 | The partner menu marks the partner's boosted technique (`partner.technique.<n>.boosted`, `partner.technique.choice.<n>.boosted`: its power and MP are already the boosted ones), and the `boosted_techniques` option arrives ([battle](../modules/game/battle.md#boosted-techniques)) |
 | 0.30.0 | The field's need meters and danger alert: `partner.gauges()` (hunger, the toilet and tiredness as they build up: `hud.gauge.<n>.label`, `need`, `value`, `max` and `fill`), `field.dangers()` and its event `field.danger` (the marks over the wild monsters that would crush the partner: `hud.danger.<n>.visible`, `x`, `y` and `hud.danger.revision`), and the options `need_meters` and `danger_alert` |
@@ -110,7 +112,7 @@ versus, the online rooms, the co-op game's tag and notices and the story boxes (
 ## Reference
 
 <!-- ui-api:generated -->
-UI API version: **0.33.0**.
+UI API version: **0.34.0**.
 
 ### `ui`
 
@@ -364,6 +366,10 @@ UI API version: **0.33.0**.
 | `whamon_in_water` | option | yes/no | Whamon in the water. |
 | `boosted_techniques` | option | yes/no | Boosted techniques. |
 | `auto_quality` | option | yes/no | Automatic quality: the game adjusts the graphics to the frame time. |
+| `graphics_preset` | option | text | Graphics preset: performance, balanced or quality (the default look); custom when the options match none. |
+| `graphics.mode` | setting | text | How the game draws: card, compatible (the Vulkan 1.2 path) or processor. |
+| `graphics.gpu` | setting | text | The graphics device's name. |
+| `graphics.auto_reason` | setting | text | Why the automatic quality chose the look: software, integrated, compatible or slow; empty when it does not choose. |
 | `render_scale` | option | text | Render scale: 100, 75 or 50 (percent). |
 | `frame_limit` | option | text | Frame limit: off, 60 or 30. |
 | `smooth_motion` | option | yes/no | Smooth motion. |
@@ -409,6 +415,9 @@ UI API version: **0.33.0**.
 | Name | Kind | Value | What it is |
 |---|---|---|---|
 | `software_mode` | setting | yes/no | Whether the game draws without a graphics card (software mode); the notice shows once a run. |
+| `software_notice.kind` | setting | text | software (no graphics card) or compatible (the card in the Vulkan 1.2 mode). |
+| `software_notice.reason` | setting | text | Why, as a reason code of docs/architecture/graphics-diagnosis.md; empty if unknown. |
+| `software_notice.<value>` | setting | text | The reason's values: gpu, adapter, dedicated, driver, minimum and api. |
 
 ### `field_item_notice`
 
@@ -823,6 +832,8 @@ UI API version: **0.33.0**.
 | `battle.menu.<n>.current` | setting | yes/no | Whether it is the command the partner follows now. |
 | `battle.menu.<n>.mp_cost` | setting | number | The MP the move costs the partner now; 0 for the other commands. |
 | `battle.menu.<n>.problem` | setting | text | In a folder battle, the text key of why the move cannot be ordered now (not enough MP, finisher not ready...); empty when it can. |
+| `battle.menu.<n>.area` | setting | text | In a folder battle, a technique's area: around_self, around_target or global; empty when it reaches its target alone. |
+| `battle.menu.<n>.friendly_fire` | setting | yes/no | In a folder battle, whether the technique also hits the partner's own side. |
 | `battle.menu.motion` | setting | number | Goes up each time the strip or the partner's bars move, or the icon under the cursor blinks. |
 | `battle.menu.top` | setting | number | The strip's top edge, in lines from the screen's center. |
 | `battle.menu.bottom` | setting | number | The strip's bottom edge. |
@@ -938,7 +949,7 @@ UI API version: **0.33.0**.
 | `battle.state(): table` | query | table | The battle: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds and match_seconds (or nil) and cup (a cup battle). |
 | `battle.fighters(): table` | query | table | The fighters, the partner first: name_key, status_key, hp, max_hp, mp, max_mp, fainted, hp_bar, id, tag, targeted and queued. |
 | `battle.allies(): table` | query | table | The other players' partners fighting beside this player's in a co-op battle (empty otherwise): name_key, status_key, hp, max_hp, mp, max_mp, fainted and revive_seconds (a fallen ally's countdown, or nil). |
-| `battle.commands(): table` | query | table | The command strip, the finisher first: command, label_key, icon, available, current, mp_cost and problem_key (folder battle: why the move cannot be ordered now, or ""). |
+| `battle.commands(): table` | query | table | The command strip, the finisher first: command, label_key, icon, available, current, mp_cost, problem_key (folder battle: why the move cannot be ordered now, or ""), area and friendly_fire (folder battle: the technique's area, "" for one target, and whether it hits allies). |
 | `battle.finisher(): table` | query | table | The finisher: progress, goal, ready, charging (the aura), charge (as a percentage) and gauge (the charge gauge's top-left corner over the partner: x, y as percentages, or nil). |
 | `battle.folder(): table` | query | table | The folder battle's order panel: active, move_key, phase, phase_percent, committed, active_target_key, active_tag, queue (move keys), queue_targets (their foes' name keys), queue_tags, target_key, target_tag, stance, bar, bar_max, broken, broken_seconds and notice (an order that just ended other than done: key, move_key, reason_key, by_key; or nil). |
 | `battle.strip(): table` | query | table | Where the strip and the partner's bars are when entering and leaving: top, bottom, blink, hp_x and mp_x (or nil). |

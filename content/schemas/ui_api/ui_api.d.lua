@@ -1,5 +1,5 @@
 ---@meta
--- The UI API 0.33.0 (docs/modding/ui-api.md) for the Lua language server. The game
+-- The UI API 0.34.0 (docs/modding/ui-api.md) for the Lua language server. The game
 -- tests write it with DWE_WRITE_API_DOC=1: do not edit it by hand.
 
 ui = {}
@@ -483,7 +483,7 @@ function battle.fighters() end
 ---@return table
 function battle.allies() end
 
---- The command strip, the finisher first: command, label_key, icon, available, current, mp_cost and problem_key (folder battle: why the move cannot be ordered now, or "").
+--- The command strip, the finisher first: command, label_key, icon, available, current, mp_cost, problem_key (folder battle: why the move cannot be ordered now, or ""), area and friendly_fire (folder battle: the technique's area, "" for one target, and whether it hits allies).
 ---@return table
 function battle.commands() end
 

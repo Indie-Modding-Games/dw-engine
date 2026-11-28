@@ -11,9 +11,8 @@
 
 namespace dwe::game::battle {
 
-// The Folder battle's numbers (docs/architecture/folder-battle.md, combat-design.md). Stats are
-// read on a scale of `stat_scale` (§6.3); times are battle frames; percents are of the base value.
-// §5: how long a technique prepares before it goes off and recovers after it, before VEL.
+// Folder battle numbers: stats on a `stat_scale` scale (§6.3), times in battle frames, percents of
+// the base. §5: a technique's preparation and recovery, before VEL.
 struct TechniqueTiming {
   std::int32_t preparationFrames = 0;
   std::int32_t recoveryFrames = 0;
@@ -90,9 +89,9 @@ struct TechniqueEntry {
 
 struct FolderRules {
   std::int32_t statScale = 1000;
-  // §4.2: the base times of an order's phases; INT shortens processing, VEL preparation (§6.4,
-  // §6.5). Preparation and recovery are a technique's own: its entry in `techniques`, else the
-  // finisher's or its MP tier's (cheapest first), else these.
+  // §4.2: an order's phase base times (INT cuts processing, VEL preparation). Preparation and
+  // recovery come from `techniques`, else the finisher's or its MP tier's (cheapest first), else
+  // these.
   std::int32_t processingFrames = 0;
   std::int32_t preparationFrames = 0;
   std::int32_t recoveryFrames = 0;
@@ -101,8 +100,7 @@ struct FolderRules {
   std::map<std::string, TechniqueTiming, std::less<>> techniques;
   // §4.6: positioning that long without reaching the range gives the order up.
   std::int32_t giveUpFrames = 0;
-  // §2.9: Aggressive chases its target to point-blank this long, then settles for the technique's
-  // reach.
+  // §2.9: Aggressive chases to point-blank this long, then settles for the technique's reach.
   std::int32_t chaseFrames = 0;
   // §6.4: movement from min to min + span percent of the base speed; execution down by up to
   // `execution_cut_percent`. §6.5: processing down by up to `processing_cut_percent`.
@@ -127,8 +125,8 @@ struct FolderRules {
   std::int32_t coverNearBonusPercent = 0;
   std::int32_t coverFarBonusPercent = 0;
   std::int32_t coverFarPixels = 0;
-  // §2.9: the bar's capacity is DEF times this; it empties from full in `bar_drain_frames` after
-  // `bar_rest_frames` without damage.
+  // §2.9: capacity is DEF times this; a full bar empties in `bar_drain_frames` after
+  // `bar_rest_frames` unhit.
   std::int32_t barDefenseTimes = 0;
   std::int32_t barDrainFrames = 0;
   std::int32_t barRestFrames = 0;

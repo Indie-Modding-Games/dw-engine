@@ -67,7 +67,9 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
-| 0.33.0 | El panel de órdenes del combate Folder: `battle.folder()` y sus ajustes `battle.folder.*` (la orden activa, su fase, las órdenes en espera, el objetivo, el enemigo de cada orden en espera, la barra de defensa y la ruptura, la postura, el punto de compromiso, las letras de los enemigos y a qué enemigos apuntan las órdenes, la técnica que reemplazó una orden), la opción `battle_system` y la opción de layout `strip` de las skins ([Combate Folder](../architecture/folder-battle.md)); la orden en curso de cada aliado en cooperativo (`order_key` en `battle.allies()`) y el aliado al que vuela el próximo objeto de un invitado (`throw_target`) |
+| 0.35.0 | El aliado al que vuela el próximo objeto de un invitado en cooperativo: `battle.ally.<n>.throw_target` y `throw_target` en `battle.allies()` (Q y E lo eligen con la bolsa de combate del invitado abierta) |
+| 0.34.0 | La razón del aviso gráfico: `software_notice.kind`, `software_notice.reason` y sus valores `software_notice.<valor>` ([diagnóstico gráfico](../architecture/graphics-diagnosis.md)) |
+| 0.33.0 | El panel de órdenes del combate Folder: `battle.folder()` y sus ajustes `battle.folder.*` (la orden activa, su fase, las órdenes en espera, el objetivo, el enemigo de cada orden en espera, la barra de defensa y la ruptura, la postura, el punto de compromiso, las letras de los enemigos y a qué enemigos apuntan las órdenes, la técnica que reemplazó una orden), la opción `battle_system` y la opción de layout `strip` de las skins ([Combate Folder](../architecture/folder-battle.md)); la orden en curso de cada aliado en cooperativo (`order_key` en `battle.allies()`) |
 | 0.32.0 | Modo software ([modo software](../architecture/software-mode.md)): las opciones `auto_quality`, `render_scale` y `frame_limit`, y el aviso `software_notice` con el ajuste `software_mode` |
 | 0.31.0 | El menú del compañero marca su técnica potenciada (`partner.technique.<n>.boosted`, `partner.technique.choice.<n>.boosted`: su poder y su MP ya son los potenciados), y llega la opción `boosted_techniques` ([combate](../modules/game/battle.md#tecnicas-potenciadas)) |
 | 0.30.0 | Los medidores de necesidades y el aviso de peligro del campo: `partner.gauges()` (el hambre, el baño y el cansancio según se acumulan: `hud.gauge.<n>.label`, `need`, `value`, `max` y `fill`), `field.dangers()` y su evento `field.danger` (las marcas sobre los monstruos salvajes que aplastarían al compañero: `hud.danger.<n>.visible`, `x`, `y` y `hud.danger.revision`), y las opciones `need_meters` y `danger_alert` |
@@ -742,6 +744,8 @@ Versión de la API de la interfaz: **0.32.0**.
 | `battle.menu.<n>.available` | ajuste | sí/no | Si la orden se puede dar ahora. |
 | `battle.menu.<n>.current` | ajuste | sí/no | Si es la orden que sigue el compañero ahora. |
 | `battle.menu.<n>.mp_cost` | ajuste | número | Los PM que le cuesta la técnica al compañero ahora; 0 en las demás órdenes. |
+| `battle.menu.<n>.area` | ajuste | texto | En un combate Folder, el área de la técnica: around_self, around_target o global; vacío si solo llega a su objetivo. |
+| `battle.menu.<n>.friendly_fire` | ajuste | booleano | En un combate Folder, si la técnica daña también al bando del compañero. |
 | `battle.menu.motion` | ajuste | número | Sube cada vez que la tira o las barras del compañero se mueven, o el icono bajo el cursor parpadea. |
 | `battle.menu.top` | ajuste | número | El borde de arriba de la tira, en líneas desde el centro de la pantalla. |
 | `battle.menu.bottom` | ajuste | número | El borde de abajo de la tira. |
@@ -831,7 +835,7 @@ Versión de la API de la interfaz: **0.32.0**.
 | `battle.state(): table` | consulta | tabla | El combate: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds y match_seconds (o nil) y cup (un combate de copa). |
 | `battle.fighters(): table` | consulta | tabla | Los luchadores, el compañero primero: name_key, status_key, hp, max_hp, mp, max_mp, fainted y hp_bar. |
 | `battle.allies(): table` | consulta | tabla | Los compañeros de los otros jugadores que pelean junto al de este en un combate cooperativo (vacío si no): name_key, status_key, hp, max_hp, mp, max_mp, fainted y revive_seconds (la cuenta atrás de un aliado caído, o nil). |
-| `battle.commands(): table` | consulta | tabla | La tira de órdenes, el golpe final primero: command, label_key, icon, available, current y mp_cost. |
+| `battle.commands(): table` | consulta | tabla | La tira de órdenes, el golpe final primero: command, label_key, icon, available, current, mp_cost, problem_key, area y friendly_fire (combate Folder: el área de la técnica y si daña aliados). |
 | `battle.finisher(): table` | consulta | tabla | El golpe final: progress, goal, ready, charging (el aura), charge (en porcentaje) y gauge (la esquina superior izquierda del indicador de carga sobre el compañero: x, y en porcentaje, o nil). |
 | `battle.strip(): table` | consulta | tabla | Dónde están la tira y las barras del compañero al entrar y salir: top, bottom, blink, hp_x y mp_x (o nil). |
 | `battle.intro(): table` | consulta | tabla | La apertura: step, anger (3 marcas), flee (8), anger_scale, flash y pieces (las piezas del cartel, con key). |

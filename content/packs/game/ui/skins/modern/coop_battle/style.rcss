@@ -1,5 +1,4 @@
-/* The co-op battle's end box in the modern look: the skin's dark rounded card with its amber line and a soft pill
-   button, at the skin's readable text sizes. */
+/* The co-op battle's end box in the modern look. */
 
 #panel {
 	border: 2dp #f2a93b;

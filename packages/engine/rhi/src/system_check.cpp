@@ -1,4 +1,5 @@
 #include <dwe/rhi/device.hpp>
+#include <dwe/rhi/gpu_diagnosis.hpp>
 #include <dwe/rhi/system_check.hpp>
 #include <dwe/rhi/vulkan_path.hpp>
 
@@ -241,7 +242,9 @@ SystemCheck checkFloor(bool compatibleMode) {
 
 } // namespace
 
-SystemCheck checkSystem(bool compatibleMode) {
+namespace {
+
+SystemCheck checkFloors(bool compatibleMode) {
   SystemCheck check = checkFloor(compatibleMode);
   const bool retry =
       check.result == SystemCheckResult::Unsuitable || check.result == SystemCheckResult::NoVulkan;
@@ -256,6 +259,15 @@ SystemCheck checkSystem(bool compatibleMode) {
   return compatible;
 }
 
+} // namespace
+
+SystemCheck checkSystem(bool compatibleMode) {
+  SystemCheck check = checkFloors(compatibleMode);
+  const SystemFacts facts = gatherSystemFacts();
+  check.diagnosis = diagnosisJson(facts, diagnose(facts));
+  return check;
+}
+
 std::string formatSystemCheck(const SystemCheck& check) {
   std::string text = "dwe-check-system 1\n";
   text += std::format("result={}\ndetail={}\ndevices={}\nfloor={}\n", resultName(check.result),
@@ -266,6 +278,9 @@ std::string formatSystemCheck(const SystemCheck& check) {
                         oneLine(gpu.name), gpu.vendorId, gpuKindName(gpu.kind),
                         VK_API_VERSION_MAJOR(gpu.apiVersion), VK_API_VERSION_MINOR(gpu.apiVersion),
                         VK_API_VERSION_PATCH(gpu.apiVersion), oneLine(gpu.driver));
+  }
+  if (!check.diagnosis.empty()) {
+    text += std::format("diagnosis={}\n", oneLine(check.diagnosis));
   }
   return text;
 }

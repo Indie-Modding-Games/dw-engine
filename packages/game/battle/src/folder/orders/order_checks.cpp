@@ -37,7 +37,6 @@ TechniqueTiming timingOf(const BattleContext& context, FighterId id, const Order
                                 .recoveryFrames = folderRules(context).recoveryFrames};
 }
 
-// The end of processing (§4.2 steps 2 and 3): the order's target and its validation.
 void validate(BattleContext& context, FighterId id) {
   FolderFighter& own = folderFighter(context, id);
   Order& order = *own.active;
@@ -66,7 +65,6 @@ void validate(BattleContext& context, FighterId id) {
   enterPhase(context, id, OrderPhase::Positioning, 0);
 }
 
-// The order still stands while positioning and preparing: its target and its MP.
 bool stillValid(BattleContext& context, FighterId id) {
   const Order& order = *folderFighter(context, id).active;
   if (order.target != id && !validFoe(context, id, order.target)) {

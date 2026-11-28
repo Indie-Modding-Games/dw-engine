@@ -46,7 +46,8 @@ strip has every entry, whatever its brain, and each entry means something else.
 The modern skin groups the strip in three blocks: the techniques with their MP cost, the four stances side by side as
 one control, then the target, clearing the queue, the bag and fleeing. The skins with the original's icon strip
 (`strip: icons`) keep its places and tint the stances' frames apart. A technique the partner has not the MP for is
-greyed with its cost in red before it is pressed, and the reason shows under it.
+greyed with its cost in red before it is pressed, and the reason shows under it. The focused technique's name also
+says what it reaches besides its target (around itself, around the target, the whole field) and whether it hits allies.
 
 Foes of the same species carry a letter (A, B...) on their card and over them in the world, and every foe's HP bar
 stays on through the battle; the card of the foe the next orders aim at is lit, and one that a waiting order aims at

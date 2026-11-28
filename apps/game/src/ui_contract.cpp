@@ -318,6 +318,13 @@ constexpr auto Contract =
         entry(SoftwareNotice, Setting, "software_mode", Boolean,
               "Whether the game draws without a graphics card (software mode); the notice shows "
               "once a run."),
+        entry(SoftwareNotice, Setting, "software_notice.kind",
+              Text, "software (no graphics card) or compatible (the card in the Vulkan 1.2 mode)."),
+        entry(
+            SoftwareNotice, Setting, "software_notice.reason", Text,
+            "Why, as a reason code of docs/architecture/graphics-diagnosis.md; empty if unknown."),
+        entry(SoftwareNotice, Setting, "software_notice.<value>",
+              Text, "The reason's values: gpu, adapter, dedicated, driver, minimum and api."),
 
         // The notices (docs/modding/ui-addons.md): small boxes the game shows over the field.
         entry(FieldItemNotice, Setting, "field_item_notice.text",
@@ -636,6 +643,17 @@ constexpr auto Contract =
         entry(PauseMenu, Option, "boosted_techniques", Boolean, "Boosted techniques."),
         entry(PauseMenu, Option, "auto_quality", Boolean,
               "Automatic quality: the game adjusts the graphics to the frame time."),
+        entry(
+            PauseMenu, Option, "graphics_preset", Text,
+            "Graphics preset: performance, balanced or quality (the default look); custom when "
+            "the options match none."),
+        entry(PauseMenu, Setting, "graphics.mode",
+              Text, "How the game draws: card, compatible (the Vulkan 1.2 path) or processor."),
+        entry(PauseMenu, Setting, "graphics.gpu", Text, "The graphics device's name."),
+        entry(
+            PauseMenu, Setting, "graphics.auto_reason", Text,
+            "Why the automatic quality chose the look: software, integrated, compatible or slow; "
+            "empty when it does not choose."),
         entry(PauseMenu, Option, "render_scale", Text, "Render scale: 100, 75 or 50 (percent)."),
         entry(PauseMenu, Option, "frame_limit", Text, "Frame limit: off, 60 or 30."),
         entry(PauseMenu, Option, "smooth_motion", Boolean, "Smooth motion."),
@@ -1029,6 +1047,12 @@ constexpr auto Contract =
             "In a folder battle, the text key of why the move cannot be ordered now (not enough "
             "MP, finisher not ready...); empty when it can."),
         entry(
+            Battle, Setting, "battle.menu.<n>.area", Text,
+            "In a folder battle, a technique's area: around_self, around_target or global; empty "
+            "when it reaches its target alone."),
+        entry(Battle, Setting, "battle.menu.<n>.friendly_fire", Boolean,
+              "In a folder battle, whether the technique also hits the partner's own side."),
+        entry(
             Battle, Setting, "battle.menu.motion", Number,
             "Goes up each time the strip or the partner's bars move, or the icon under the cursor blinks."),
         entry(Battle, Setting, "battle.menu.top", Number,
@@ -1257,8 +1281,10 @@ constexpr auto Contract =
             "otherwise): name_key, status_key, hp, max_hp, mp, max_mp, fainted and revive_seconds (a "
             "fallen ally's countdown, or nil)."),
         api(Battle, Query, "battle.commands", Table, "(): table",
-            "The command strip, the finisher first: command, label_key, icon, available, current, mp_cost "
-            "and problem_key (folder battle: why the move cannot be ordered now, or \"\")."),
+            "The command strip, the finisher first: command, label_key, icon, available, current, mp_cost, "
+            "problem_key (folder battle: why the move cannot be ordered now, or \"\"), area and "
+            "friendly_fire (folder battle: the technique's area, \"\" for one target, and whether "
+            "it hits allies)."),
         api(Battle, Query, "battle.finisher", Table, "(): table",
             "The finisher: progress, goal, ready, charging (the aura), charge (as a percentage) and "
             "gauge (the charge gauge's top-left corner over the partner: x, y as percentages, or nil)."),

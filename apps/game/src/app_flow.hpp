@@ -36,8 +36,7 @@ struct PlayStart {
   // The randomizer a new game plays with, as its setup screen chose it (randomizer.md); nothing:
   // no randomized run. A loaded game plays its save's.
   std::optional<game::randomizer::RunSettings> randomizer = std::nullopt;
-  // The battle system a new game plays, as its mode names it; nothing: the original's. A loaded
-  // game plays the one its save records.
+  // nullopt: the original's; a loaded game plays the one its save records.
   std::optional<std::string> battle = std::nullopt;
   // A cooperative guest starts from the host's shared world in memory; this text is never written
   // into the guest's local save slots.

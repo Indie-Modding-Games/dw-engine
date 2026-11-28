@@ -123,7 +123,9 @@ end
 -- The command strip in the game's order, the finisher first: command (the number battle.command
 -- takes), label_key, icon (its icon in the skins' sheets, "" for the finisher), available (it can
 -- be given now), current (the partner follows it now), mp_cost (a technique's MP now, else 0) and
--- problem_key (in a Folder battle, the text key of why a move cannot be ordered now, or "").
+-- problem_key (in a Folder battle, the text key of why a move cannot be ordered now, or ""), area
+-- and friendly_fire (in a Folder battle, the technique's area: "around_self", "around_target",
+-- "global" or "" for one target, and whether it also hits allies).
 function battle.commands()
   local list = {}
   for index = 0, whole("battle.menu.count") - 1 do
@@ -135,6 +137,8 @@ function battle.commands()
       current = value(entry("battle.menu", index, "current"), false),
       mp_cost = whole(entry("battle.menu", index, "mp_cost")),
       problem_key = value(entry("battle.menu", index, "problem"), ""),
+      area = value(entry("battle.menu", index, "area"), ""),
+      friendly_fire = value(entry("battle.menu", index, "friendly_fire"), false),
     }
   end
   return list

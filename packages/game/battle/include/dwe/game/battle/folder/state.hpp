@@ -6,8 +6,8 @@
 #include <string_view>
 #include <vector>
 
-// The Folder battle system's own state (docs/architecture/folder-battle.md, combat-design.md): the
-// trainer's orders, how each fighter executes them, its stance and its defense bar.
+// The Folder battle's own state (docs/architecture/folder-battle.md): orders, stances and defense
+// bars.
 namespace dwe::game::battle {
 
 using FighterId = std::size_t;
@@ -42,7 +42,6 @@ enum class OrderPhase : std::uint8_t {
 // How an order left the fighter (§4.5, §4.6).
 enum class OrderEnd : std::uint8_t { Done, Interrupted, Invalid, Cancelled, Replaced };
 
-// Why an order could not go on.
 enum class OrderProblem : std::uint8_t {
   None,
   EmptySlot,
@@ -76,22 +75,19 @@ struct FolderFighter {
   OrderPhase phase = OrderPhase::Idle;
   // The frames left of a timed phase (processing, preparing, recovering), or spent positioning.
   std::int32_t phaseFrames = 0;
-  // The frames of the timed phase in full, for the HUD's progress.
   std::int32_t phaseLength = 0;
   // §2.9: the damage taken lately; it breaks the defense at its capacity.
   std::int32_t defenseBar = 0;
   // Frames since the last hit, before the bar drains.
   std::int32_t restFrames = 0;
-  // While above 0 the defense is broken.
   std::int32_t brokenFrames = 0;
   std::int32_t brokenLength = 0;
-  // The last order that ended, how and why, for the HUD.
   std::optional<Order> lastOrder;
   OrderEnd lastEnd = OrderEnd::Done;
   OrderProblem lastProblem = OrderProblem::None;
   std::optional<OrderNotice> notice;
-  // A status effect (stun, confusion, flattening) holds it: the original's behaviour for the
-  // status runs meanwhile.
+  // A status effect (stun, confusion, flattening) holds it while the original's status behaviour
+  // runs.
   bool held = false;
   // A hit came after the technique of the order committed (its effect already threw what lands):
   // the order counts as done instead of going back to positioning.

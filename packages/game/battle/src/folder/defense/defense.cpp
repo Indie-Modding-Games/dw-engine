@@ -28,8 +28,8 @@ void emitFor(const BattleContext& context, EventKind kind, FighterId id, std::in
                 .command = Command::None});
 }
 
-// §6.2, §3.8: the damage of `attack` on its defender, covered or not, with the difficulty's share
-// for the partner as the Classic battle takes it.
+// §6.2, §3.8: the damage of `attack`, covered or not, with the partner's difficulty share as in
+// Classic.
 std::int32_t damageOf(BattleContext& context, const AttackInFlight& attack, bool covered) {
   const FolderRules& rules = folderRules(context);
   const BattleState& state = *context.state;
@@ -158,8 +158,6 @@ void handleFolderAttack(BattleContext& context, const AttackInFlight& attack) {
   }
 }
 
-// §2.9: the bar drains after a rest, and always during a break; the break counts down; VEL sets the
-// walking speed (§6.4).
 void tickDefense(BattleContext& context, FighterId id) {
   const FolderRules& rules = folderRules(context);
   FolderFighter& own = folderFighter(context, id);

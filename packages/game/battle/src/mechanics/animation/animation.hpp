@@ -19,9 +19,8 @@ inline constexpr std::int32_t HitClip = 0x28;
 inline constexpr std::int32_t HitFromBehindClip = 0x29;
 inline constexpr std::int32_t FaintClip = 0x2B;
 
-// The animation each fighter shows, started as the original starts it
-// (startAnimation): the stances when the battle starts, then each frame from the poses and the
-// frame's events.
+// The animation each fighter shows, started as the original's startAnimation does: the stances at
+// the battle's start, then each frame from the poses and the frame's events.
 void startShownClips(BattleState& state);
 void updateShownClips(const BattleContext& context);
 // std_main.c: STD_tickBattleResultScreen: the time ran out with a winner; the loser falls at once
@@ -36,8 +35,8 @@ std::optional<std::int32_t> clipLength(const Fighter& fighter, std::int32_t clip
 // Whether `clip`, which the fighter must be showing, has played to its end (anim.c: animFlag bit 0
 // off): false while it shows another clip, nothing when the battle has no motion for it.
 std::optional<bool> clipEnded(const Fighter& fighter, std::int32_t clip);
-// The root step of the fighter's clip on its next frame; nothing once the clip ended or without
-// its motion.
+// The root step of the fighter's clip on its next frame; nothing once it ended or without its
+// motion.
 std::optional<RootStep> nextRootStep(const Fighter& fighter);
 
 } // namespace dwe::game::battle

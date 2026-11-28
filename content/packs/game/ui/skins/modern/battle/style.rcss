@@ -790,7 +790,8 @@
 	display: none;
 }
 
-#fight.folder #command-name.problem {
+#fight.folder #command-name.problem,
+#fight.folder #command-name.reach {
 	display: inline-block;
 	padding: 2dp 10dp;
 	background-color: #10161ee0;
@@ -802,8 +803,20 @@
 	display: none;
 }
 
-/* The open bag covers the middle of the screen down to the panel, and in the boxed skins the bottom too: the panel
-   gives way until the bag closes. */
+#command-reach {
+	font-size: 18dp;
+	color: #b9c6d4;
+}
+
+#command-reach.hidden {
+	display: none;
+}
+
+#command-name.reach #command-problem {
+	margin-left: 10dp;
+}
+
+/* The open bag covers down to the panel (and the bottom in boxed skins): the panel hides meanwhile. */
 #fight.bag-open #folder-panel {
 	display: none;
 }
@@ -819,8 +832,7 @@
 	display: none;
 }
 
-/* The Folder plate keeps a fixed height at the bottom left, four rows of one line each: the defense bar, the message
-   (a broken defense, else how an order ended, else an altered state), the active order beside its phase, the queue. */
+/* The Folder plate: a fixed height at the bottom left, four one-line rows. */
 #folder-panel {
 	width: 470dp;
 	height: 136dp;
@@ -853,8 +865,7 @@
 	margin: 0;
 }
 
-/* A Classic battle's strip holds the commands the original's strip draws: the finisher, which has no icon there, goes
-   with its own key from the gauge's card, the same in every skin. */
+/* A Classic strip holds the original's commands: the finisher goes with its own key from the gauge's card. */
 #fight:not(.folder) .command.no-icon {
 	display: none;
 }
@@ -862,8 +873,9 @@
 /* The Folder strip in three blocks, each button placed by logic.lua (lay_out_strip): the techniques with their MP,
    the four stances side by side as one control, then the target, clearing the queue, the bag and fleeing. A technique
    the partner has not the MP for is greyed with its cost in red before it is pressed, and why shows under it. */
+/* Grouped buttons are placed against the full-width #commands, not the row: a row sized by them would squeeze them. */
 #command-row.grouped {
-	position: relative;
+	position: static;
 	padding: 0;
 }
 
@@ -895,7 +907,8 @@
 	background-color: #2a2228;
 }
 
-#fight.folder #command-name.problem {
+#fight.folder #command-name.problem,
+#fight.folder #command-name.reach {
 	position: absolute;
 	margin: 0;
 }
@@ -917,8 +930,7 @@
 	border-color: #ff5a48;
 }
 
-/* The active order's five phases (processing, positioning, preparing, executing, recovering), the lock at the start of
-   executing lit once the technique has committed: from there a hit no longer stops it. */
+/* The order's five phases; the lock lights once the technique commits: a hit no longer stops it. */
 #folder-phase {
 	display: flex;
 	height: 8dp;
@@ -949,7 +961,6 @@
 	background-color: #ffd34f;
 }
 
-/* The waiting orders, one numbered chip each with the letter of its foe. */
 .folder-chip {
 	display: inline-block;
 	margin-right: 6dp;
@@ -961,8 +972,7 @@
 	border-radius: 4dp;
 }
 
-/* Twin foes carry a letter on their card and over them in the world; the card of the foe the orders aim at is lit, and
-   one an order waits for has an orange edge. */
+/* Twin foes carry a letter; the targeted foe's card is lit, a queued order's foe gets an orange edge. */
 .fighter-tag {
 	margin-right: 6dp;
 	padding: 0 5dp;
@@ -1004,7 +1014,6 @@
 	border: 2dp #ffb347;
 }
 
-/* How full the finisher gauge is, or that it is ready. */
 #finisher-percent {
 	margin-left: 6dp;
 	font-size: 18dp;

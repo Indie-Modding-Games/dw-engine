@@ -49,8 +49,8 @@ void changeTarget(BattleContext& context, FighterId id, const std::vector<Fighte
   commands.changeTarget = false;
 }
 
-// The commands that act on their own and end a commanded fighter's decisions for the frame; false
-// when it goes on to decide by itself.
+// The commands that act on their own and end a commanded fighter's frame; false: it decides by
+// itself.
 bool followCommand(BattleContext& context, FighterId id, const std::vector<FighterId>& enemies) {
   Fighter& self = context.fighter(id);
   CommandState& commands = context.state->commandsOf(id);
@@ -98,8 +98,8 @@ bool followCommand(BattleContext& context, FighterId id, const std::vector<Fight
   return false;
 }
 
-// A commanded fighter picks its move by the command: the strongest for attack, the cheapest for
-// moderate, else its own call.
+// A commanded fighter's move: the strongest for attack, the cheapest for moderate, else its own
+// call.
 void decideCommandedMove(BattleContext& context, FighterId id) {
   Fighter& self = context.fighter(id);
   const Command current = context.state->commandsOf(id).current;
@@ -133,8 +133,8 @@ void decideCommandedMove(BattleContext& context, FighterId id) {
   }
 }
 
-// battle_main.c: BTL_tickPartnerAI for the partner; vs_combat.c: VS__tickDigimonAI for either side
-// of a versus match.
+// battle_main.c: BTL_tickPartnerAI for the partner; vs_combat.c: VS__tickDigimonAI for a versus
+// side.
 void tickCommanded(BattleContext& context, FighterId id) {
   BattleState& state = *context.state;
   Fighter& self = context.fighter(id);

@@ -115,7 +115,6 @@ local function text(key, arguments)
   return t(key, arguments)
 end
 
--- Sets an element's text only when it changes.
 local function set_text_once(document, id, value)
   if applied[id .. " text"] ~= value then
     applied[id .. " text"] = value
@@ -157,8 +156,8 @@ local function draw_fighter(document, index)
     lookup(document, prefix .. "-mp-fill"):set_property("width", percent(mp, max_mp) .. "%")
   else
     -- An enemy's HP bar only shows for a while after it takes damage, and it has no MP bar
-    -- (battle_main.c: BTL_renderEnemyHPBars); a Folder battle keeps it, the letter of a twin foe
-    -- and the marks of the foe the orders aim at.
+    -- (battle_main.c: BTL_renderEnemyHPBars); a Folder battle keeps it for its foes' letters and
+    -- marks.
     document:get(prefix .. "-hp-row"):set_class("hidden", not (fighter.hp_bar or folder.active))
     local tag = folder.active and fighter.tag or ""
     local tag_element = lookup(document, prefix .. "-tag")
@@ -170,8 +169,7 @@ local function draw_fighter(document, index)
   panel:set_class("fainted", fighter.fainted)
 end
 
--- An ally's card (co-op): its name and status, its current order, its HP and MP as the partner's
--- bars draw them and, once it falls, its revive countdown.
+-- An ally's card (co-op), with its revive countdown once it falls.
 local function draw_ally(document, index, ally)
   local prefix = "ally-" .. index
   lookup(document, prefix):set_class("hidden", ally == nil)
@@ -205,6 +203,7 @@ end
 local function draw_allies(document)
   local allies = battle.allies()
   set_class(document, "allies", "compact", #allies >= max_allies)
+  lookup(document, "fight"):set_class("with-allies", #allies > 0)
   for index = 0, max_allies - 1 do
     draw_ally(document, index, allies[index + 1])
   end
@@ -246,8 +245,7 @@ local function frame_kind(index, count)
   return index % 2 == 1 and "frame-odd" or "frame-even"
 end
 
--- The three blocks of a Folder strip: techniques, stances and the other actions (the bag's entry
--- among these).
+-- A Folder strip's three blocks; the bag's entry counts among the other actions.
 local command_kinds = {
   [2] = "stance",
   [4] = "stance",
@@ -263,8 +261,7 @@ local function command_kind(entry)
   return command_kinds[entry.command] or "action"
 end
 
--- What a Folder strip's button says: a technique with its MP cost, the target command with the foe
--- the orders aim at.
+-- A technique shows its MP cost, the target command the foe the orders aim at.
 local function command_text(entry)
   local label = text(entry.label_key)
   if not folder.active then
@@ -283,7 +280,6 @@ local function command_text(entry)
   return label
 end
 
--- A technique the partner has not the MP for, which a Folder strip greys before it is pressed.
 local function short_of_mp(entry)
   local partner = fighters[1]
   return entry.mp_cost > 0 and (partner ~= nil and partner.mp or 0) < entry.mp_cost
@@ -327,10 +323,8 @@ local function draw_commands(document)
   swap_class(lookup(document, "open-bag"), frame_classes, "open-bag", "place-" .. count)
 end
 
--- The modern layout's Folder strip in its three blocks, each on the row where it fits whole: the
--- techniques, the stances side by side as one control, then the target, clearing the queue, the bag
--- and fleeing. The buttons keep their ids and order in the document (routes and the original
--- layout go by them); only their places change.
+-- The modern layout places the Folder strip's three blocks on rows where they fit whole; buttons
+-- keep their ids and document order (routes and the original layout go by them).
 local action_places = { [7] = 1, [3] = 2, [1] = 4 }
 -- The grouped strip's buttons in the order they show, which left and right walk; empty otherwise.
 local strip_order = {}
@@ -389,13 +383,24 @@ local function lay_out_strip(document)
   for _, each in ipairs(rows) do
     widest = math.max(widest, each.width)
   end
+  if widest <= 0 then
+    return
+  end
   local pad = gap * 0.4
+  local from_left, from_top = lookup(document, "commands"):rect()
+  local row_left, row_top, row_width, row_height = lookup(document, "command-row"):rect()
+  local inner_left = row_left - from_left + (row_width - (widest + pad * 2)) / 2
   local top = pad
   for _, each in ipairs(rows) do
-    local left = pad + (widest - each.width) / 2
+    top = top + each.height + pad
+  end
+  local inner_top = row_top - from_top + (row_height - top) / 2
+  top = pad
+  for _, each in ipairs(rows) do
+    local left = inner_left + pad + (widest - each.width) / 2
     for _, item in ipairs(each) do
       set_property(document, item.id, "left", string.format("%.0fpx", left + item.x))
-      set_property(document, item.id, "top", string.format("%.0fpx", top))
+      set_property(document, item.id, "top", string.format("%.0fpx", inner_top + top))
     end
     top = top + each.height + pad
   end
@@ -427,12 +432,22 @@ local function draw_cursor(document)
   end
 end
 
+local function reach_text(entry)
+  local parts = {}
+  if entry.area ~= "" then
+    parts[#parts + 1] = text("battle.folder.area." .. entry.area)
+  end
+  if entry.friendly_fire then
+    parts[#parts + 1] = text("battle.folder.friendly_fire")
+  end
+  return table.concat(parts, ", ")
+end
+
 -- The name of the focused command under the row, as the original names the hovered icon, and a
--- technique's MP cost after it (a skin that shows it styles #command-cost). The name gets the class
--- short while the command cannot be given now: the finisher before its gauge is full, a technique
--- the partner has not the MP for.
+-- technique's MP cost (#command-cost), then its Folder reach; class short while it cannot be given
+-- now.
 local function draw_command_name(document)
-  local name, cost, short, problem = "", 0, false, ""
+  local name, cost, short, problem, reach = "", 0, false, "", ""
   for index = 0, command_count() - 1 do
     if lookup(document, "command-" .. index):has_focus() then
       local entry = command(index)
@@ -441,6 +456,7 @@ local function draw_command_name(document)
       local partner = fighters[1]
       short = not entry.available or (cost > 0 and (partner ~= nil and partner.mp or 0) < cost)
       problem = entry.problem_key ~= "" and text(entry.problem_key) or ""
+      reach = folder.active and reach_text(entry) or ""
     end
   end
   -- A text strip already names the focused button; only an icon strip needs the name under it.
@@ -456,10 +472,17 @@ local function draw_command_name(document)
     lookup(document, "command-problem"):set_text(problem)
   end
   set_class(document, "command-problem", "hidden", problem == "")
+  if applied["command-reach text"] ~= reach then
+    applied["command-reach text"] = reach
+    lookup(document, "command-reach"):set_text(reach)
+  end
+  set_class(document, "command-reach", "hidden", reach == "")
+  set_class(document, "command-name", "reach", reach ~= "")
+  lookup(document, "fight"):set_class("reach", reach ~= "")
   set_class(document, "command-name", "short", short or problem ~= "")
   set_class(document, "command-name", "problem", problem ~= "")
-  -- The modern layout's Folder strip says why under the strip, below the button itself.
-  if problem ~= "" and folder.active and ui.layout("strip") ~= "icons" then
+  -- A text Folder strip says why and what it reaches below the button.
+  if (problem ~= "" or reach ~= "") and folder.active and ui.layout("strip") ~= "icons" then
     for index = 0, command_count() - 1 do
       local button = lookup(document, "command-" .. index)
       if button:has_focus() then
@@ -505,7 +528,6 @@ end
 -- look whose tiles overlap (the pixel one) still reaches each of them; past the last icon the
 -- default navigation goes on to the entries round the strip.
 local function step_along_strip(document, step)
-  -- The grouped strip goes round its blocks in the order they show.
   if #strip_order > 0 then
     for index, id in ipairs(strip_order) do
       if lookup(document, id):has_focus() then
@@ -577,8 +599,8 @@ local function draw_finisher(document)
   for index = 0, finisher_marks - 1 do
     lookup(document, "finisher-" .. index):set_class("filled", index < filled)
   end
-  -- The same word in the player's language, as many of its letters lit as the gauge has marks lit
-  -- and the rest dim (the original look shows it where the original's English picture is not used).
+  -- The word in the player's language, lit letter by gauge mark (where the original's English
+  -- picture is not used).
   local word = t("battle.finisher_word")
   local letters = utf8.len(word) or #word
   local shown = math.floor(letters * filled / finisher_marks)
@@ -1021,9 +1043,9 @@ local function draw_anger(document, intro)
   draw_marks(document, intro.flee, "flee-", max_flee, scale)
 end
 
--- The HUD's zones, which what floats over the fighters (numbers, enemy bars, shouts) keeps out of:
--- a thing that would land in one goes under it when the zone is in the window's top half, over it
--- in the bottom half. Rects in dp from the window's corner; a hidden zone has no size.
+-- HUD zones that floating things (numbers, enemy bars, shouts) keep out of: under a zone in the
+-- window's top half, over it in the bottom half. Rects in dp from the window's corner; a hidden
+-- zone has no size.
 local reserved_zones = { "partner-panel", "folder-panel", "commands", "enemies", "allies" }
 local zone_gap = 6
 
@@ -1058,6 +1080,29 @@ local function clear_of_hud(hud, x_percent, y_percent, dx, dy, w, h)
       end
     end
   end
+  return (y - dy) * 100 / hud.height
+end
+
+-- Close foes' bars would overlap: a later bar moves above the ones already placed.
+local function clear_of_bars(hud, placed, x_percent, y_percent, dx, dy, w, h)
+  if hud.width <= 0 or hud.height <= 0 then
+    return y_percent
+  end
+  local x = x_percent * hud.width / 100 + dx
+  local y = y_percent * hud.height / 100 + dy
+  local moved = true
+  while moved do
+    moved = false
+    for _, box in ipairs(placed) do
+      local across = x + w >= box.left - zone_gap and x <= box.right + zone_gap
+      local within = y + h >= box.top - zone_gap and y <= box.bottom + zone_gap
+      if across and within then
+        y = box.top - zone_gap - h - 1
+        moved = true
+      end
+    end
+  end
+  placed[#placed + 1] = { left = x, top = y, right = x + w, bottom = y + h }
   return (y - dy) * 100 / hud.height
 end
 
@@ -1222,6 +1267,7 @@ local function draw_hp_bars(document)
     bars[bar.enemy] = bar
   end
   local hud = nil
+  local placed = {}
   for enemy = 1, max_enemies do
     local bar = bars[enemy]
     local id = "hb-" .. enemy
@@ -1230,6 +1276,7 @@ local function draw_hp_bars(document)
       local x, y = bar.left, bar.top
       hud = hud or hud_zones(document)
       local top = clear_of_hud(hud, bar.x, bar.y, x * 3, (y - 9) * 3, 132, 42)
+      top = clear_of_bars(hud, placed, bar.x, top, x * 3 - 36, (y - 9) * 3, 168, 42)
       set_property(document, id, "left", bar.x .. "%")
       set_property(document, id, "top", top .. "%")
       set_property(document, id .. "-frame", "left", pixels(x))
@@ -1538,11 +1585,9 @@ local function draw_intro(document)
   lookup(document, "fight"):set_class("veiled", intro_step == "anger")
 end
 
--- The Folder battle's panel (battle.folder()): the defense bar and the stance, the message, the
--- active order with its five phases and the commit point's lock, the waiting orders as chips.
+-- The Folder battle's panel (battle.folder()).
 local folder_steps = { "processing", "positioning", "preparing", "executing", "recovering" }
 
--- A foe's name with its letter when it has a twin.
 local function foe_name(key, tag)
   local name = text(key)
   if name ~= "" and tag ~= nil and tag ~= "" then
@@ -1551,7 +1596,6 @@ local function foe_name(key, tag)
   return name
 end
 
--- How an order ended, with the move that replaced it and why it could not go on.
 local function notice_text(notice)
   local said = text(notice.key)
   local replaced = notice.key == "battle.folder.end.replaced" and notice.by_key ~= ""

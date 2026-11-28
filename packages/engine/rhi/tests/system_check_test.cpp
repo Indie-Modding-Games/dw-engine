@@ -17,7 +17,8 @@ TEST_CASE("the system check prints a usable GPU for the launcher") {
                                          .kind = GpuKind::Discrete,
                                          .apiVersion = VK_MAKE_API_VERSION(0, 1, 4, 312),
                                          .driver = "NVIDIA 580.95.05"},
-                          .compatible = false};
+                          .compatible = false,
+                          .diagnosis = {}};
   CHECK(formatSystemCheck(check) == "dwe-check-system 1\n"
                                     "result=ok\n"
                                     "detail=\n"
@@ -35,7 +36,8 @@ TEST_CASE("the system check keeps every value on its line") {
                              .detail = "no driver\nat all",
                              .deviceCount = 0,
                              .gpu = std::nullopt,
-                             .compatible = false};
+                             .compatible = false,
+                             .diagnosis = {}};
   CHECK(formatSystemCheck(noVulkan) == "dwe-check-system 1\nresult=no-vulkan\ndetail=no driver at "
                                        "all\ndevices=0\nfloor=1.3\n");
   const SystemCheck old{.result = SystemCheckResult::Unsuitable,
@@ -46,7 +48,8 @@ TEST_CASE("the system check keeps every value on its line") {
                                        .kind = GpuKind::Integrated,
                                        .apiVersion = VK_MAKE_API_VERSION(0, 1, 2, 0),
                                        .driver = "0x1"},
-                        .compatible = false};
+                        .compatible = false,
+                        .diagnosis = {}};
   const std::string text = formatSystemCheck(old);
   CHECK(text.find("result=unsuitable\n") != std::string::npos);
   CHECK(text.find("vendor=0x8086\n") != std::string::npos);
@@ -56,7 +59,8 @@ TEST_CASE("the system check keeps every value on its line") {
                            .detail = "",
                            .deviceCount = 0,
                            .gpu = std::nullopt,
-                           .compatible = false})
+                           .compatible = false,
+                           .diagnosis = {}})
             .find("result=no-device\n") != std::string::npos);
 }
 
@@ -69,7 +73,8 @@ TEST_CASE("the system check says when only the compatible floor fits") {
                                          .kind = GpuKind::Discrete,
                                          .apiVersion = VK_MAKE_API_VERSION(0, 1, 2, 170),
                                          .driver = "AMD 2.0.179"},
-                          .compatible = true};
+                          .compatible = true,
+                          .diagnosis = {}};
   const std::string text = formatSystemCheck(check);
   CHECK(text.find("result=ok\n") != std::string::npos);
   CHECK(text.find("floor=1.2\n") != std::string::npos);

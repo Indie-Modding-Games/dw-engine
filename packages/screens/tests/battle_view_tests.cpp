@@ -444,6 +444,37 @@ TEST_CASE("a folder battle's view says why a move cannot be ordered and how an o
   CHECK(std::get<std::string>(notice->value) == "battle.folder.end.annulled");
 }
 
+TEST_CASE("a folder battle's technique entries carry their area and friendly fire") {
+  const auto species = fixtureSpecies();
+  const NameKeys names{&species, nullptr, &testCatalog()};
+  BattleSetup setup = duel(evenStats(900, 600), evenStats(700, 80), {"wide_blast", "shot"});
+  const auto entryOf = [](const dwe::screens::BattleView& view, Command command) {
+    return std::ranges::find(view.menu, command, &dwe::screens::CommandEntry::command);
+  };
+  const auto classic = dwe::screens::battleViewOf(startBattle(setup, 3), names);
+  REQUIRE(entryOf(classic, Command::Technique1) != classic.menu.end());
+  CHECK(entryOf(classic, Command::Technique1)->area.empty());
+
+  setup.system = BattleSystemId::Folder;
+  const auto view = dwe::screens::battleViewOf(startBattle(std::move(setup), 3), names);
+  const auto blast = entryOf(view, Command::Technique1);
+  const auto shot = entryOf(view, Command::Technique2);
+  REQUIRE(blast != view.menu.end());
+  REQUIRE(shot != view.menu.end());
+  CHECK(blast->area == "around_self");
+  CHECK(blast->friendlyFire);
+  CHECK(shot->area.empty());
+  CHECK_FALSE(shot->friendlyFire);
+  const auto settings = dwe::screens::settingsOf(view);
+  const auto index = static_cast<std::size_t>(std::distance(view.menu.begin(), blast));
+  const auto* area = settingNamed(settings, std::format("battle.menu.{}.area", index));
+  const auto* friendly = settingNamed(settings, std::format("battle.menu.{}.friendly_fire", index));
+  REQUIRE(area != nullptr);
+  REQUIRE(friendly != nullptr);
+  CHECK(std::get<std::string>(area->value) == "around_self");
+  CHECK(std::get<bool>(friendly->value));
+}
+
 TEST_CASE(
     "a folder battle's view letters twin foes, marks the aimed ones and names a replacement") {
   const auto species = fixtureSpecies();

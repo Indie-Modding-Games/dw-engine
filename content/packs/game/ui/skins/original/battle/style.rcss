@@ -1256,6 +1256,33 @@
 	color: #a8d8f8;
 }
 
+/* Name and order on a dark strip, as the plate's labels, so they read over the bright sand. */
+.partner.ally .fighter-head {
+	display: inline-block;
+	height: auto;
+	padding: 0 10dp 6dp 10dp;
+	margin-bottom: 4dp;
+	background-color: #0b1218c8;
+}
+
+.ally .fighter-name {
+	color: #ffffff;
+}
+
+.ally {
+	margin: 0 0 10dp 0;
+}
+
+/* The open bag spans the top of the screen: the ally rows move under it. */
+#fight.bag-open #allies {
+	top: 380dp;
+}
+
+#fight.with-allies #command-label {
+	padding: 0 10dp;
+	background-color: #0b1218c8;
+}
+
 /* ------------------------------------------------------------------------------------------------------------------
    The Folder battle (not in the original; it follows this skin's boxes): one of the original's boxes (theme.rcss:
    .original-box) at the bottom left, 10 pixels from the edges as the partner's bars are from theirs. "Guard" in the
@@ -1316,8 +1343,7 @@
 	line-height: 30dp;
 }
 
-/* The strip names the hovered icon in a Folder battle too (the modern skin's Folder pill does not apply), and says why
-   the focused move cannot be ordered now after its name, in red at the small size. */
+/* The strip names the hovered icon in a Folder battle too, with why it cannot be ordered after it in red. */
 #fight.folder #command-name,
 #fight.folder #command-name.problem {
 	display: block;
@@ -1337,6 +1363,17 @@
 	display: none;
 }
 
+/* A Folder technique's reach takes a line of its own under the name, and the foe list makes room for it. */
+#command-reach {
+	display: block;
+	font-size: 22dp;
+	color: #a8b8c8;
+}
+
+#command-reach.hidden {
+	display: none;
+}
+
 /* The key that types on the end box's text, while the text waits for it. */
 #end-more {
 	display: block;
@@ -1350,8 +1387,7 @@
 	display: none;
 }
 
-/* The Folder plate keeps a fixed height at the bottom left, four rows of one line each: the defense bar, the message
-   (a broken defense, else how an order ended, else an altered state), the active order beside its phase, the queue. */
+/* The Folder plate: a fixed height at the bottom left, four one-line rows. */
 #folder-panel {
 	height: 156dp;
 	box-sizing: border-box;
@@ -1383,8 +1419,7 @@
 	margin: 0;
 }
 
-/* The Folder plate's stance chip, phases and queue chips in the boxes' colours; the stances' frames on the strip
-   tinted apart from the techniques and the actions. The finisher's word already fills as its gauge does. */
+/* The Folder plate's chips and phases in the boxes' colours; the strip's stance frames tinted apart. */
 #folder-stance {
 	font-size: 20dp;
 	line-height: 26dp;
@@ -1433,14 +1468,17 @@
 	max-width: 100%;
 }
 
-/* A Folder battle names its foes by letter: a compact list at the left under the strip, as the bars hanging from a foe
-   high in the field can sit past the screen's top. */
+/* A Folder battle lists its foes by letter at the left under the strip: bars of high foes can sit past the top. */
 #fight.folder #enemies {
 	display: block;
 	position: absolute;
 	left: 30dp;
 	top: 210dp;
 	width: 300dp;
+}
+
+#fight.folder.reach #enemies {
+	top: 240dp;
 }
 
 #fight.folder .fighter.enemy {
