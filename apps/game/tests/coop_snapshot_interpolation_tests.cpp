@@ -59,7 +59,7 @@ TEST_CASE("client presentation rejects old snapshots, drops gone entities and re
   REQUIRE(afterLeave->entities.size() == 1);
   CHECK(afterLeave->entities.front().position.x == 8.0F);
   REQUIRE(buffer.push(
-      Snapshot{.mapId = "field/b", .worldTick = 1, .entities = {{.networkId = 1, .x = 50}}},
+      Snapshot{.mapId = "field/b", .worldTick = 22, .entities = {{.networkId = 1, .x = 50}}},
       Millis{1100}));
   const auto afterMapChange = buffer.sample(Millis{1100});
   REQUIRE(afterMapChange);
@@ -81,4 +81,33 @@ TEST_CASE("a guest's presence query lists the players the newest snapshot shows 
                   Millis{0}));
   CHECK(buffer.playersOn("field/a") == std::vector<PlayerId>{0, 2});
   CHECK(buffer.playersOn("field/b").empty());
+}
+
+TEST_CASE("a late snapshot fills a track in time but never takes the guest back a map (#358)") {
+  CoopSnapshotInterpolation buffer;
+  // Snapshot 2 shows a turn (z 140) and arrives after 3, before the playback reached its time.
+  REQUIRE(buffer.push(
+      Snapshot{.mapId = "field/a", .worldTick = 1, .entities = {{.networkId = 1, .z = 0}}},
+      Millis{80}));
+  REQUIRE(buffer.push(
+      Snapshot{.mapId = "field/a", .worldTick = 3, .entities = {{.networkId = 1, .z = 20}}},
+      Millis{180}));
+  CHECK_FALSE(buffer.push(
+      Snapshot{.mapId = "field/a", .worldTick = 2, .entities = {{.networkId = 1, .z = 140}}},
+      Millis{185}));
+  const auto filled = buffer.sample(Millis{100 + 30 + 100});
+  REQUIRE(filled);
+  CHECK(filled->worldTick == 3);
+  CHECK(filled->entities.front().position.z == doctest::Approx(140.0F));
+  // The host went on to another map; a snapshot of the map before, late, is not drawn.
+  REQUIRE(buffer.push(
+      Snapshot{.mapId = "field/b", .worldTick = 5, .entities = {{.networkId = 1, .x = 7}}},
+      Millis{280}));
+  CHECK_FALSE(buffer.push(
+      Snapshot{.mapId = "field/a", .worldTick = 4, .entities = {{.networkId = 1, .x = 99}}},
+      Millis{285}));
+  const auto after = buffer.sample(Millis{400});
+  REQUIRE(after);
+  CHECK(after->mapId == "field/b");
+  CHECK(after->entities.front().position.x == 7.0F);
 }

@@ -33,15 +33,17 @@ struct PresentedCoopWorld {
 
 // The host's snapshots as a guest draws them (#354): every entity on a track of its own
 // (game::coop::PoseTrack) played a little behind the newest snapshot on the guest's clock, so the
-// motion is smooth whatever the network's jitter and the local frame rate. Late or repeated
-// snapshots are dropped; a map change starts every track over. It never touches the guest's field.
+// motion is smooth whatever the network's jitter and the local frame rate. A late snapshot only
+// fills the tracks it still reaches in time, a repeated one is dropped, and a map change (a newer
+// snapshot on another map) starts every track over. It never touches the guest's field.
 class CoopSnapshotInterpolation {
 public:
   // The host stamps a snapshot every SnapshotTicks of its 60 Hz field: its world tick times this
   // is the host's clock the tracks play by.
   static constexpr net::Millis SnapshotPeriod{50};
 
-  // A snapshot received `now`. False for one not newer than the newest kept.
+  // A snapshot received `now`. False for one not newer than the newest kept (a late one of the
+  // same map may still fill the tracks).
   [[nodiscard]] bool push(game::coop::Snapshot snapshot, net::Millis now);
   // The entities of the newest snapshot, each where its track draws it at `now`.
   [[nodiscard]] std::optional<PresentedCoopWorld> sample(net::Millis now) const;

@@ -139,11 +139,14 @@ private:
   std::uint32_t revision_ = 1;
 };
 
-// A remote player's transform as a viewer draws it (#354): the states arrive with the sender's
-// sequence and clock; the track keeps the newest few, drops late or repeated ones, and plays them
-// back a little behind the newest so the motion between them is smooth whatever the network's
-// jitter. Past the newest it holds a short way and then stops; a jump farther than a player can
-// move (a correction, a respawn) is drawn as a jump, not a slide.
+// A remote player's transform as a viewer draws it (#354, #358): the states arrive with the
+// sender's sequence and clock; the track keeps the newest few in order and plays them back a little
+// behind the newest, so the motion between them is smooth whatever the network's jitter. A late
+// state still ahead of the playback fills its place; one already played, or repeated, is dropped.
+// Past the newest it goes on a short way and then holds; when states come again after a loss it
+// catches up from where it held within the delay instead of jumping. A step longer than the sender
+// could have moved in the time between two states (a warp, a script putting it somewhere, a
+// correction) is drawn as a jump, never a slide. It only draws: the authority never reads it.
 struct TrackedPose {
   float x = 0.0F;
   float y = 0.0F;
@@ -158,8 +161,10 @@ struct PoseTrackRules {
   net::Millis delay{100};
   // How far past the newest state it extrapolates before it stops there.
   net::Millis extrapolation{100};
-  // A step longer than this between two states is a jump.
-  float snapDistance = 800.0F;
+  // The fastest anything on a field moves (world units per second; a run is about 1000) and a
+  // fixed allowance on top: a step farther than this reach in the sender's time is a teleport.
+  float maxSpeed = 2500.0F;
+  float snapSlack = 64.0F;
   // A state this much later than the quickest delivery seen means the sender stopped its clock (a
   // pause) or the route got slower for good: the track takes the new delay at once instead of
   // creeping toward it.
@@ -172,7 +177,8 @@ public:
   explicit PoseTrack(PoseTrackRules rules = {}) : rules_{rules} {}
 
   // A state the sender stamped `sequence` at `senderTime` (its own clock), received `now`. False
-  // for a state not newer than the newest one kept. A different map starts the track over.
+  // for one dropped: repeated, already played back, or from the map before a newer one. A newer
+  // state on a different map starts the track over.
   bool push(std::uint32_t sequence, net::Millis senderTime, const PlayerPose& pose,
             net::Millis now);
   // The pose to draw at `now` (local clock); none before the first state.
@@ -185,8 +191,16 @@ private:
   struct Entry {
     std::uint32_t sequence = 0;
     net::Millis senderTime{0};
-    PlayerPose pose;
+    TrackedPose pose;
+    // Farther from the state before it than the sender could move: drawn as a jump.
+    bool jump = false;
+    // Not a state: where the track held when states came again after a loss, to catch up from.
+    bool bridge = false;
   };
+  [[nodiscard]] net::Millis playhead(net::Millis now) const;
+  [[nodiscard]] const Entry* stateBefore(std::size_t index) const;
+  [[nodiscard]] bool jumped(const Entry* from, const Entry& to) const;
+
   PoseTrackRules rules_;
   std::vector<Entry> entries_;
   std::string mapId_;
