@@ -8,6 +8,7 @@
 #include <RmlUi/Core/FontMetrics.h>
 #include <RmlUi/Core/StringUtilities.h>
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
@@ -38,6 +39,8 @@ public:
   // The context's pixels per dp, which sets how many times larger the bitmap font draws.
   void setDpRatio(float ratio) { dpRatio_ = ratio; }
   void setFallbacks(std::vector<FallbackChain> chains);
+  // Lets the renderer sample the bitmap atlas sharp: filtered, a fractional offset bleeds ink.
+  void setBeforeBitmapAtlas(std::function<void()> hook) { beforeBitmapAtlas_ = std::move(hook); }
   bool setLanguage(std::string_view language);
   [[nodiscard]] bool covers(std::string_view text) const;
 
@@ -68,6 +71,7 @@ public:
   void ReleaseFontResources() override;
 
 private:
+  std::function<void()> beforeBitmapAtlas_;
   // The bitmap font at one size: drawn `scale` times larger, with the modern face that draws what
   // it lacks.
   struct BitmapFace {

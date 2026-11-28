@@ -58,9 +58,12 @@ or the address, and leaves out rooms already playing. Each room's phase:
 | `ready` | the host says both picked what they play |
 | `playing` | the host says the game started: out of the list |
 
-The host sends `ready`, `playing` and `closed` to `POST /v1/rooms/<code>/state` with its token (the game sends it as
-a WebSocket that gets one answer). A room that closes before a guest arrives leaves the list with it; one whose
-players met stays until the host says `closed`, or 10 minutes after its last notice. `GET /v1/info` says what the
+The host sends `connected`, `ready`, `playing` and `closed` to `POST /v1/rooms/<code>/state` with its token (the
+game sends it as a WebSocket that gets one answer), and repeats the room's state every minute while it lasts. A room
+that closes before a guest arrives leaves the list with it; one whose players met stays until the host says
+`closed`, or 3 minutes after its last notice, so a host that crashed leaves no room behind (#416). A late lobby
+notice never takes a game under way back to the lobby. A room of more seats whose host left its lobby with guests in
+stays listed as full only: nobody can join a room that is gone. `GET /v1/info` says what the
 server can do (`public-rooms`, `room-state`, and `relay` when it has TURN).
 
 Limits: 50 open public rooms at most, one per address, six rooms a minute and five list reads every ten seconds per

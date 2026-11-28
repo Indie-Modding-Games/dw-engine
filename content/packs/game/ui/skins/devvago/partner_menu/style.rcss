@@ -2383,3 +2383,27 @@ body.layout-pages-compact #scrim #close { font-family: "Pixel Small"; font-size:
 }
 #scrim.compact-partner #status-weight-label, #scrim.compact-partner.status-text.status-extras #status-weight-label { width: 80dp; }
 #scrim.compact-partner #status-weight, #scrim.compact-partner.status-text.status-extras #status-weight { left: 84dp; width: 78dp; }
+
+/* In a battle the bag opens under the strip and the partner's bars, short, so the fight stays in sight. */
+body.layout-pages-compact #scrim.battle-bag #panel { top: 170dp; height: auto; width: 900dp; margin: 0 0 0 -450dp; }
+body.layout-pages-compact #scrim.battle-bag #page-items { position: relative; top: auto; height: auto; padding: 0 12dp 12dp 12dp; box-sizing: border-box; }
+body.layout-pages-compact #scrim.battle-bag #bag-foot { position: relative; top: auto; height: 44dp; padding-top: 6dp; box-sizing: border-box; }
+body.layout-pages-compact #scrim.battle-bag #bag-grid { position: relative; left: auto; right: auto; top: auto; height: auto; max-height: 200dp; }
+body.layout-pages-compact #scrim.battle-bag #bag-description { position: relative; left: auto; right: auto; top: auto; height: auto; min-height: 52dp; margin-top: 8dp; }
+
+/* A co-op guest's battle bag: the keys that pick the partner its item flies to. */
+#throw-hint {
+	display: block;
+	position: relative;
+	margin: 6dp 0 0 0;
+	font-size: 18dp;
+	color: #9cbad0;
+}
+
+#throw-hint.hidden {
+	display: none;
+}
+
+#throw-hint .key {
+	margin-right: 6dp;
+}

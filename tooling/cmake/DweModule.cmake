@@ -207,11 +207,12 @@ function(dwe_add_to_package)
 endfunction()
 
 # dwe_add_module(<name> LAYER <layer> SOURCES <files...> [DEPS <modules...>] [PUBLIC_LIBS <libs...>]
-#                [PRIVATE_LIBS <libs...>] [TEST_LIBS <libs...>])
+#                [PRIVATE_LIBS <libs...>] [TEST_LIBS <libs...>] [NESTED_TESTS])
 # Declares the static library dwe::<name> from the current directory: include/ is public, src/ is private, and every
-# tests/*.cpp file becomes part of the module's test executable.
+# tests/*.cpp file becomes part of the module's test executable. NESTED_TESTS takes the tests/ subfolders too, for a
+# module whose tests mirror its feature folders.
 function(dwe_add_module name)
-    cmake_parse_arguments(PARSE_ARGV 1 arg "" "LAYER" "SOURCES;DEPS;PUBLIC_LIBS;PRIVATE_LIBS;TEST_LIBS")
+    cmake_parse_arguments(PARSE_ARGV 1 arg "NESTED_TESTS" "LAYER" "SOURCES;DEPS;PUBLIC_LIBS;PRIVATE_LIBS;TEST_LIBS")
     _dwe_check_deps(${name} ${arg_LAYER} ${arg_DEPS})
     set_property(GLOBAL PROPERTY DWE_LAYER_${name} ${arg_LAYER})
     _dwe_folder_group(group)
@@ -231,7 +232,11 @@ function(dwe_add_module name)
     dwe_apply_options(dwe_${name})
     dwe_add_to_package(dwe_${name})
 
-    file(GLOB test_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
+    if(arg_NESTED_TESTS)
+        file(GLOB_RECURSE test_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
+    else()
+        file(GLOB test_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
+    endif()
     if(BUILD_TESTING AND test_sources)
         add_executable(dwe_${name}_tests ${test_sources})
         target_link_libraries(dwe_${name}_tests PRIVATE dwe::${name} dwe_test_main ${arg_TEST_LIBS})

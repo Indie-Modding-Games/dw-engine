@@ -16,6 +16,9 @@
 namespace dwe::app {
 
 inline constexpr std::string_view SleepMenuDocument = "sleep_menu";
+// A co-op guest's wait for the world's morning: seconds left, -1 while the world's clock stands.
+inline constexpr std::string_view SleepWaitingSetting = "sleep_menu.waiting";
+inline constexpr std::string_view SleepWaitSecondsSetting = "sleep_menu.wait_seconds";
 
 // The pause menu's Sleep (docs/architecture/save-and-load.md, 3.6), as partner.c's
 // partnerTickSleep: the partner walks up to the player, the player plays its clip, the partner
@@ -32,6 +35,8 @@ public:
 
   // Whether the player waits on a sleep: the field and the game time wait meanwhile.
   [[nodiscard]] bool active() const;
+
+  [[nodiscard]] bool waitsForWorld() const { return phase_ == Phase::WaitingWorld; }
 
   // Whether the field still moves, without the player: the partner walks up, the two play their
   // clips, and the screen fades out and in (partner.c: partnerTickSleep runs in the field's state).
@@ -57,7 +62,8 @@ public:
 
 private:
   // Settling: the player's and the partner's clips before the fade out (SleepSteps). FadeTail: the
-  // player has control back, and the fade in draws its last frames.
+  // player has control back, and the fade in draws its last frames. WaitingWorld: a co-op guest's
+  // dark screen until the world's morning.
   enum class Phase : std::uint8_t {
     Awake,
     FadingOut,
@@ -65,7 +71,8 @@ private:
     FadingIn,
     FadeTail,
     WalkingUp,
-    Settling
+    Settling,
+    WaitingWorld
   };
 
   [[nodiscard]] std::int32_t fadeFrame() const;
@@ -75,6 +82,8 @@ private:
   void showMenu();
   void follow(const SaveStep& step);
   void startFadeIn();
+  void wakeNow();
+  void publishWait();
   void apply(FieldScene& scene, const SleepSteps::Order& order);
 
   session::GameSession* session_;
@@ -96,6 +105,7 @@ private:
   bool dialogShown_ = false;
   bool fieldIdle_ = false;
   std::optional<bool> canSleep_;
+  std::optional<double> waitShown_;
 };
 
 } // namespace dwe::app

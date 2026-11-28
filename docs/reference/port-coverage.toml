@@ -185,8 +185,8 @@ target = "TRN_"
 # --- Battle
 BTL_appendItemDroppedText = { status = "portado", dwe = "packages/screens/include/dwe/screens/battle_view.hpp:116", what = "Adds the line for the item the opponent dropped to the end box." }
 BTL_appendInjuredText = { status = "portado", dwe = "packages/screens/src/battle_view.cpp:252", what = "Adds the line for the partner's injury to the end box." }
-BTL_appendCommandLearnedText = { status = "portado", dwe = "packages/game/battle/src/aftermath.cpp:101", what = "Adds the battle command the partner learned to the end box.", note = "the text is built by packages/screens/src/battle_view.cpp:239 (originalLines)" }
-BTL_appendMPBonusText = { status = "portado", dwe = "packages/game/battle/src/aftermath.cpp:122", what = "Adds the MP bonus gained to the end box.", note = "in two rows: fix for the original's bug (docs/modules/game/battle.md)" }
+BTL_appendCommandLearnedText = { status = "portado", dwe = "packages/game/battle/src/core/aftermath.cpp:101", what = "Adds the battle command the partner learned to the end box.", note = "the text is built by packages/screens/src/battle_view.cpp:239 (originalLines)" }
+BTL_appendMPBonusText = { status = "portado", dwe = "packages/game/battle/src/core/aftermath.cpp:122", what = "Adds the MP bonus gained to the end box.", note = "in two rows: fix for the original's bug (docs/modules/game/battle.md)" }
 BTL_scrollBattleEndText = { status = "portado", dwe = "packages/screens/include/dwe/screens/battle_view.hpp:116", what = "Scrolls the lines of the battle end box." }
 BTL_tickBattleEndText = { status = "portado", dwe = "content/packs/game/ui/battle/logic.lua:546", what = "Advances the end box text; a button speeds it up." }
 BTL_isEndBoxTextFinished = { status = "portado", dwe = "packages/screens/include/dwe/screens/battle_view.hpp:116", what = "Tells whether the end box has finished showing its text." }
@@ -196,30 +196,30 @@ BTL_isBattleStartTextFinished = { status = "portado", dwe = "packages/screens/in
 BTL_initializePartnerStatusBars = { status = "portado", dwe = "packages/screens/src/partner_bars.cpp:24", what = "Builds the partner's HP and MP bars in the HUD." }
 BTL_tickPartnerStatusBars = { status = "portado", dwe = "packages/screens/src/partner_bars.cpp:30", what = "Updates the partner's HP and MP bars." }
 BTL_tickPartnerWaypointTrail = { status = "portado", dwe = "packages/game/field/src/partner_follow.cpp", what = "During battle, stores the partner's tile trail so it can later return next to the player without getting stuck." }
-BTL_resetFlatten = { status = "portado", dwe = "packages/game/battle/src/battle_context.hpp:115", what = "Restores the flattened fighter to its normal shape." }
-BTL_getMoveWithHighestDistance = { status = "portado", dwe = "packages/game/battle/src/battle_context.hpp:219", what = "The longest range among the opponent's moves, so the partner keeps its distance." }
-BTL_maintainDistanceRange = { status = "portado", dwe = "packages/game/battle/src/battle_context.hpp:197", what = "Keeps the fighter between a minimum and a maximum distance from the target." }
-BTL_hasAffordableMoves = { status = "portado", dwe = "packages/game/battle/src/usability.hpp:28", what = "Tells whether the fighter has enough MP for any move." }
+BTL_resetFlatten = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status.hpp:19", what = "Restores the flattened fighter to its normal shape." }
+BTL_getMoveWithHighestDistance = { status = "portado", dwe = "packages/game/battle/src/mechanics/actions/actions.hpp:23", what = "The longest range among the opponent's moves, so the partner keeps its distance." }
+BTL_maintainDistanceRange = { status = "portado", dwe = "packages/game/battle/src/mechanics/movement/movement.hpp:38", what = "Keeps the fighter between a minimum and a maximum distance from the target." }
+BTL_hasAffordableMoves = { status = "portado", dwe = "packages/game/battle/src/mechanics/decisions/usability.hpp:28", what = "Tells whether the fighter has enough MP for any move." }
 BTL_initializePartnerTile = { status = "no-aplica", note = "internal state of the partner's trail", what = "Stores the partner's tile at the start of the battle." }
 BTL_addEnemyHPBars = { status = "portado", dwe = "apps/game/src/battle_screen.cpp:521", what = "Adds the opponents' HP bars." }
 BTL_initializeEnemyHPBarSprites = { status = "portado", dwe = "packages/screens/src/enemy_hp_bars.cpp:55", what = "Sets up the fill of the opponents' HP bars: 50 pixels, tinted green." }
 BTL_removeEnemyHPBars = { status = "portado", dwe = "apps/game/src/battle_screen.cpp:241", what = "Removes the opponents' HP bars when the battle ends." }
-BTL_clearBlockedAttacks = { status = "portado", dwe = "packages/game/battle/src/fighter_actions.cpp:670", what = "Empties each fighter's list of attacks already received." }
+BTL_clearBlockedAttacks = { status = "portado", dwe = "packages/game/battle/src/mechanics/actions/fighter_actions.cpp:675", what = "Empties each fighter's list of attacks already received." }
 BTL_getAttackTech = { status = "portado", dwe = "packages/game/battle/include/dwe/game/battle/state.hpp:152", what = "Gives the move of an attack from its animation." }
 BTL_getFighterSlot = { status = "no-aplica", note = "internal index", what = "Gives the battle slot of an entity." }
-BTL_addBlockedAttack = { status = "portado", dwe = "packages/game/battle/src/attack_hits.cpp:255", what = "Records that an attack already hit a fighter so it does not hit twice." }
-BTL_startHitAnimation = { status = "portado", dwe = "packages/game/battle/src/shown_clips.cpp:110", what = "Starts the hit animation, from the front or from behind." }
+BTL_addBlockedAttack = { status = "portado", dwe = "packages/game/battle/src/classic/attack_resolution.cpp:94", what = "Records that an attack already hit a fighter so it does not hit twice." }
+BTL_startHitAnimation = { status = "portado", dwe = "packages/game/battle/src/mechanics/animation/shown_clips.cpp:111", what = "Starts the hit animation, from the front or from behind." }
 BTL_getDistanceSquared = { status = "no-aplica", note = "helper calculation", what = "Squared distance between two fighters." }
-BTL_applyFlattenScale = { status = "portado", dwe = "packages/game/battle/src/shown_clips.cpp", what = "Flattens the model of the flattened fighter.", note = "staged scale and switch to the flat drawing (FlatLook); the field applies it to the model" }
-BTL_addStatusEffectVisual = { status = "portado", dwe = "packages/game/battle/src/status_visuals.cpp:28", what = "Puts the visual effect of its status on the fighter (poison, confusion, stun)." }
-BTL_applyStretchScale = { status = "portado", dwe = "packages/game/battle/src/shown_clips.cpp", what = "Stretches the model as it recovers from being flattened." }
-BTL_applySquashScale = { status = "portado", dwe = "packages/game/battle/src/shown_clips.cpp", what = "Shrinks the model when it is flattened." }
-BTL_clearPoison = { status = "portado", dwe = "packages/game/battle/src/status_effects.cpp:54", what = "Cures poison." }
+BTL_applyFlattenScale = { status = "portado", dwe = "packages/game/battle/src/mechanics/animation/shown_clips.cpp", what = "Flattens the model of the flattened fighter.", note = "staged scale and switch to the flat drawing (FlatLook); the field applies it to the model" }
+BTL_addStatusEffectVisual = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals.cpp:28", what = "Puts the visual effect of its status on the fighter (poison, confusion, stun)." }
+BTL_applyStretchScale = { status = "portado", dwe = "packages/game/battle/src/mechanics/animation/shown_clips.cpp", what = "Stretches the model as it recovers from being flattened." }
+BTL_applySquashScale = { status = "portado", dwe = "packages/game/battle/src/mechanics/animation/shown_clips.cpp", what = "Shrinks the model when it is flattened." }
+BTL_clearPoison = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_effects.cpp:61", what = "Cures poison." }
 BTL_healFlatten = { status = "portado", note = "", what = "Cures the flattened state and moves on to its recovery." }
-BTL_addPoisonStatusVisual = { status = "portado", dwe = "packages/game/battle/src/status_visuals.cpp:28", what = "Puts the poison bubbles over the fighter." }
-BTL_addConfusionStatusVisual = { status = "portado", dwe = "packages/game/battle/src/status_visuals.cpp:28", what = "Puts the confusion effect over the fighter." }
-BTL_addStunStatusVisual = { status = "portado", dwe = "packages/game/battle/src/status_visuals.cpp:28", what = "Puts the stun stars over the fighter." }
-BTL_getRandomUsableMove = { status = "portado", dwe = "packages/game/battle/src/usability.hpp:32", what = "Picks a usable move at random." }
+BTL_addPoisonStatusVisual = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals.cpp:28", what = "Puts the poison bubbles over the fighter." }
+BTL_addConfusionStatusVisual = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals.cpp:28", what = "Puts the confusion effect over the fighter." }
+BTL_addStunStatusVisual = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals.cpp:28", what = "Puts the stun stars over the fighter." }
+BTL_getRandomUsableMove = { status = "portado", dwe = "packages/game/battle/src/mechanics/decisions/usability.hpp:32", what = "Picks a usable move at random." }
 BTL_getNpcEntityIndex = { status = "no-aplica", note = "internal index", what = "Gives the entity of an opponent." }
 BTL_countLivingEnemies = { status = "portado", dwe = "packages/game/battle/include/dwe/game/battle/state.hpp:382", what = "Counts the living opponents." }
 BTL_initializeCommandMenu = { status = "portado", dwe = "packages/screens/src/command_menu.cpp:21", what = "Opens the player's command menu in battle: the strip slides down from the top." }
@@ -230,9 +230,9 @@ BTL_renderCommandShout = { status = "portado", dwe = "packages/screens/src/comma
 BTL_initializeDeathCountdown = { status = "portado", dwe = "packages/screens/include/dwe/screens/death_countdown.hpp:16", what = "Sets up the countdown to revive the fallen partner." }
 BTL_addDeathCountdown = { status = "portado", dwe = "packages/screens/include/dwe/screens/death_countdown.hpp:17", what = "Shows the fallen partner's countdown." }
 BTL_tickDeathCountdown = { status = "portado", dwe = "packages/screens/include/dwe/screens/death_countdown.hpp:17", what = "Decreases the fallen partner's countdown." }
-handleFleeing = { status = "portado", dwe = "packages/game/battle/src/ai_ticks.cpp:431", what = "Fleeing from battle: the partner runs and the battle ends if it succeeds." }
+handleFleeing = { status = "portado", dwe = "packages/game/battle/src/mechanics/player/player_retreat.cpp:98", what = "Fleeing from battle: the partner runs and the battle ends if it succeeds." }
 NPCEntityTickBattle = { status = "portado", dwe = "apps/game/src/battle_screen_exit.cpp", what = "Moves the map characters that do not fight during the battle (they flee).", note = "they flee at the start and after winning, with the animation at double speed (animFlag 4)" }
-resetStatsAfterCombat = { status = "portado", dwe = "packages/game/battle/src/aftermath.cpp", what = "Removes the temporary stat changes from the partner when the battle ends." }
+resetStatsAfterCombat = { status = "portado", dwe = "packages/game/battle/src/core/aftermath.cpp", what = "Removes the temporary stat changes from the partner when the battle ends." }
 isScreenConcave = { status = "portado", dwe = "apps/game/src/battle_screen_exit.cpp", what = "Tells whether the map is a concave one, where characters that do not fight do not join the battle.", note = "the concave_maps list in battle.yaml; with a wall on the straight line they do not join" }
 loadBattleDataTick = { status = "no-aplica", note = "asynchronous loading in the original", what = "Waits for the battle to finish loading." }
 setCombatTextPosition = { status = "portado", dwe = "apps/game/src/battle_screen.cpp:188", what = "Places the rising damage and healing numbers over the fighter." }
@@ -240,144 +240,144 @@ initializeEntityText = { status = "portado", dwe = "packages/screens/include/dwe
 
 # --- Battle effects
 BTL_initializeParticleEmitters = { status = "portado", dwe = "packages/game/battle/include/dwe/game/battle/effect_runner.hpp", note = "battle.md: Particle emitters (the empty emitters of the EffectRunner)", what = "Sets up the particle emitters of the moves." }
-BTL_clearEFESoundChannels = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:145", what = "Frees the held sounds of the effects." }
+BTL_clearEFESoundChannels = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:145", what = "Frees the held sounds of the effects." }
 BTL_getEFETextureSection = { status = "no-aplica", note = "reading of the effect file; extraction does it", what = "Finds the texture inside an effect's file." }
 BTL_getEFEModelSection = { status = "no-aplica", note = "reading of the effect file; extraction does it", what = "Finds the models inside an effect's file." }
 BTL_getEFEFileId = { status = "no-aplica", note = "disc file table", what = "Gives the effect file of a move." }
 BTL_handleEFEFileLoaded = { status = "no-aplica", note = "asynchronous loading in the original", what = "Builds an effect when its file finishes loading." }
-BTL_tickParticleEmitters = { status = "portado", dwe = "packages/game/battle/src/effect_runner_fx.cpp", note = "battle.md: Particle emitters", what = "Moves the particles that moves emit." }
-BTL_initializeEFEEngine = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:122", what = "Starts the effect machine at the start of the battle." }
-BTL_runEFESlotScript = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:227", what = "Runs the effect script of a slot." }
+BTL_tickParticleEmitters = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_fx.cpp", note = "battle.md: Particle emitters", what = "Moves the particles that moves emit." }
+BTL_initializeEFEEngine = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:122", what = "Starts the effect machine at the start of the battle." }
+BTL_runEFESlotScript = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:227", what = "Runs the effect script of a slot." }
 BTL_markEFEFinished = { status = "no-aplica", note = "only writes to a table that nothing reads (UNUSED_EFE_ARRAY); mark_finished does nothing", what = "Marks the effect as finished so the battle goes on." }
-BTL_disableMapLayer = { status = "portado", dwe = "packages/game/battle/src/effect_runner_quads.cpp:192", note = "the map and its objects are not drawn until the next frame (DG Dimension); battle.md", what = "Hides a map layer during the move (changing backgrounds)." }
-BTL_tickRibbonPoints = { status = "portado", dwe = "packages/game/battle/src/effect_runner_prims.cpp", note = "battle.md: Light ribbons", what = "Moves the points of a move's light ribbon." }
-BTL_initializeRibbonPoints = { status = "portado", dwe = "packages/game/battle/src/effect_runner_prims.cpp", note = "battle.md: Light ribbons", what = "Sets up a move's light ribbon." }
-BTL_renderScreenFade = { status = "portado", dwe = "packages/game/battle/src/effect_runner_prims.cpp", note = "battle.md: Screen veils", what = "Fades the screen to a color during a move." }
-BTL_renderScreenOverlay = { status = "portado", dwe = "packages/game/battle/src/effect_runner_prims.cpp", note = "battle.md: Screen veils", what = "Paints a color veil over the screen during a move." }
-BTL_renderRingTube = { status = "portado", dwe = "packages/game/battle/src/effect_runner_quads.cpp:206", note = "Meltdown; battle.md", what = "Draws a tube of rings (bolts, whirlwinds) for a move." }
-BTL_renderRadialWaves = { status = "portado", dwe = "packages/game/battle/src/effect_runner_quads.cpp:265", note = "Confused Storm; battle.md", what = "Draws waves that spread out in a circle for a move." }
-BTL_addClutLoadPrim = { status = "portado", dwe = "packages/game/battle/src/effect_runner_prims.cpp", note = "battle.md: Palette loads", what = "Changes an effect's palette while it runs (color flashes)." }
-BTL_drawTMDScreenSpace = { status = "portado", dwe = "packages/game/battle/src/effect_runner_subops.cpp:476", note = "the model is placed in the world where the camera would see it; battle.md", what = "Draws an effect model stuck to the screen." }
-BTL_loadClutColors = { status = "portado", dwe = "packages/game/battle/src/effect_runner_prims.cpp", note = "battle.md: Palette loads", what = "Copies colors into an effect's palette." }
-BTL_getCameraRotation = { status = "portado", dwe = "packages/game/battle/src/effect_runner_prims.cpp", note = "battle.md: Light ribbons", what = "Reads the camera rotation to orient an effect." }
-BTL_convertToViewSpace = { status = "portado", dwe = "packages/game/battle/src/effect_runner_quads.cpp:180", note = "no game effect uses it", what = "Converts an effect position to camera space." }
-BTL_render3DTexturedQuad = { status = "portado", dwe = "packages/game/battle/src/effect_runner_quads.cpp:153", note = "Spiral Sword; battle.md", what = "Draws a textured quad in the world (flames, bolts)." }
-BTL_renderWireframeBox = { status = "portado", dwe = "packages/game/battle/src/effect_runner_prims.cpp", note = "battle.md: Fixed camera, lines and wireframes", what = "Draws a wireframe box for an effect." }
-BTL_discardEFEOperand = { status = "portado", dwe = "packages/game/battle/src/effect_runner_subops.cpp", what = "Discards an operand of the effect script." }
-BTL_renderWireframeGrid = { status = "portado", dwe = "packages/game/battle/src/effect_runner_prims.cpp", note = "battle.md: Fixed camera, lines and wireframes", what = "Draws a wireframe grid for an effect." }
-BTL_render2DTexturedQuad = { status = "portado", dwe = "packages/game/battle/src/effect_runner_quads.cpp:116", note = "Charm Perfume, Reverse Program; battle.md", what = "Draws a textured quad on the screen for an effect." }
-BTL_restoreCameraView = { status = "portado", dwe = "packages/game/battle/src/effect_runner_prims.cpp", note = "battle.md: Fixed camera, lines and wireframes", what = "Puts the battle camera back in place after a move." }
-BTL_setupFixedCamera = { status = "portado", dwe = "packages/game/battle/src/effect_runner_prims.cpp", note = "battle.md: Fixed camera, lines and wireframes", what = "Fixes the camera at a point to show off a move." }
-BTL_renderEFELine = { status = "portado", dwe = "packages/game/battle/src/effect_runner_prims.cpp", note = "battle.md: Fixed camera, lines and wireframes", what = "Draws a line for an effect." }
-BTL_findHitEntity = { status = "portado", dwe = "packages/game/battle/src/effect_runner_subops.cpp:587", what = "Finds who an effect's hit reaches." }
+BTL_disableMapLayer = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_quads.cpp:192", note = "the map and its objects are not drawn until the next frame (DG Dimension); battle.md", what = "Hides a map layer during the move (changing backgrounds)." }
+BTL_tickRibbonPoints = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_prims.cpp", note = "battle.md: Light ribbons", what = "Moves the points of a move's light ribbon." }
+BTL_initializeRibbonPoints = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_prims.cpp", note = "battle.md: Light ribbons", what = "Sets up a move's light ribbon." }
+BTL_renderScreenFade = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_prims.cpp", note = "battle.md: Screen veils", what = "Fades the screen to a color during a move." }
+BTL_renderScreenOverlay = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_prims.cpp", note = "battle.md: Screen veils", what = "Paints a color veil over the screen during a move." }
+BTL_renderRingTube = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_quads.cpp:206", note = "Meltdown; battle.md", what = "Draws a tube of rings (bolts, whirlwinds) for a move." }
+BTL_renderRadialWaves = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_quads.cpp:265", note = "Confused Storm; battle.md", what = "Draws waves that spread out in a circle for a move." }
+BTL_addClutLoadPrim = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_prims.cpp", note = "battle.md: Palette loads", what = "Changes an effect's palette while it runs (color flashes)." }
+BTL_drawTMDScreenSpace = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_subops.cpp:478", note = "the model is placed in the world where the camera would see it; battle.md", what = "Draws an effect model stuck to the screen." }
+BTL_loadClutColors = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_prims.cpp", note = "battle.md: Palette loads", what = "Copies colors into an effect's palette." }
+BTL_getCameraRotation = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_prims.cpp", note = "battle.md: Light ribbons", what = "Reads the camera rotation to orient an effect." }
+BTL_convertToViewSpace = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_quads.cpp:180", note = "no game effect uses it", what = "Converts an effect position to camera space." }
+BTL_render3DTexturedQuad = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_quads.cpp:153", note = "Spiral Sword; battle.md", what = "Draws a textured quad in the world (flames, bolts)." }
+BTL_renderWireframeBox = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_prims.cpp", note = "battle.md: Fixed camera, lines and wireframes", what = "Draws a wireframe box for an effect." }
+BTL_discardEFEOperand = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_subops.cpp", what = "Discards an operand of the effect script." }
+BTL_renderWireframeGrid = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_prims.cpp", note = "battle.md: Fixed camera, lines and wireframes", what = "Draws a wireframe grid for an effect." }
+BTL_render2DTexturedQuad = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_quads.cpp:116", note = "Charm Perfume, Reverse Program; battle.md", what = "Draws a textured quad on the screen for an effect." }
+BTL_restoreCameraView = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_prims.cpp", note = "battle.md: Fixed camera, lines and wireframes", what = "Puts the battle camera back in place after a move." }
+BTL_setupFixedCamera = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_prims.cpp", note = "battle.md: Fixed camera, lines and wireframes", what = "Fixes the camera at a point to show off a move." }
+BTL_renderEFELine = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_prims.cpp", note = "battle.md: Fixed camera, lines and wireframes", what = "Draws a line for an effect." }
+BTL_findHitEntity = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_subops.cpp:589", what = "Finds who an effect's hit reaches." }
 BTL_printDebugValue = { status = "no-aplica", note = "debug code from the original", what = "Writes a debug value." }
-BTL_renderParallaxSprites = { status = "portado", dwe = "packages/game/battle/src/effect_runner_prims.cpp", note = "battle.md: On-screen layers", what = "Draws parallax sprite layers for an effect." }
-BTL_renderScrollingBackground = { status = "portado", dwe = "packages/game/battle/src/effect_runner_prims.cpp", note = "battle.md: On-screen layers", what = "Draws a scrolling background during a move." }
-BTL_addSourceEntityParticleFX = { status = "portado", dwe = "packages/game/battle/src/effect_runner_subops.cpp", note = "HitParticles::attach; battle rolls with --original-rolls, otherwise its own (battle.md)", what = "Launches particles from the attacker." }
-BTL_renderParticleFlashSprite = { status = "portado", dwe = "packages/game/battle/src/effect_runner_prims.cpp", note = "battle.md: Particle flash", what = "Draws a particle's flash." }
-BTL_projectPositionToScreen = { status = "portado", dwe = "packages/game/battle/src/effect_runner_prims.cpp", note = "battle.md: Screen sprites", what = "Projects an effect position to the screen for its sprites." }
-BTL_renderScreenSprite = { status = "portado", dwe = "packages/game/battle/src/effect_runner_prims.cpp", note = "battle.md: Screen sprites", what = "Draws an on-screen sprite for an effect." }
-BTL_addCloudEffect = { status = "portado", dwe = "packages/game/battle/src/effect_runner_fx.cpp", note = "battle.md: Clouds", what = "Adds a cloud of smoke or dust for a move." }
-BTL_addParticleEmitter = { status = "portado", dwe = "packages/game/battle/src/effect_runner_fx.cpp", note = "battle.md: Particle emitters", what = "Adds a particle emitter." }
-BTL_discardEFEOperandPair = { status = "portado", dwe = "packages/game/battle/src/effect_runner_subops.cpp", what = "Discards two operands of the effect script." }
-BTL_popEFEValueToVariable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:311", what = "Effect command: pops a value from the stack into a variable." }
-BTL_dispatchEFESubOpcode = { status = "portado", dwe = "packages/game/battle/src/effect_runner_subops.cpp", what = "Effect command: runs a sub-command." }
-BTL_callEFESubroutine = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:321", what = "Effect command: calls a subroutine." }
-BTL_pushEFEVariableAddress = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:311", what = "Effect command: pushes a variable's address onto the stack." }
-BTL_pushEFEVariable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:311", what = "Effect command: pushes a variable onto the stack." }
-BTL_pushEFEImmediate = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:311", what = "Effect command: pushes a number onto the stack." }
-BTL_jumpEFEScript = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:311", what = "Effect command: jumps." }
-BTL_stopEFEScript = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:311", what = "Effect command: stops the script." }
-BTL_branchEFEOnComparison = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:311", what = "Effect command: jumps if a comparison holds." }
-BTL_applyEFEVariableOperator = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect command: applies an operator between a variable and the register." }
-BTL_loadEFEIndexedVariable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:311", what = "Effect command: reads an element from a table." }
-BTL_loadEFERandomValue = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:96", what = "Effect command: loads a random number." }
-BTL_loadEFEVariable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:311", what = "Effect command: loads a variable." }
-BTL_loadEFEImmediate = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:311", what = "Effect command: loads a number." }
-BTL_shiftRightInt32Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: shifts right (32 bits)." }
-BTL_shiftLeftInt32Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: shifts left (32 bits)." }
-BTL_moduloInt32Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: remainder (32 bits)." }
-BTL_divideInt32Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: divides (32 bits)." }
-BTL_multiplyInt32Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: multiplies (32 bits)." }
-BTL_subtractInt32Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: subtracts (32 bits)." }
-BTL_addInt32Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: adds (32 bits)." }
-BTL_setInt32Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: assigns (32 bits)." }
-BTL_shiftRightInt8Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: shifts right (8 bits)." }
-BTL_shiftLeftInt8Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: shifts left (8 bits)." }
-BTL_moduloInt8Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: remainder (8 bits)." }
-BTL_divideInt8Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: divides (8 bits)." }
-BTL_multiplyInt8Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: multiplies (8 bits)." }
-BTL_subtractInt8Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: subtracts (8 bits)." }
-BTL_addInt8Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: adds (8 bits)." }
-BTL_setInt8Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: assigns (8 bits)." }
-BTL_shiftRightInt16Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: shifts right (16 bits)." }
-BTL_shiftLeftInt16Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: shifts left (16 bits)." }
-BTL_moduloInt16Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: remainder (16 bits)." }
-BTL_divideInt16Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: divides (16 bits)." }
-BTL_multiplyInt16Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: multiplies (16 bits)." }
-BTL_subtractInt16Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: subtracts (16 bits)." }
-BTL_addInt16Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: adds (16 bits)." }
-BTL_setInt16Variable = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:101", what = "Effect operator: assigns (16 bits)." }
-BTL_compareGreaterOrEqual = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:56", what = "Effect comparison: greater or equal." }
-BTL_compareGreater = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:56", what = "Effect comparison: greater." }
-BTL_compareLessOrEqual = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:56", what = "Effect comparison: less or equal." }
-BTL_compareLess = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:56", what = "Effect comparison: less." }
-BTL_compareNotEqual = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:56", what = "Effect comparison: not equal." }
-BTL_compareEqual = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:56", what = "Effect comparison: equal." }
-BTL_calculateAttackHitPosition = { status = "portado", dwe = "packages/game/battle/src/movement.cpp:458", what = "Calculates where on the target's body a hit lands." }
-BTL_interpolateClamped = { status = "portado", dwe = "packages/game/battle/src/effect_math.cpp:249", what = "Interpolates a value between two limits (ribbon color, wave radius)." }
+BTL_renderParallaxSprites = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_prims.cpp", note = "battle.md: On-screen layers", what = "Draws parallax sprite layers for an effect." }
+BTL_renderScrollingBackground = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_prims.cpp", note = "battle.md: On-screen layers", what = "Draws a scrolling background during a move." }
+BTL_addSourceEntityParticleFX = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_subops.cpp", note = "HitParticles::attach; battle rolls with --original-rolls, otherwise its own (battle.md)", what = "Launches particles from the attacker." }
+BTL_renderParticleFlashSprite = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_prims.cpp", note = "battle.md: Particle flash", what = "Draws a particle's flash." }
+BTL_projectPositionToScreen = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_prims.cpp", note = "battle.md: Screen sprites", what = "Projects an effect position to the screen for its sprites." }
+BTL_renderScreenSprite = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_prims.cpp", note = "battle.md: Screen sprites", what = "Draws an on-screen sprite for an effect." }
+BTL_addCloudEffect = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_fx.cpp", note = "battle.md: Clouds", what = "Adds a cloud of smoke or dust for a move." }
+BTL_addParticleEmitter = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_fx.cpp", note = "battle.md: Particle emitters", what = "Adds a particle emitter." }
+BTL_discardEFEOperandPair = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_subops.cpp", what = "Discards two operands of the effect script." }
+BTL_popEFEValueToVariable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:311", what = "Effect command: pops a value from the stack into a variable." }
+BTL_dispatchEFESubOpcode = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_subops.cpp", what = "Effect command: runs a sub-command." }
+BTL_callEFESubroutine = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:321", what = "Effect command: calls a subroutine." }
+BTL_pushEFEVariableAddress = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:311", what = "Effect command: pushes a variable's address onto the stack." }
+BTL_pushEFEVariable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:311", what = "Effect command: pushes a variable onto the stack." }
+BTL_pushEFEImmediate = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:311", what = "Effect command: pushes a number onto the stack." }
+BTL_jumpEFEScript = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:311", what = "Effect command: jumps." }
+BTL_stopEFEScript = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:311", what = "Effect command: stops the script." }
+BTL_branchEFEOnComparison = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:311", what = "Effect command: jumps if a comparison holds." }
+BTL_applyEFEVariableOperator = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect command: applies an operator between a variable and the register." }
+BTL_loadEFEIndexedVariable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:311", what = "Effect command: reads an element from a table." }
+BTL_loadEFERandomValue = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:96", what = "Effect command: loads a random number." }
+BTL_loadEFEVariable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:311", what = "Effect command: loads a variable." }
+BTL_loadEFEImmediate = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:311", what = "Effect command: loads a number." }
+BTL_shiftRightInt32Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: shifts right (32 bits)." }
+BTL_shiftLeftInt32Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: shifts left (32 bits)." }
+BTL_moduloInt32Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: remainder (32 bits)." }
+BTL_divideInt32Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: divides (32 bits)." }
+BTL_multiplyInt32Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: multiplies (32 bits)." }
+BTL_subtractInt32Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: subtracts (32 bits)." }
+BTL_addInt32Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: adds (32 bits)." }
+BTL_setInt32Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: assigns (32 bits)." }
+BTL_shiftRightInt8Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: shifts right (8 bits)." }
+BTL_shiftLeftInt8Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: shifts left (8 bits)." }
+BTL_moduloInt8Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: remainder (8 bits)." }
+BTL_divideInt8Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: divides (8 bits)." }
+BTL_multiplyInt8Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: multiplies (8 bits)." }
+BTL_subtractInt8Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: subtracts (8 bits)." }
+BTL_addInt8Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: adds (8 bits)." }
+BTL_setInt8Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: assigns (8 bits)." }
+BTL_shiftRightInt16Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: shifts right (16 bits)." }
+BTL_shiftLeftInt16Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: shifts left (16 bits)." }
+BTL_moduloInt16Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: remainder (16 bits)." }
+BTL_divideInt16Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: divides (16 bits)." }
+BTL_multiplyInt16Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: multiplies (16 bits)." }
+BTL_subtractInt16Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: subtracts (16 bits)." }
+BTL_addInt16Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: adds (16 bits)." }
+BTL_setInt16Variable = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:101", what = "Effect operator: assigns (16 bits)." }
+BTL_compareGreaterOrEqual = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:56", what = "Effect comparison: greater or equal." }
+BTL_compareGreater = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:56", what = "Effect comparison: greater." }
+BTL_compareLessOrEqual = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:56", what = "Effect comparison: less or equal." }
+BTL_compareLess = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:56", what = "Effect comparison: less." }
+BTL_compareNotEqual = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:56", what = "Effect comparison: not equal." }
+BTL_compareEqual = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:56", what = "Effect comparison: equal." }
+BTL_calculateAttackHitPosition = { status = "portado", dwe = "packages/game/battle/src/mechanics/movement/movement.cpp:461", what = "Calculates where on the target's body a hit lands." }
+BTL_interpolateClamped = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_math.cpp:250", what = "Interpolates a value between two limits (ribbon color, wave radius)." }
 BTL_initializeEFESubOpcodeTable = { status = "no-aplica", note = "jump table of the original", what = "Builds the effect sub-command table." }
-BTL_dispatchEFEOpcode = { status = "portado", dwe = "packages/game/battle/src/effect_runner.cpp:311", what = "Runs a command of the effect script." }
-BTL_resetPoisonBubbles = { status = "portado", dwe = "packages/game/battle/src/status_visuals.cpp:127", what = "Resets the poison bubbles over a fighter." }
-BTL_addPoisonBubble = { status = "portado", dwe = "packages/game/battle/src/status_visuals.cpp:147", what = "Releases a poison bubble over the poisoned fighter." }
-BTL_tickPoisonBubble = { status = "portado", dwe = "packages/game/battle/src/status_visuals.cpp:91", what = "Makes a poison bubble rise." }
-BTL_tickPoisonEffect = { status = "portado", dwe = "packages/game/battle/src/status_visuals.cpp:91", what = "Keeps the poison visual effect on the fighter." }
+BTL_dispatchEFEOpcode = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner.cpp:311", what = "Runs a command of the effect script." }
+BTL_resetPoisonBubbles = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals.cpp:127", what = "Resets the poison bubbles over a fighter." }
+BTL_addPoisonBubble = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals.cpp:147", what = "Releases a poison bubble over the poisoned fighter." }
+BTL_tickPoisonBubble = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals.cpp:91", what = "Makes a poison bubble rise." }
+BTL_tickPoisonEffect = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals.cpp:91", what = "Keeps the poison visual effect on the fighter." }
 BTL_initializePoisonBubble = { status = "portado", dwe = "apps/game/src/field_scene_status.cpp:256", what = "Sets up a poison bubble." }
-BTL_addPoisonEffect = { status = "portado", dwe = "packages/game/battle/src/status_visuals.cpp:38", what = "Puts the poison visual effect." }
-BTL_tickConfusionEffect = { status = "portado", dwe = "packages/game/battle/src/status_visuals.cpp:91", what = "Animates the confusion visual effect." }
+BTL_addPoisonEffect = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals.cpp:38", what = "Puts the poison visual effect." }
+BTL_tickConfusionEffect = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals.cpp:91", what = "Animates the confusion visual effect." }
 BTL_initializeConfusionEffect = { status = "portado", dwe = "apps/game/src/field_scene_status.cpp:365", what = "Sets up the confusion visual effect." }
-BTL_addConfusionEffect = { status = "portado", dwe = "packages/game/battle/src/status_visuals.cpp:28", what = "Puts the confusion visual effect." }
-BTL_resetStunSubEffects = { status = "portado", dwe = "packages/game/battle/src/status_visuals.cpp:127", what = "Resets the stun stars." }
-BTL_tickStunEffect = { status = "portado", dwe = "packages/game/battle/src/status_visuals.cpp:159", what = "Animates the stun visual effect." }
-BTL_addStunSubEffect = { status = "portado", dwe = "packages/game/battle/src/status_visuals.cpp:91", what = "Adds a stun star." }
-BTL_tickStunSubEffect = { status = "portado", dwe = "packages/game/battle/src/status_visuals.cpp:91", what = "Spins a stun star." }
+BTL_addConfusionEffect = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals.cpp:28", what = "Puts the confusion visual effect." }
+BTL_resetStunSubEffects = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals.cpp:127", what = "Resets the stun stars." }
+BTL_tickStunEffect = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals.cpp:159", what = "Animates the stun visual effect." }
+BTL_addStunSubEffect = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals.cpp:91", what = "Adds a stun star." }
+BTL_tickStunSubEffect = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals.cpp:91", what = "Spins a stun star." }
 BTL_setTMDObjectColor = { status = "portado", dwe = "apps/game/src/field_scene_battle_visuals.cpp:100", note = "the gray of the aura objects (0x3C and 0x5A over the file's 0x80) as the model's tint", what = "Tints an object of a model (auras, status glows)." }
-BTL_tickFinisherAura = { status = "portado", dwe = "packages/game/battle/src/status_visuals_effects.cpp:238", what = "Animates the charged finisher's aura around the partner." }
-BTL_addFinisherAura = { status = "portado", dwe = "packages/game/battle/src/status_visuals_effects.cpp:168", what = "Puts the charged finisher's aura." }
-BTL_tickAuraProjectile = { status = "portado", dwe = "packages/game/battle/src/flattened_shots.cpp:98", note = "the flattened fighter's shot: 35 per frame, 58 frames, box 45/200; drawn in apps/game/src/field_scene_battle_visuals.cpp:426", what = "Moves an aura projectile." }
+BTL_tickFinisherAura = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals_effects.cpp:238", what = "Animates the charged finisher's aura around the partner." }
+BTL_addFinisherAura = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals_effects.cpp:168", what = "Puts the charged finisher's aura." }
+BTL_tickAuraProjectile = { status = "portado", dwe = "packages/game/battle/src/mechanics/attacks/flattened_shots.cpp:99", note = "the flattened fighter's shot: 35 per frame, 58 frames, box 45/200; drawn in apps/game/src/field_scene_battle_visuals.cpp:426", what = "Moves an aura projectile." }
 BTL_initializeAuraProjectiles = { status = "portado", dwe = "packages/game/battle/include/dwe/game/battle/state.hpp:171", note = "the 8 slots start free with the battle state", what = "Sets up the aura projectiles." }
-BTL_addAuraProjectile = { status = "portado", dwe = "packages/game/battle/src/flattened_shots.cpp:74", note = "each species' drawing comes from the disc (data/battle: flattened_shots)", what = "Launches an aura projectile." }
-BTL_initializeItemParticleVelocities = { status = "portado", dwe = "packages/game/battle/src/status_visuals_effects.cpp:121", note = "with the effects' own rolls, not the battle's (Assumption)", what = "Gives velocities to the particles of an item used in battle." }
-BTL_tickItemParticles = { status = "portado", dwe = "packages/game/battle/src/status_visuals_effects.cpp:249", what = "Moves the particles of an item used in battle." }
-BTL_initializeBattleItemParticles = { status = "portado", dwe = "packages/game/battle/src/status_visuals_effects.cpp:119", what = "Sets up the particles of items in battle." }
-BTL_addItemParticles = { status = "portado", dwe = "packages/game/battle/src/status_visuals_effects.cpp:186", what = "Launches the particles when an item is used in battle." }
-BTL_initializeBuffTrails = { status = "portado", dwe = "packages/game/battle/src/status_visuals_effects.cpp:131", note = "with the effects' own rolls (Assumption)", what = "Sets up the trails of a stat buff." }
-BTL_tickBuffDisk = { status = "portado", dwe = "packages/game/battle/src/status_visuals_effects.cpp:270", what = "Animates the disk of a stat buff." }
-BTL_addBuffTrails = { status = "portado", dwe = "packages/game/battle/src/status_visuals_effects.cpp:203", what = "Puts the trails of a stat buff." }
-BTL_tickBuffTrails = { status = "portado", dwe = "packages/game/battle/src/status_visuals_effects.cpp:293", what = "Moves the trails of a stat buff." }
-BTL_initializeUnk3 = { status = "portado", dwe = "packages/game/battle/src/status_visuals_effects.cpp:119", what = "Sets up the stat buff disk." }
-BTL_addBuffDiskEffect = { status = "portado", dwe = "packages/game/battle/src/status_visuals_effects.cpp:203", what = "Puts the disk of a stat buff." }
+BTL_addAuraProjectile = { status = "portado", dwe = "packages/game/battle/src/mechanics/attacks/flattened_shots.cpp:75", note = "each species' drawing comes from the disc (data/battle: flattened_shots)", what = "Launches an aura projectile." }
+BTL_initializeItemParticleVelocities = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals_effects.cpp:121", note = "with the effects' own rolls, not the battle's (Assumption)", what = "Gives velocities to the particles of an item used in battle." }
+BTL_tickItemParticles = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals_effects.cpp:249", what = "Moves the particles of an item used in battle." }
+BTL_initializeBattleItemParticles = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals_effects.cpp:119", what = "Sets up the particles of items in battle." }
+BTL_addItemParticles = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals_effects.cpp:186", what = "Launches the particles when an item is used in battle." }
+BTL_initializeBuffTrails = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals_effects.cpp:131", note = "with the effects' own rolls (Assumption)", what = "Sets up the trails of a stat buff." }
+BTL_tickBuffDisk = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals_effects.cpp:270", what = "Animates the disk of a stat buff." }
+BTL_addBuffTrails = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals_effects.cpp:203", what = "Puts the trails of a stat buff." }
+BTL_tickBuffTrails = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals_effects.cpp:293", what = "Moves the trails of a stat buff." }
+BTL_initializeUnk3 = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals_effects.cpp:119", what = "Sets up the stat buff disk." }
+BTL_addBuffDiskEffect = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals_effects.cpp:203", what = "Puts the disk of a stat buff." }
 startThrowingItem = { status = "portado", dwe = "apps/game/src/battle_screen_throw.cpp:23", what = "The player throws the chosen item to the partner in battle.", note = "the player's animation 6 and the item on its node 9; the item leaves the bag in the battle adapter" }
-tickThrownItem = { status = "portado", dwe = "packages/game/battle/src/thrown_item.cpp:201", what = "Carries the thrown item from the hand to the partner and applies it on arrival.", note = "in the hand until frame 7 of the animation, then 24 flight steps in an arc (ITEM_THROW_HEIGHT as a formula) toward the partner; measured in the original: it lands 29 frames after the throw" }
-BTL_tickBuffRings = { status = "portado", dwe = "packages/game/battle/src/status_visuals_effects.cpp:317", what = "Animates the rings of a stat buff." }
-BTL_initializeUnk2 = { status = "portado", dwe = "packages/game/battle/src/status_visuals_effects.cpp:149", note = "with the effects' own rolls (Assumption)", what = "Sets up the rings of a stat buff." }
+tickThrownItem = { status = "portado", dwe = "packages/game/battle/src/mechanics/player/thrown_item.cpp:204", what = "Carries the thrown item from the hand to the partner and applies it on arrival.", note = "in the hand until frame 7 of the animation, then 24 flight steps in an arc (ITEM_THROW_HEIGHT as a formula) toward the partner; measured in the original: it lands 29 frames after the throw" }
+BTL_tickBuffRings = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals_effects.cpp:317", what = "Animates the rings of a stat buff." }
+BTL_initializeUnk2 = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_visuals_effects.cpp:149", note = "with the effects' own rolls (Assumption)", what = "Sets up the rings of a stat buff." }
 tickBuffModel = { status = "portado", dwe = "apps/game/src/field_scene_battle_visuals.cpp:248", note = "the parity of the battle frames (StatusVisuals::frames)", what = "Animates the model that accompanies a stat buff." }
 morphBuffModel = { status = "portado", dwe = "apps/game/src/field_scene_battle_visuals.cpp:153", note = "the disk is drawn with row 491 or a copy of the model with 492", what = "Alternates the palette of the buff model." }
 initializeParticleFX = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "the 50 directions measured in FX_PARTICLE_DATA (it rolls them at startup)", what = "Sets up the effects' particles." }
-tickParticleFX = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "field: the sparks with no fighter (gym); battle: packages/game/battle/src/hit_particles.cpp, with its clouds and particles (battle.md)", what = "Moves the effects' particles." }
-addEntityParticleFX = { status = "portado", dwe = "packages/game/battle/src/hit_particles.cpp", note = "drawing: apps/game/src/field_effects.cpp (battle.md)", what = "Launches particles attached to a fighter." }
+tickParticleFX = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "field: the sparks with no fighter (gym); battle: packages/game/battle/src/mechanics/effects/hit_particles.cpp, with its clouds and particles (battle.md)", what = "Moves the effects' particles." }
+addEntityParticleFX = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/hit_particles.cpp", note = "drawing: apps/game/src/field_effects.cpp (battle.md)", what = "Launches particles attached to a fighter." }
 initializeEntityParticleFX = { status = "portado", dwe = "packages/game/battle/include/dwe/game/battle/hit_particles.hpp:129", note = "the slots start free when HitParticles is created", what = "Sets up the particles attached to fighters." }
-tickEntityParticleFX = { status = "portado", dwe = "packages/game/battle/src/hit_particles.cpp", note = "drawing: apps/game/src/field_effects.cpp (battle.md)", what = "Moves the particles attached to a fighter." }
-tickCloudFX = { status = "portado", dwe = "packages/game/battle/src/effect_runner_fx.cpp", note = "battle.md: Clouds (the moves' clouds); the field's (gym, poop): apps/game/src/field_effects.cpp", what = "Moves the smoke and dust clouds of the effects." }
-EFECreateFlash = { status = "portado", dwe = "packages/game/battle/src/effect_runner_fx.cpp", note = "battle.md: Flashes", what = "Creates a light flash for a move." }
-tickEFEFlash = { status = "portado", dwe = "packages/game/battle/src/effect_runner_fx.cpp", note = "battle.md: Flashes", what = "Animates a light flash." }
+tickEntityParticleFX = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/hit_particles.cpp", note = "drawing: apps/game/src/field_effects.cpp (battle.md)", what = "Moves the particles attached to a fighter." }
+tickCloudFX = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_fx.cpp", note = "battle.md: Clouds (the moves' clouds); the field's (gym, poop): apps/game/src/field_effects.cpp", what = "Moves the smoke and dust clouds of the effects." }
+EFECreateFlash = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_fx.cpp", note = "battle.md: Flashes", what = "Creates a light flash for a move." }
+tickEFEFlash = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_fx.cpp", note = "battle.md: Flashes", what = "Animates a light flash." }
 setEFEFlashOffset = { status = "portado", dwe = "apps/game/src/death_effects.cpp:295", note = "the sway of the flashes on death (DOOA_tickDissolve)", what = "Moves a light flash." }
 findEFEDATFile = { status = "no-aplica", note = "disc read", what = "Finds the effects data file." }
 initializeEFE = { status = "no-aplica", note = "setup of the original", what = "Sets up the effects system." }
 getEFEDATEntry = { status = "no-aplica", note = "disc read", what = "Gives an entry of the effects file." }
 fillEFEXTable = { status = "no-aplica", note = "jump table of the original", what = "Fills the effect command table." }
 translateConditionFXToEntity = { status = "portado", dwe = "apps/game/src/field_scene_status.cpp", note = "the partner's butterfly and the battle's poison and confusion (CONDITION_FX_OFFSETS in the species table: condition_fx); the field's need bubble takes the point's x and z (renderConditionBubble, apps/game/src/play_session.cpp partnerBubbleOf)", what = "Attaches a status effect to a character's position." }
-doSomethingWithSomePoints = { status = "portado", dwe = "packages/game/battle/src/effect_runner_subops.cpp:703", what = "Tests whether an in-line hit crosses a fighter's box." }
+doSomethingWithSomePoints = { status = "portado", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_subops.cpp:705", what = "Tests whether an in-line hit crosses a fighter's box." }
 DOOA_storeDigimonY = { status = "no-aplica", note = "auxiliary data for the rebirth scene", what = "Stores the creature's height for the rebirth scene." }
 DOOA_getStoredDigimonY = { status = "no-aplica", note = "auxiliary data for the rebirth scene", what = "Reads the stored height for the rebirth scene." }
 tickHealingParticles = { status = "portado", dwe = "apps/game/src/field_effects.cpp", note = "particle 0's ring divides by zero: the processor gives -1 (Equal)", what = "Moves the healing particles when an item is used." }
@@ -385,7 +385,7 @@ initializeHealingParticles = { status = "portado", dwe = "apps/game/src/field_ef
 addHealingParticleEffect = { status = "portado", dwe = "apps/game/src/play_session.cpp", note = "which items have a ring: inventory.yaml effects.healing_particles; in battle, the thrown item (battle_screen.cpp, HealingShown)", what = "Launches the healing particles over the partner." }
 
 # --- Field
-findAABBHitEntity = { status = "portado", note = "only in the effects' hit checks; the field collides with its grid", dwe = "packages/game/battle/src/effect_runner_subops.cpp:717", what = "Finds the entity whose box touches another." }
+findAABBHitEntity = { status = "portado", note = "only in the effects' hit checks; the field collides with its grid", dwe = "packages/game/battle/src/mechanics/effects/effect_runner_subops.cpp:719", what = "Finds the entity whose box touches another." }
 hasAABBOverlap = { status = "no-aplica", note = "box test of the original", what = "Tells whether two boxes touch." }
 initializePartnerWaypoint = { status = "portado", dwe = "packages/game/field/src/field.cpp:858", what = "Clears the partner's trail when the map changes." }
 popPartnerWaypoint = { status = "portado", dwe = "packages/game/field/src/partner_follow.cpp", what = "Removes the first point of the partner's trail." }
@@ -419,7 +419,7 @@ tamerTickIdle = { status = "portado", dwe = "packages/game/field/src/field.cpp",
 tamerTickTraining = { status = "portado", dwe = "packages/game/gym/src/course_flow.cpp", what = "The player plays its clip 10 and looks at the partner every frame while training (gym.yaml: watch_animation)." }
 tamerTickMachinedramonSpawn = { status = "portado", dwe = "apps/game/src/story_scene_glue.cpp", what = "The player watches the final boss appear.", note = "partner routine 8: BossArrivalScene; the story continues when the arrival ends" }
 tamerTickAwardSomething = { status = "portado", dwe = "apps/game/src/award_screen.cpp", what = "Award scene: stops the clock, shows the medal or level earned and waits." }
-calculatePosition = { status = "portado", dwe = "packages/game/battle/src/bone_matrix.cpp", what = "Calculates a position with a matrix.", note = "for the effects bone, in 4.12 fixed point like the original" }
+calculatePosition = { status = "portado", dwe = "packages/game/battle/src/mechanics/animation/bone_matrix.cpp", what = "Calculates a position with a matrix.", note = "for the effects bone, in 4.12 fixed point like the original" }
 
 # --- Partner
 partnerTick = { status = "portado", dwe = "apps/game/src/play_session.cpp:400", what = "Moves the partner every frame according to its state." }
@@ -706,8 +706,8 @@ VSLoadSounds = { status = "falta", what = "Loads the versus mode sounds.", syste
 addClock = { status = "portado", dwe = "packages/session/include/dwe/session/game_session.hpp", what = "Sets the game clock and the play time." }
 tickPlaytime = { status = "portado", dwe = "packages/session/src/game_session.cpp", what = "Counts the play time, up to 999:59." }
 lookupFileTable = { status = "no-aplica", note = "disc file table", what = "Looks up a file in the disc table." }
-addAttackObject = { status = "portado", dwe = "packages/game/battle/src/attack_hits.cpp", what = "Registers a hit of a move." }
-popAttackObject = { status = "portado", dwe = "packages/game/battle/src/attack_hits.cpp", what = "Takes out the next hit to apply." }
+addAttackObject = { status = "portado", dwe = "packages/game/battle/src/mechanics/attacks/attack_hits.cpp", what = "Registers a hit of a move." }
+popAttackObject = { status = "portado", dwe = "packages/game/battle/src/mechanics/attacks/attack_hits.cpp", what = "Takes out the next hit to apply." }
 updateTMDTextureData = { status = "no-aplica", note = "the original's textures", what = "Adjusts the textures of a model." }
 initializeLoadedMap = { status = "portado", dwe = "apps/game/src/session_start.cpp", what = "Builds the map when a save is loaded." }
 recalculatePPandArena = { status = "portado", dwe = "packages/game/story/src/prosperity.cpp", what = "Recomputes the city's prosperity points according to who has joined.", note = "CityAdapter calls it at game start, on load and before each player save" }
@@ -902,8 +902,8 @@ STD_addLoseScene = { status = "portado", dwe = "packages/game/tournament/src/mat
 STD_tickLoseScene = { status = "portado", dwe = "packages/game/tournament/src/match_show.cpp:1", what = "Animates the defeat scene of the cup match." }
 STD_addWinScene = { status = "portado", dwe = "packages/game/tournament/src/match_show.cpp:1", note = "victory letters; drawn by apps/game/src/story_tournament.cpp", what = "Starts the victory scene of the cup match." }
 STD_tickWinScene = { status = "portado", dwe = "packages/game/tournament/src/match_show.cpp:1", what = "Animates the victory sign of the cup match." }
-STD_handleCommands = { status = "portado", dwe = "packages/game/battle/src/battle.cpp:1", note = "the match's command strip without run (fixed match) and the finisher", what = "Navigates and confirms the commands to the partner in the cup match, including the finisher." }
-STD_tickTamerTournament = { status = "portado", dwe = "packages/game/battle/src/battle.cpp:1", note = "the commands; select toggles BATTLE_TOGGLE_LIFEBAR, which nothing reads in the cup (only BTL_renderEnemyHPBars in wild battles)", what = "Reads the player's input in the cup: toggles life bars and gives commands." }
+STD_handleCommands = { status = "portado", dwe = "packages/game/battle/src/core/battle.cpp:1", note = "the match's command strip without run (fixed match) and the finisher", what = "Navigates and confirms the commands to the partner in the cup match, including the finisher." }
+STD_tickTamerTournament = { status = "portado", dwe = "packages/game/battle/src/core/battle.cpp:1", note = "the commands; select toggles BATTLE_TOGGLE_LIFEBAR, which nothing reads in the cup (only BTL_renderEnemyHPBars in wild battles)", what = "Reads the player's input in the cup: toggles life bars and gives commands." }
 STD_offsetTMDObjectUVs = { status = "no-aplica", note = "UV adjustment of the original's models", what = "Shifts the texture coordinates of a model piece." }
 STD_loadVersusSceneModel = { status = "no-aplica", note = "loading of the original's models", what = "Loads and places the versus sign model." }
 STD_addVersusModelScene = { status = "portado", dwe = "packages/game/tournament/src/match_show.cpp:1", note = "the DRAW sign after time runs out", what = "Starts the versus sign animation before the match." }
@@ -941,8 +941,8 @@ STD_tickCameraChase = { status = "portado", dwe = "packages/game/tournament/src/
 STD_tickCameraIntro = { status = "portado", dwe = "packages/game/tournament/src/match_show.cpp:1", what = "Advances the introduction camera sequence." }
 STD_startCameraIntro = { status = "portado", dwe = "packages/game/tournament/src/match_show.cpp:1", what = "Starts the camera pass between the two fighters." }
 STD_applyEntityViewpoint = { status = "portado", dwe = "packages/game/tournament/src/match_show.cpp:1", what = "Camera anchored to the focused fighter's view." }
-STD_addFighterCounter = { status = "portado", dwe = "packages/game/battle/src/battle.cpp:1", note = "the clock counts and the battle screen draws it (packages/screens/src/battle_view.cpp, match-clock)", what = "Starts the cup match's time clock." }
-STD_tickFighterCounter = { status = "portado", dwe = "packages/game/battle/src/battle.cpp:1", note = "the clock counts and the battle screen draws it", what = "Counts the clock down except when a fighter is down." }
+STD_addFighterCounter = { status = "portado", dwe = "packages/game/battle/src/core/battle.cpp:1", note = "the clock counts and the battle screen draws it (packages/screens/src/battle_view.cpp, match-clock)", what = "Starts the cup match's time clock." }
+STD_tickFighterCounter = { status = "portado", dwe = "packages/game/battle/src/core/battle.cpp:1", note = "the clock counts and the battle screen draws it", what = "Counts the clock down except when a fighter is down." }
 STD_updateBracket = { status = "portado", dwe = "packages/game/tournament/src/bracket_animation.cpp:1", what = "Advances the bracket to the next matchup and highlights the player." }
 STD_addBracketProjectile = { status = "portado", dwe = "packages/game/tournament/src/bracket_animation.cpp:1", what = "Launches the animated marker that climbs the bracket toward the winner." }
 STD_addBracketHitFlash = { status = "portado", dwe = "packages/game/tournament/src/bracket_animation.cpp:367", what = "Starts the flash on a bracket tile." }
@@ -954,23 +954,23 @@ STD_isBracketFinished = { status = "portado", dwe = "packages/game/tournament/in
 STD_tickBracketHitFlash = { status = "portado", dwe = "packages/game/tournament/src/bracket_animation.cpp:1", what = "Animates the flash of a bracket tile." }
 STD_addBracketIntro = { status = "portado", dwe = "apps/game/src/tournament_bracket_screen.cpp:1", what = "Starts the bracket presentation at the start of the cup." }
 STD_tickBracketIntro = { status = "portado", dwe = "packages/game/tournament/src/bracket_animation.cpp:1", what = "Animates the bracket presentation." }
-STD_combatSetup = { status = "portado", dwe = "packages/game/tournament/src/match_show.cpp:1", note = "the camera approach with the sign; the penalty for sickness or injury is applied by packages/game/battle/src/battle.cpp", what = "Prepares the partner's and the opponent's combat data in the cup." }
-STD_checkEndCondition = { status = "portado", dwe = "packages/game/battle/src/battle.cpp:1", what = "Checks for the end of the match by KO or time and decides the winner." }
+STD_combatSetup = { status = "portado", dwe = "packages/game/tournament/src/match_show.cpp:1", note = "the camera approach with the sign; the penalty for sickness or injury is applied by packages/game/battle/src/core/battle.cpp", what = "Prepares the partner's and the opponent's combat data in the cup." }
+STD_checkEndCondition = { status = "portado", dwe = "packages/game/battle/src/core/battle.cpp:1", what = "Checks for the end of the match by KO or time and decides the winner." }
 STD_tickBattle = { status = "portado", dwe = "packages/game/tournament/src/match_show.cpp:1", note = "the camera part (MatchCamera::tickFight); the rest is the combat of packages/game/battle", what = "Advances the cup match by one frame." }
-STD_areAllEnemyDigimonDead = { status = "portado", dwe = "packages/game/battle/src/state.cpp:15", note = "BattleState::livingEnemies() == 0, which the cup match end checks", what = "Tells whether all the match's opponents are down." }
+STD_areAllEnemyDigimonDead = { status = "portado", dwe = "packages/game/battle/src/core/state.cpp:15", note = "BattleState::livingEnemies() == 0, which the cup match end checks", what = "Tells whether all the match's opponents are down." }
 STD_tickBattleResultScreen = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", note = "TIME UP, the damage box, the draw and the loser's fall (faintAtTimeUp)", what = "Handles the result screen after the cup match." }
 STD_addTimeoutWindow = { status = "portado", dwe = "apps/game/src/tournament_match_screen.cpp:1", what = "Shows the match's time-out notice." }
 STD_getDigitCount = { status = "no-aplica", note = "generic digit count", what = "Counts the digits of a number." }
-STD_tickDigimonSenile = { status = "portado", dwe = "packages/game/battle/src/shown_clips.cpp:186", note = "the one that disobeys in the cup waits in its stance; the counter is the one of the normal battle", what = "Keeps the fighter in the disobedient state until its counter runs out." }
+STD_tickDigimonSenile = { status = "portado", dwe = "packages/game/battle/src/mechanics/animation/shown_clips.cpp:187", note = "the one that disobeys in the cup waits in its stance; the counter is the one of the normal battle", what = "Keeps the fighter in the disobedient state until its counter runs out." }
 STD_initializePlayerMarker = { status = "portado", dwe = "apps/game/src/battle_screen.cpp:519", note = "the markers are published with the life bars (battle.markers) only in a single-species cup match", what = "Adds the marker that tells each fighter apart on screen." }
 STD_getEntityIndex2 = { status = "no-aplica", note = "generic lookup in the entity table", what = "Returns the index of an entity in the table." }
 STD_combatMain = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", note = "a battle with a clock in the arena, with the opponent drawn, its charge mode rolled like STD_tickEnemyAI and no end box; victory, defeat and draw letters", what = "Main loop of a cup match up to the result." }
-STD_startWalkingAnimation2 = { status = "portado", dwe = "packages/game/battle/src/shown_clips.cpp:133", note = "the normal or weak stance (0x21/0x22) the match starts with", what = "Sets the normal or weak stance according to life at the start of the match." }
-STD_applyPartnerStatsToFighter = { status = "portado", dwe = "packages/game/battle/src/original_damage.cpp:26", note = "it is the cup's hit chance: no guaranteed hit for a low level and 0% after a faint (STD_DISABLE_HITTING)", what = "Computes a move's hit chance in the cup (the decomp name is misleading)." }
+STD_startWalkingAnimation2 = { status = "portado", dwe = "packages/game/battle/src/mechanics/animation/shown_clips.cpp:134", note = "the normal or weak stance (0x21/0x22) the match starts with", what = "Sets the normal or weak stance according to life at the start of the match." }
+STD_applyPartnerStatsToFighter = { status = "portado", dwe = "packages/game/battle/src/mechanics/strategies/original_damage.cpp:26", note = "it is the cup's hit chance: no guaranteed hit for a low level and 0% after a faint (STD_DISABLE_HITTING)", what = "Computes a move's hit chance in the cup (the decomp name is misleading)." }
 STD_tickFrames = { status = "no-aplica", note = "frame loop of the original", what = "Advances several game frames in a row." }
-STD_selectMoveTarget = { status = "portado", dwe = "packages/game/battle/src/fighter_actions.cpp:97", note = "it is the wait of the group's moves in the cup: one per side and none while the other attacks with another", what = "Tells whether a move of the group that shares a wait must wait (the decomp name is misleading)." }
-STD_applyMoveResult = { status = "portado", dwe = "packages/game/battle/src/status_effects.cpp:283", note = "copy of BTL_tickStatusEffects: poison, confusion, stun and crush", what = "Advances poison, confusion, stun and crush on the fighters each frame." }
-STD_updateFighterStatusVisuals = { status = "portado", dwe = "packages/game/battle/src/status_effects.cpp:37", note = "copy of BTL_clearConfusion that points back at the other fighter", what = "Removes the fighter's confusion and turns it toward the other." }
+STD_selectMoveTarget = { status = "portado", dwe = "packages/game/battle/src/mechanics/actions/fighter_actions.cpp:102", note = "it is the wait of the group's moves in the cup: one per side and none while the other attacks with another", what = "Tells whether a move of the group that shares a wait must wait (the decomp name is misleading)." }
+STD_applyMoveResult = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_effects.cpp:290", note = "copy of BTL_tickStatusEffects: poison, confusion, stun and crush", what = "Advances poison, confusion, stun and crush on the fighters each frame." }
+STD_updateFighterStatusVisuals = { status = "portado", dwe = "packages/game/battle/src/mechanics/status/status_effects.cpp:44", note = "copy of BTL_clearConfusion that points back at the other fighter", what = "Removes the fighter's confusion and turns it toward the other." }
 STD_addCommandMenu = { status = "portado", dwe = "packages/screens/src/command_menu.cpp:24", note = "the fixed strip at the bottom (68 to 100) and the name above; the original look places it with the match class", what = "Shows the player's command menu in the cup." }
 STD_initializeTournament = { status = "portado", dwe = "apps/game/src/story_tournament.cpp:1", note = "model, floor, camera, music (STD_MUSIC) and arena lights; the cup's effects (poison, confusion, stun, finisher aura and boosts) are copies of the battle ones and BattleScreen draws them the same", what = "Prepares the cup arena: music, camera, lights, stage and effects." }
 STD_initializeOpponent = { status = "portado", dwe = "packages/game/tournament/src/bracket.cpp:1", what = "Generates a cup opponent with stats and moves according to its level." }
@@ -999,18 +999,18 @@ VS_tickCameraChase = { status = "falta", what = "Camera that chases the fighter 
 VS_tickCameraIntro = { status = "falta", what = "Advances the versus introduction's camera sequence." }
 VS_startCameraIntro = { status = "falta", what = "Starts the camera pass between the versus fighters." }
 VS_applyEntityViewpoint = { status = "falta", what = "Versus camera anchored to the fighter's view." }
-VS_addFighterCounter = { status = "portado", dwe = "packages/game/battle/src/battle.cpp:1", what = "Starts the versus match's time clock." }
-VS_tickFighterCounter = { status = "portado", dwe = "packages/game/battle/src/battle.cpp:1", what = "Counts down the versus match's clock." }
-"VS__combatInit" = { status = "parcial", dwe = "packages/game/battle/src/rules.cpp:1", note = "without the player markers or the 3D HUD records; online versus is shown as a panel", what = "Prepares the versus match: damage, clock, markers and both fighters' records." }
+VS_addFighterCounter = { status = "portado", dwe = "packages/game/battle/src/core/battle.cpp:1", what = "Starts the versus match's time clock." }
+VS_tickFighterCounter = { status = "portado", dwe = "packages/game/battle/src/core/battle.cpp:1", what = "Counts down the versus match's clock." }
+"VS__combatInit" = { status = "parcial", dwe = "packages/game/battle/src/core/battle.cpp:152", note = "without the player markers or the 3D HUD records; online versus is shown as a panel", what = "Prepares the versus match: damage, clock, markers and both fighters' records." }
 VS_setupDemoCombat = { status = "falta", note = "title demo: only the trial version's main calls it; this version's main plays the movie", what = "Prepares the demo's automatic match." }
 VS_checkDemoEndCondition = { status = "falta", note = "title demo: only the trial version's main calls it; this version's main plays the movie", what = "Checks whether the demo ends by KO, time or a button." }
 VS_cleanupDemoCombat = { status = "falta", note = "title demo: only the trial version's main calls it; this version's main plays the movie", what = "Closes the demo match and frees its objects." }
 "VS__combatSetup" = { status = "portado", dwe = "packages/session/src/battle_adapter.cpp:1", what = "Prepares the combat data of the versus's two players." }
-"VS__checkEndCondition" = { status = "portado", dwe = "packages/game/battle/src/aftermath.cpp:1", what = "Checks for the end of the versus match by KO or time and decides the winner." }
+"VS__checkEndCondition" = { status = "portado", dwe = "packages/game/battle/src/core/aftermath.cpp:1", what = "Checks for the end of the versus match by KO or time and decides the winner." }
 "VS__tickBattle" = { status = "portado", dwe = "packages/session/src/versus_series.cpp:1", what = "Advances the versus match by one frame." }
 "VS__handlePause" = { status = "falta", what = "Handles the versus pause by either player." }
 "VS__isButtonsPressed" = { status = "no-aplica", note = "reading controllers of the original", what = "Tells whether either controller pressed the given buttons." }
-"VS__areAllEnemyDigimonDead" = { status = "portado", dwe = "packages/game/battle/src/aftermath.cpp:1", what = "Tells whether all the versus opponents are down." }
+"VS__areAllEnemyDigimonDead" = { status = "portado", dwe = "packages/game/battle/src/core/aftermath.cpp:1", what = "Tells whether all the versus opponents are down." }
 "VS__addTimeoutWindow" = { status = "falta", what = "Shows the versus time-out notice." }
 "VS__getDigitCount" = { status = "no-aplica", note = "generic digit count", what = "Counts the digits of a number." }
 "VS__tickDigimonStun" = { status = "falta", what = "Keeps the fighter stunned with its animation." }
@@ -1024,9 +1024,9 @@ VS_cleanupDemoCombat = { status = "falta", note = "title demo: only the trial ve
 VS_runDemoCombat = { status = "falta", note = "title demo: only the trial version's main calls it; this version's main plays the movie", what = "Runs the demo match with music and no menus." }
 "VS__combatMain" = { status = "portado", dwe = "packages/session/src/versus_series.cpp:1", what = "Main loop of a versus match up to the result." }
 "VS__tickVSInput" = { status = "portado", dwe = "packages/engine/net/src/lockstep.cpp:1", note = "online: each machine's commands travel by lockstep", what = "Reads the players' commands during the versus match." }
-"VS___tickVSInput" = { status = "portado", dwe = "packages/game/battle/src/battle.cpp:1", what = "Processes a versus player's commands with their own controller." }
-"VS__tickDigimonP1" = { status = "portado", dwe = "packages/game/battle/src/ai_ticks.cpp:1", what = "Updates player 1's fighter every frame." }
-"VS__tickDigimonP2" = { status = "portado", dwe = "packages/game/battle/src/ai_ticks.cpp:1", what = "Updates player 2's fighter every frame." }
+"VS___tickVSInput" = { status = "portado", dwe = "packages/game/battle/src/core/battle.cpp:1", what = "Processes a versus player's commands with their own controller." }
+"VS__tickDigimonP1" = { status = "portado", dwe = "packages/game/battle/src/classic/commanded_decisions.cpp:1", what = "Updates player 1's fighter every frame." }
+"VS__tickDigimonP2" = { status = "portado", dwe = "packages/game/battle/src/classic/commanded_decisions.cpp:1", what = "Updates player 2's fighter every frame." }
 VS_setupDemoBattle = { status = "falta", note = "title demo: only the trial version's main calls it; this version's main plays the movie", what = "Sets up the demo: arena, two random fighters and their sounds." }
 VS_cleanupDemoBattle = { status = "falta", note = "title demo: only the trial version's main calls it; this version's main plays the movie", what = "Removes the fighters and the arena when the demo ends." }
 VS_loadDemoAssets = { status = "falta", note = "title demo: only the trial version's main calls it; this version's main plays the movie", what = "Randomly picks the demo's arena and music and prepares effects." }
@@ -1050,7 +1050,7 @@ VS_setVersusModelSceneTimer = { status = "falta", what = "Sets the timer of the 
 "VS__setPostIntroPosition" = { status = "falta", what = "Leaves the fighter in its final position after the versus introduction." }
 "VS__tickIntroName" = { status = "falta", what = "Shows the fighter's name during the versus introduction." }
 VS_applyPartnerStatsToFighter = { status = "portado", dwe = "packages/session/src/battle_adapter.cpp:1", what = "Copies the Digimon's stats to its versus fighter record." }
-VS_rollAttackOutcome = { status = "portado", dwe = "packages/game/battle/src/original_damage.cpp:1", what = "Rolls the outcome of an attack: hit, damage and effects." }
+VS_rollAttackOutcome = { status = "portado", dwe = "packages/game/battle/src/mechanics/strategies/original_damage.cpp:1", what = "Rolls the outcome of an attack: hit, damage and effects." }
 VS_startAttackAnimation = { status = "falta", what = "Starts a move's animation and particles." }
 VS_resolveAttack = { status = "falta", what = "Resolves the hits of the moves in flight." }
 VS_startFighterMove = { status = "falta", what = "Makes the fighter start executing a move." }

@@ -36,6 +36,8 @@ inline constexpr std::string_view PortBattleDefeat =
 inline constexpr std::string_view PortBattleNotStarted =
     "start_battle: the battle could not start; the story takes it as a flight (variable {} at 0), "
     "not as a win";
+inline constexpr std::string_view PortBattleRefused =
+    "start_battle: the shared world holds its battles; the section ends where it stands";
 inline constexpr std::string_view PortBattleFled =
     "[port:battle] start_battle fled (script_interp.c:1928): battles fled {}, back to map {} exit "
     "{}";

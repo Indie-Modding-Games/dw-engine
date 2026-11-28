@@ -340,7 +340,7 @@ Un byte de tipo al principio de cada mensaje, en el rango `0x60–0x6F` (el vers
 | `0x63` | `Commands` | no fiable | cliente → host | Un comando cuantizado con secuencia. El buffer acepta solo secuencias nuevas con rollover y lo vuelve neutral tras 250 ms; repetición de las últimas 3 secuencias queda pendiente. |
 | `0x64` | reservado | — | — | Sin mensaje de posición del cliente. |
 | `0x65` | reservado | — | — | Sin mensaje de corrección; se reconcilia con snapshots. |
-| `0x66` | `Snapshot` | no fiable | host → cliente | Tick, ACK de comando y hasta 48 entidades cuantizadas. El capturador actual incluye jugador host, compañero host e invitado. El tamaño se limita a 1200 bytes; NPCs, HUD, recepción e interpolación del cliente siguen pendientes. |
+| `0x66` | `Snapshot` | no fiable | host → cliente | Tick, ACK de comando y hasta 48 entidades cuantizadas. El capturador incluye a cada jugador y su compañero y después los NPC del mapa (#419). El tamaño se limita a 1200 bytes; el HUD sigue pendiente. |
 | `0x67` | reservado | — | — | No se requiere ACK para snapshots completos. |
 | `0x68` | `Event` | fiable | host → cliente | Reservado en el protocolo actual; planificado para cambio de mapa, diálogo e inicio/fin de combate. |
 | `0x69` | `Action` | fiable | cliente → host | Reservado; planificado para acciones críticas con id monotónico y secuencia de origen. |
@@ -475,7 +475,7 @@ nombra un segundo jugador fijo.
 | La posición propia de un invitado | el invitado, revisada por el anfitrión | `PlayerState`, rechazado o corregido si es imposible |
 | La posición del anfitrión, NPCs, historia, reloj, batallas | anfitrión | instantáneas (§5.1) y eventos |
 | Cómo se dibuja un jugador remoto | cada partida, en local | interpolación (abajo); nunca escribe la autoridad |
-| Lo que los jugadores cambian en el mundo (cofres, triggers, puertas, objetos del suelo) | anfitrión | `WorldChange`, `WorldSync`, `GroundItems` (§5.8) |
+| Lo que los jugadores cambian en el mundo (cofres, triggers, puertas, objetos del suelo, cacas) | anfitrión | `WorldChange`, `WorldSync`, `GroundItems`, `PoopPiles` (§5.8) |
 
 **Mensajes.** Tres tipos se suman a la tabla de §5.5 y ocupan el lugar de su esbozo `OwnPose` y `PoseFix` (versión 4
 del protocolo):
@@ -485,6 +485,7 @@ del protocolo):
 | `0x70` | `PlayerState` | no fiable | cliente → anfitrión | Id del jugador, secuencia (el tick del invitado), la época de corrección que sigue, mapa, posición, orientación, movimiento. Cada 3 ticks. |
 | `0x71` | `PlayerCorrection` | fiable | anfitrión → cliente | Dónde pone el anfitrión a ese jugador: mapa, posición, orientación, la salida en un cambio de mapa y una época nueva. |
 | `0x72` | `Roster` | fiable | anfitrión → cliente | Revisión y, por jugador, id, nombre y especie del compañero. |
+| `0x73` | `PartnerForm` | fiable | cliente → anfitrión | La especie actual del compañero del invitado (protocolo 14, #412). |
 
 **Sincronización de la transformación.** El invitado mueve su propio jugador y lo informa. El anfitrión acepta un
 estado solo si el enlace es dueño de ese jugador, es más nuevo que el último aceptado (los paquetes tardíos,
@@ -496,16 +497,67 @@ salto del lado del invitado (un `place` de un script) es uno de esos rechazos: s
 
 **Mapas (decisión 2 de §6).** El grupo va adonde va el anfitrión. Las salidas propias del invitado quedan retenidas
 (`Field::holdExits`); cuando el anfitrión cambia de mapa, cada invitado recibe una corrección con el mapa nuevo, la
-salida y el punto de aparición del anfitrión, y llega justo allí. Los estados del mapa o la época anteriores se
-rechazan, y el invitado no informa nada mientras viaja. Cada jugador sigue teniendo su propio mapa actual: un jugador
+salida y el punto de aparición del anfitrión, y llega justo allí. Su compañero llega a su lado, como en cualquier
+entrada a un mapa, y una corrección en el mapa en el que ya está (al unirse, un reinicio) también lo trae
+(`Field::placePlayerWithPartner`). Los estados del mapa o la época anteriores se rechazan, y el invitado no informa nada
+mientras viaja. Cada jugador sigue teniendo su propio mapa actual: un jugador
 remoto en otro mapa no se dibuja ni se mueve, y vuelve a mostrarse cuando llega.
 
-**Interpolación.** Los jugadores remotos se dibujan desde un búfer corto de estados con hora (`PoseTrack`): 100 ms por
-detrás del más nuevo, mezclando los dos que rodean ese momento. Los estados tardíos nunca hacen retroceder una pista,
-un hueco corto se extrapola como mucho 100 ms y luego se queda quieto, un paso de más de 800 unidades (un salto de
-mapa o una corrección) se dibuja como salto, y un emisor cuyo reloj se pausó se retoma sin una recuperación lenta. El
-anfitrión dibuja así a los invitados, y los invitados dibujan a todos desde las instantáneas del anfitrión, con la
-hora del reloj del anfitrión. Dibujar es solo presentación: nunca cambia lo que guarda la autoridad.
+**El aviso de zona (#356).** Antes de seguir al anfitrión a otro mapa, el juego del invitado espera
+`CoopGuestWorld::ZoneLeadTicks` (45 ticks, 0,75 s) con el aviso `online.coop.host_changed_zone` («{name} cambió de
+zona», el nombre del anfitrión) en pantalla, y luego hace el fundido. La espera empieza una vez por cambio
+(`CoopGuestWorld::takeZoneChange` da el mapa y la época de la corrección, para una skin que quiera su propio aspecto) y
+aguarda mientras corre un cambio de mapa propio del invitado. Unirse, un reinicio de sala en el mismo mapa y volver
+tras un salto de historia propio del invitado no muestran aviso ni esperan. El invitado no informa nada durante la
+espera, igual que durante el viaje. Un aviso de campo abierto en el invitado (una enfermedad, una medalla, un nivel de
+domador) nunca retiene el viaje: se aparta mientras el invitado sigue al anfitrión (`AwardScreen::holdsField`) y vuelve
+a abrirse cuando camina por el mapa nuevo, así que el invitado nunca se queda atrás con la pantalla en negro ni se
+pierde los combates del anfitrión allí.
+
+**Interpolación (#358).** Los jugadores remotos y sus compañeros se dibujan desde un búfer corto de estados con hora
+(`PoseTrack`): 100 ms por detrás del más nuevo, mezclando los dos que rodean ese momento. Un estado tardío que aún va
+por delante de la reproducción ocupa su sitio; uno ya reproducido, o repetido, se descarta, y uno rezagado del mapa
+anterior a un cambio nunca devuelve la pista allí. Un hueco se extrapola como mucho 100 ms y luego se queda quieto;
+cuando vuelven los estados, la pista alcanza desde donde se quedó dentro de los 100 ms de retraso en vez de saltar. Un
+paso más largo de lo que el emisor pudo moverse entre dos estados (2500 unidades por segundo más 64, en el reloj del
+emisor) es un teletransporte, como un salto dentro de un mapa, un script que pone a un personaje en otro sitio o una
+corrección, y se dibuja como salto, nunca como deslizamiento; un cambio de mapa empieza la pista de nuevo. Un emisor
+cuyo reloj se pausó se retoma sin una recuperación lenta. El anfitrión dibuja así a los invitados, y los invitados
+dibujan a todos desde las instantáneas del anfitrión, con la hora del reloj del anfitrión. Dibujar es solo
+presentación: nunca cambia lo que guarda la autoridad. Un teletransporte escondido dentro de una pérdida larga no se
+distingue de una carrera, así que se dibuja como la recuperación de 100 ms. Auditoría:
+[#358](audits/358-audit.md).
+
+**La forma del compañero (#412).** Cada compañero vive y evoluciona solo en la partida de su dueño, así que su forma
+viaja como los nombres del roster. El anfitrión pone la especie de su propio compañero en el roster en cada tick en que
+cambia; un invitado dice la suya con `PartnerForm` mientras el roster diga otra, una vez por segundo hasta que la diga
+(una forma enviada antes de que el juego del anfitrión leyera el enlace se vuelve a decir). El anfitrión la toma como
+del jugador del enlace, sube la revisión del roster y la envía a todos; cada partida carga entonces el modelo nuevo en
+lugar del viejo, en el cuerpo de campo del anfitrión y en el dibujo de cada invitado, así que ninguna partida conserva
+la forma vieja ni dibuja dos. Las estadísticas y el estado del compañero son de la partida de su dueño: una batalla los
+toma de allí al empezar (§6.1).
+
+**Lo que reproduce un script (#420).** Un curso del gimnasio, una escena o una charla reproducen clips en el jugador y
+el compañero en lugar de los de su movimiento. Las instantáneas y los estados del invitado llevan ese clip (el id de
+animación del original y cuántas veces lo arrancó un script, para que un empujón arrancado de nuevo se vuelva a
+reproducir) desde el protocolo 14. Los estados de un invitado llevan también el sitio de su compañero y el clip que le
+reproduce un script, en cada reporte (#411: antes, solo mientras su partida lo retenía): el anfitrión dibuja allí al
+compañero del invitado, suavizado en una pista propia como el cuerpo, en lugar de un seguimiento propio que se alejaba
+del del invitado. Una batalla que empieza coloca a ese compañero donde lo ve su jugador, y los demás invitados lo ven
+allí en las instantáneas del anfitrión. Un invitado que no manda compañero lo sigue teniendo con el seguimiento de
+antes. Un compañero a más de 2000 unidades de su jugador no se dibuja allí. Un clip que un script ya no reproduce no
+deja nada: el cuerpo vuelve al clip de su movimiento en todas las máquinas.
+
+**Los NPC del mapa (#419).** Antes cada partida movía sus NPC del mapa por su cuenta, así que uno salvaje estaba,
+perseguía y se iba distinto en cada pantalla. Desde el protocolo 14 las instantáneas del anfitrión listan también los
+NPC de su mapa, con id `0x100` más el hueco, después de los jugadores (ninguno si no caben en un datagrama). En un
+invitado que está en el mapa del anfitrión, cada NPC listado está donde el del anfitrión y se mueve igual, tan suave
+como los jugadores; un script de la partida del propio invitado que lo retenga o lo anime sigue mandando. Uno que el
+anfitrión ya no tiene (una batalla lo quitó, un cambio de historia lo hizo irse) sale del mapa del invitado cuando
+lleva un segundo sin aparecer y no corre ningún script allí, así que no queda nada atrás. En otro mapa, durante un
+cambio de mapa o una batalla co-op, o sin enlace, los NPC del invitado se mueven por su cuenta; durante una batalla de
+la propia partida del invitado son sus luchadores y están donde esa batalla los pone. Reaccionan al jugador
+del anfitrión, como los ve su partida; un NPC que solo tiene el anfitrión no se añade en el invitado.
 
 **Ciclo de vida.** Un invitado entra cuando termina su saludo: recibe el id libre más bajo, un cuerpo y un compañero
 en el campo del anfitrión junto a él, una corrección a ese sitio y un roster nuevo. Sale con `Leave`, con un enlace
@@ -513,12 +565,20 @@ caído o con un cierre inesperado: su registro, cuerpo, compañero y búferes de
 lo quita. Cuando una partida cooperativa termina en cualquiera de los lados (volver a la portada, salir), ese lado
 envía `Leave` y cierra la sala; un invitado cuyo anfitrión se fue vuelve a la portada. Un jugador que vuelve entra
 como nuevo, con un estado limpio.
+Cerrar la ventana cuenta como salir (#416): el juego manda `Leave` a todos y el último aviso de la sala antes de
+apagarse (1,5 s como mucho), y un enlace que se despidió conserva su transporte un segundo (`CoopLeaveFlush`) para que
+la despedida llegue, en vez de que los demás vean un enlace caído e intenten volver. El anfitrión de una sala pública
+repite el estado de su sala al directorio cada minuto (`net::RoomRefreshEvery`), así que la entrada de un anfitrión que
+se colgó o perdió la línea sale de la lista en menos de tres minutos.
 
 **Presencia.** `WorldAuthority::playersOn(map)` (anfitrión) y `CoopGameplayBridge::playersOn(map)` (invitado, desde la
 última instantánea) dicen qué jugadores están en un mapa, para los sistemas que necesitan a los demás cerca
 (batallas, objetos compartidos).
 
-Pruebas: `packages/game/coop/tests/authority_tests.cpp`, `apps/game/tests/coop_world_tests.cpp`,
+Pruebas: `packages/game/coop/tests/authority_tests.cpp`, `packages/game/coop/tests/replication_tests.cpp`,
+`apps/game/tests/coop_world_tests.cpp`, `apps/game/tests/coop_replication_tests.cpp`,
+`apps/game/tests/coop_npc_mirror_tests.cpp`,
+`packages/game/coop/tests/pose_track_tests.cpp`,
 `apps/game/tests/coop_snapshot_interpolation_tests.cpp`, `apps/game/tests/player_registry_tests.cpp` y los casos
 cooperativos de `packages/game/field/tests/field_tests.cpp`.
 
@@ -540,7 +600,11 @@ el resultado.
 | Puertas y mecanismos que un script mueve mientras los jugadores miran | ediciones en vivo del mapa (flags de objetos, celdas cerradas) | compartida con los jugadores de ese mapa; en la siguiente visita el script de cabecera del mapa las reconstruye desde los triggers compartidos | `WorldAsk` → anfitrión → `WorldChange` |
 | Medallas, especies criadas, los objetos clave de la página del jugador (cañas) | triggers de historia | local: de cada jugador | nunca se envían |
 | La congelación de un script, el trigger de encarar en una charla, el nombre del mapa siguiente | variables de historia y un trigger | local: siguen los scripts propios de ese jugador | nunca se envían |
+| Recompensas que un script da una vez por jugador: los días desde la última carne de la granja (la carne diaria de Palmon y de la granja, #421) | variables de historia (`player_own_variables` en las reglas de la historia) | local: cada jugador recibe su carne una vez al día | nunca se envían |
+| El trabajo de la tienda del cañón: los clientes atendidos, la cuenta y su medidor, el resultado de cada turno, la frase de la mitad (#423) | variables de historia y un trigger (`player_own_variables`, `player_own_triggers`), la cuenta y el regateo | local: cada jugador hace su propio trabajo; que un jugador abra la tienda nunca mueve el medidor del otro | nunca se envían |
+| Lo que un script pasa a las rutinas del motor justo antes de llamarlas: un objeto del mapa y su animación, el personaje y la cara de una burbuja de humor, el mapa y la entrada del pájaro (variables 247 y 248); la tirada de trabajo en 110 (las puertas de la Mansión de juguetes la tiran al entrar al mapa, scripts 142 a 144) | variables de historia (`player_own_variables`) | local: ningún script las vuelve a leer, así que la llamada de otro jugador nunca las cambia bajo un script en marcha | nunca se envían |
 | La bolsa, los bits, el compañero y sus cuidados, los menús, los diálogos en pantalla, la cámara | sistemas de la sesión | local | nunca se envían (batallas: §6.1) |
+| Las cacas que los compañeros dejan en el campo | el `poop_piles` del anfitrión, el de cada mapa | compartida: cada partida muestra las cacas del anfitrión del mapa en el que está, la que deja cualquier compañero se ve en todas las partidas de ese mapa, y una caca se come una sola vez; lo que dejar o comerse una hace al compañero y a sus estadísticas sigue siendo de su jugador | `PoopPiles` del anfitrión; la caca que deja o se come el compañero de un invitado es un `PileAsk`, y comerse una se responde con `PileAnswer` |
 
 Los hechos locales salen de las reglas de la historia (`StoryAdapter::playerOwnTrigger` y `playerOwnVariable`): un
 ruleset que mueve la congelación o el encarar a otro número los mueve también.
@@ -567,12 +631,52 @@ mete la partida del invitado el objeto en la bolsa; rechazada (o sin respuesta e
 nada y el aviso dice que otro jugador lo tomó (`online.coop.item_gone`). El anfitrión toma al momento, como en la
 partida de un jugador, así que si toma dentro del mismo viaje de ida y vuelta va primero; si al tomar el objeto ya no
 está porque otro lo tomó con el aviso abierto, recibe el mismo aviso. En un mapa en el que no está el anfitrión, el
-suelo de un invitado es suyo y no hace falta reclamar. La partida de un jugador nunca reclama.
+suelo de un invitado es suyo y no hace falta reclamar. La partida de un jugador nunca reclama. La lista del anfitrión
+reemplaza el suelo del invitado pero conserva su largo, así que el hueco que sostiene el aviso abierto de un invitado se
+sigue pudiendo leer cuando la lista del anfitrión ya no trae su objeto (tomar el último objeto con permiso leía fuera
+del suelo y cerraba el juego del invitado, #414).
+
+**Cacas.** El mundo del anfitrión guarda las cacas de cada mapa, como en la partida de un jugador (`poop_piles`, con los
+límites de las reglas de cuidado). El compañero del anfitrión deja y se come cacas al momento, como en la partida de un
+jugador. El compañero de un invitado deja su caca en la pantalla del invitado al momento (con la nube) y su partida envía
+un `PileAsk`: el anfitrión pone la caca en esa casilla de ese mapa, o a un paso al azar si ya hay una. El compañero de
+un invitado que come cacas va hasta una y juega su clip de comer como siempre; luego su partida pregunta al anfitrión
+(`PileAsk`) y retiene al compañero hasta el `PileAnswer`. Solo una respuesta concedida come: el compañero recibe el
+tamaño de la caca del anfitrión (sus efectos de cuidado, `handleEatingPoop`, sobre sus propias estadísticas); rechazada
+(otro compañero se la comió antes, el del anfitrión dentro del mismo viaje de ida y vuelta incluido) o sin respuesta en
+diez segundos, el compañero no come nada. El anfitrión responde las peticiones de cada invitado en orden y una sola vez.
+Cada vez que cambian las cacas de un mapa en el anfitrión, cada invitado recibe la lista de ese mapa (`PoopPiles`), que
+reemplaza las cacas de ese mapa en su partida; cada partida dibuja solo las cacas del mapa en el que está. Un invitado
+que entra, y todos los invitados cuando el anfitrión entra en un mapa, reciben una lista que primero reinicia sus cacas
+y luego una por cada mapa que tiene alguna, así que una caca que su copia del mundo conservaba de antes desaparece. Las
+cacas son del mundo del anfitrión: están en su guardado y nunca en el de un invitado. La partida de un jugador no cambia.
+
+**Los eventos empiezan una vez (#417).** Cada partida ejecuta su propia historia, así que dos jugadores que hablaban
+con el mismo NPC jugaban los dos su evento, cada uno con su nombre, y empezaban los dos su combate. Mientras la partida
+de un jugador juega el evento de un NPC (una sección que empezó un toque o una charla, hasta que acaba el script), ese
+NPC queda retenido: un invitado se lo dice al anfitrión con `EventStatus` (`0xC2`, protocolo 14), el anfitrión le dice
+a cada invitado los de todos, el suyo incluido, y las demás partidas en ese mapa descartan entretanto sus toques y
+charlas con ese NPC. Cuando el evento acaba, sus cambios de historia llegan a los demás como siempre, así que el
+siguiente jugador que habla con el NPC ve lo que dejó el evento. Un jugador que se va suelta su NPC. Los NPC que
+comparten id de script (los salvajes de una especie en un mapa) quedan retenidos juntos. Dos toques dentro del mismo
+viaje de ida y vuelta aún pueden empezar los dos.
 
 **Entrar tarde y cambiar de mapa.** Un invitado que entra recibe toda la historia compartida (`WorldSync`, en partes
 que caben en un datagrama) y el suelo del anfitrión; todos los invitados los reciben otra vez cuando el anfitrión entra
 en un mapa. La sincronización lleva la revisión del anfitrión, así que un cambio que ya está en ella no se aplica otra
 vez.
+
+**Reinicios de sala (#422).** Un warp de script de vuelta al mapa en el que está el grupo lo carga otra vez: así
+empieza de nuevo una sala de prueba (el camino del bosque de Centarumon, la ruta de las flechas y sus vallas). Cada carga
+del mapa del anfitrión tiene su propia revisión, y cada `WorldAsk` dice la revisión más nueva que había tomado la
+partida del invitado (`seen`). Lo que un invitado pidió para ese mapa antes de ver la recarga (un paso por el camino
+viejo, una valla que movió su script) queda superado: las ediciones del mapa se descartan y los hechos se vuelven a
+contar a todos con el valor del mundo, así que nada de la sala vieja sobrevive al reinicio. Un hecho que otro jugador
+cambió después de la revisión que había visto un invitado supera igual la petición de ese invitado; un cambio anterior
+del mismo jugador nunca supera sus peticiones siguientes. Un invitado al que el reinicio trae de vuelta (un
+`PlayerCorrection` con salida en el mapa en el que ya está) carga el mapa otra vez como hizo el anfitrión, en lugar de
+solo ponerse junto al anfitrión con lo que sus scripts dejaron allí; las ediciones del mapa del anfitrión que llegan
+mientras carga esperan a que termine. Las peticiones de un invitado desde el mapa que el grupo dejó conservan sus hechos.
 
 **Guardado (§5.6).** El mundo es del anfitrión: lo que un invitado cambia en él está en el siguiente guardado del
 anfitrión, como cualquier cosa que haga el anfitrión. Nada del mundo entra en el guardado propio del invitado: solo
@@ -582,12 +686,15 @@ vuelven a casa su compañero y su bolsa (§5.6).
 
 | Tipo | Nombre | Canal | Dirección | Contenido |
 |---|---|---|---|---|
-| `0x90` | `WorldAsk` | fiable | cliente → anfitrión | El número de petición del invitado, su mapa y las ediciones (trigger, variable, objeto del mapa, celdas cerradas). |
+| `0x90` | `WorldAsk` | fiable | cliente → anfitrión | El número de petición del invitado, la revisión más nueva del anfitrión que había tomado (versión 14 del protocolo), su mapa y las ediciones (trigger, variable, objeto del mapa, celdas cerradas). |
 | `0x91` | `WorldChange` | fiable | anfitrión → cliente | Revisión, el jugador del que vino y su petición, el mapa, las ediciones. |
 | `0x92` | `WorldSync` | fiable | anfitrión → cliente | Revisión, parte, y un tramo de triggers (bits) y variables. |
 | `0x93` | `GroundItems` | fiable | anfitrión → cliente | El mapa del anfitrión y su carga, y cada objeto del suelo: id, ranura, objeto, celda y lugar. |
 | `0x94` | `ItemClaim` | fiable | cliente → anfitrión | El número de reclamación del invitado, cofre u objeto del suelo, el trigger del cofre o la ranura y el id del objeto, el mapa. |
 | `0x95` | `ClaimAnswer` | fiable | anfitrión → cliente | El número de reclamación y si se concedió. |
+| `0x96` | `PoopPiles` | fiable | anfitrión → cliente | Un mapa, si reinicia las cacas del invitado (versión 15 del protocolo), y cada caca en él: casilla y tamaño. |
+| `0x97` | `PileAsk` | fiable | cliente → anfitrión | El número de petición del invitado, dejada o comida, el mapa, la casilla, y el tamaño de una caca dejada (versión 15 del protocolo). |
+| `0x98` | `PileAnswer` | fiable | anfitrión → cliente | El número de petición, si se concedió comerla, y el tamaño de la caca (versión 15 del protocolo). |
 
 **Cambios del mundo al momento.** La sección de cabecera de un mapa decide al cargarlo qué personajes están en él, a
 partir de los triggers y variables de la historia (un personaje reclutado ya no está, su ayudante ocupa su lugar, un
@@ -624,7 +731,10 @@ sobre un `CoopLink` real, el ayudante propio de quien recluta y un visitante que
 `packages/game/field/tests/npc_spawns_tests.cpp`, `apps/dwx/tests/script_warps_command_tests.cpp` (los NPC sacados
 del Lua, con el parche de un mod), el caso MAPHEAD de
 `packages/formats/tests/script_guarded_walk_tests.cpp`, el caso cooperativo de
-`packages/game/field/tests/field_items_tests.cpp` y el de `packages/session/tests/story_adapter_tests.cpp`.
+`packages/game/field/tests/field_items_tests.cpp` y el de `packages/session/tests/story_adapter_tests.cpp`; las cacas:
+`apps/game/tests/coop_poop_piles_tests.cpp` (un anfitrión y dos invitados con enlaces reales: cacas dejadas en cada
+lado, una caca que se comen dos compañeros a la vez, uno que entra tarde y un mapa nuevo) y el caso de cacas compartidas
+de `packages/game/partner/tests/toilet_tests.cpp`.
 ### 5.9 Salas de cuatro y el diagnóstico de sincronía
 
 Lo que añaden #352 y #359 (versión 7 del protocolo, tipos `0xA0`–`0xA2`).
@@ -654,24 +764,39 @@ listo y un invitado cuyo enlace aún se está conectando (`online.member.<n>.arr
 **Juego.** En el anfitrión cada invitado tiene su propio puente de juego, controlador y cuerpo: sus comandos mueven a su
 propio jugador (`GuestFieldIntent`), sus estados llegan a la autoridad con su id, las correcciones y las listas de
 jugadores le llegan solo a él, y cada uno recibe las instantáneas con el acuse de sus propios comandos. Un invitado
-dibuja a todos desde las instantáneas y pone una etiqueta a cada otro jugador (`coop_hud.tag.<n>.*`). El enlace de
+dibuja a todos desde las instantáneas y pone una etiqueta a cada otro jugador (`coop_hud.tag.<n>.*`); las etiquetas se
+ocultan mientras el menú del juego o las páginas del compañero de este jugador están abiertos, y los avisos del HUD duran
+sus segundos en ticks del juego, no en fotogramas de la ventana. El enlace de
 cada invitado lleva sus propios mensajes de combate: cualquier invitado puede empezar un combate, y cada jugador libre
 de ese mapa pelea en él ([combate cooperativo](coop-combat.md) §12). Un puente descarta los mensajes que ninguna parte
 del juego lee (el listo de un lobby, los fragmentos de un guardado) en vez de encolarlos, así que un compañero que los
 siga enviando no hace crecer nada del otro lado.
 
+**Un jugador que se va mientras los demás juegan.** Solo termina su enlace; los otros invitados mantienen el suyo
+(`room_tests.cpp`). El anfitrión lo saca de la lista de jugadores enseguida, pero un combate en el que pelea conserva sus
+cuerpos hasta que termina, en el anfitrión y en cada invitado (`CoopGuestWorld::keepsBodies` con
+`BattleMirror::fighting`): un invitado ya no los quita en cuanto la lista los pierde, así que su compañero no usa el
+cuerpo del compañero propio de ese invitado. El `BattleBegin` de un combate acepta a cualquier jugador como quien lo
+empezó (antes la comprobación impedía que saliera un combate empezado por el tercer o cuarto jugador). Auditoría:
+[#352](audits/352-audit.md).
+
 **Diagnóstico de sincronía.** Una herramienta de desarrollo detrás de la consola (F1), que solo se abre con las
-herramientas de desarrollo activas, así que nunca corre en las builds de release. `coop_sync("on")` en el anfitrión
-pide a cada invitado que informe; `coop_sync("report")` imprime el cuadro completo una vez y `coop_sync("off")` lo
-para. Mientras está activo, el log dice cuándo un jugador cambia de mapa, cuándo se pierden o llegan tarde
-instantáneas o comandos, y cuándo un invitado tiene a un jugador en otro sitio (otro mapa, o a más de 600 unidades)
-durante más de dos segundos, y otra vez cuando vuelve a estar sincronizado. El informe lista dónde tiene el anfitrión a
-cada jugador y, por invitado, dónde lo tiene él, cuántos ticks del mundo va por detrás y qué perdió.
+herramientas de desarrollo activas. Una build configurada con `DWE_COOP_SYNC=OFF` (lo predeterminado en un paquete,
+`DWE_PACKAGE`) lo deja fuera: su anfitrión nunca lo pide y sus invitados nunca informan. `coop_sync("on")` en el
+anfitrión pide a cada invitado que informe; `coop_sync("trace")` hace lo mismo y además registra cada informe, jugador
+por jugador, junto a dónde tiene el anfitrión a ese jugador; `coop_sync("report")` imprime el cuadro completo una vez y
+`coop_sync("off")` lo para. Mientras está activo, el log dice cuándo un jugador cambia de mapa, cuándo se pierden o
+llegan tarde instantáneas o comandos, y cuándo un invitado tiene a un jugador en otro sitio (otro mapa, o a más de 600
+unidades) durante más de dos segundos, y otra vez cuando vuelve a estar sincronizado. Cada una de esas líneas empieza
+con la hora y el tick del mundo del anfitrión. El informe lista el sitio autoritativo de cada jugador (el del anfitrión
+en su campo, y el de cada invitado según su último estado válido aceptado por la autoridad) y, por invitado, dónde lo
+tiene él, cuántos ticks del mundo va por detrás y qué perdió. Auditoría: [#359](audits/359-audit.md).
 `coop_fell("<jugador>")` (la misma consola, solo en el anfitrión) derriba al compañero de ese jugador en el combate
 cooperativo del anfitrión, para probar la cuenta atrás del aliado y Apuntar de la bolsa sin un combate largo.
 
 Tests: `packages/game/coop/tests/sync_watch_tests.cpp`, `apps/game/tests/coop_connection_tests.cpp` (cuatro plazas),
-`apps/game/tests/coop_sync_tests.cpp` (2, 3 y 4 jugadores sin ventana sobre enlaces con pérdidas, convergiendo) y los
+`apps/game/tests/coop_sync_tests.cpp` (2, 3 y 4 jugadores sin ventana sobre enlaces con pérdidas, convergiendo, y un
+invitado sin instantáneas que diverge solo) y los
 tests de plazas de `apps/versus-signal/test`.
 
 ### 5.10 Unirse y volver a una partida en curso
@@ -736,7 +861,7 @@ Propuestas el 2026-11-16 con una recomendación cada una; así quedaron hechas.
 | 2 | ¿Mapa compartido? | Sí: el grupo va donde va el anfitrión. Las salidas propias de un invitado se retienen y el cambio de mapa del anfitrión los lleva a todos (§5.7). Cada partida sigue conociendo su mapa, así que un jugador que aún carga simplemente no se dibuja. |
 | 3 | Combate | **Pelean todos los compañeros.** Lo empiece quien lo empiece, se suma cada compañero libre de ese mapa, hasta cuatro (§6.1, [combate cooperativo](coop-combat.md) §12), y los enemigos escalan según cuántos pelean ([dificultad cooperativa](coop-difficulty.md)). |
 | 4 | Progreso | La historia, los triggers, el dinero y el mundo son **del anfitrión**, guardados en su propia ranura como en un jugador (§5.6). Los cambios de cualquier jugador a ese mundo pasan por el anfitrión (§5.8). El invitado juega con su propio compañero, sus técnicas, las especies que crió y su bolsa con sus bits, y se los lleva a su propia ranura al salir y en puntos seguros mientras tanto (C4, §5.6); nada del mundo del anfitrión va con ellos. |
-| 5 | Pausa y menús | Cada partida corre su propia copia del mundo del anfitrión, así que un menú o la pausa solo paran la partida de ese jugador; los demás siguen. Un combate compartido espera mientras el anfitrión tiene el menú abierto (§6.1). |
+| 5 | Pausa y menús | Un menú o la pausa de Start son solo de ese jugador, también del anfitrión (#415): mientras otros comparten el mundo solo retienen la entrada de ese jugador, y el mundo, su reloj y sus combates siguen para todos. Un combate que empieza cierra el menú de juego de quien lo tenga abierto. Los scripts del anfitrión y sus propias pantallas completas (una charla, el menú del gimnasio, una tienda, la pesca) tampoco paran ya el reloj del mundo: su compañero se queda quieto y vive ese tiempo al quedar libre ([entrenamiento](coop-training.md) §4.8). A solas, los menús, los scripts y la pausa paran la partida como en el original (`shared_pause.hpp`). |
 | 6 | Diálogos y escenas | Los scripts de un jugador corren en su partida: sus diálogos y escenas son suyos y los demás siguen jugando. Lo que una escena cambia en el mundo llega a los demás por el anfitrión (§5.8), y los NPCs que trae o se lleva aparecen al momento en todas las partidas. |
 
 ### 6.1 Combates (decisión 3)
@@ -761,17 +886,26 @@ que correr en un solo sitio. Corre en la **simulación del anfitrión**:
 - **Un combate a la vez.** El mundo compartido corre un combate, así que un encuentro nunca crea dos. Una petición
   mientras corre uno se rechaza por ocupado (`BattleRefused`): el script del invitado recibe «no empezó», como cuando
   un combate no puede empezar en el original, y el invitado entra al combate en curso como ayudante. Una petición que el
-  anfitrión no puede aceptar por otro motivo (se fue del mapa entretanto, o está en una pantalla, escena o script)
-  también se rechaza, y entonces el juego del invitado corre ese combate él mismo, en solitario. Cada combate que empieza
-  el anfitrión en el mapa del invitado (el de su historia, el de un torneo) se le muestra al invitado igual.
+  anfitrión aún no puede aceptar (está en una pantalla, escena o script, en un cambio de mapa, al final de un combate, o
+  su consulta de presencia aún no pone al invitado ahí) espera en el anfitrión, como mucho `BattleAskWaitTicks` (10
+  segundos), y empieza en cuanto el anfitrión queda libre; si espera más, se rechaza por ocupado. Solo una petición desde
+  otro mapa que el del anfitrión se rechaza por no estar ahí, y entonces el juego del invitado corre ese combate él
+  mismo, en solitario. Así el invitado nunca pelea solo un encuentro que el anfitrión aún podía empezar, y un encuentro
+  nunca se pelea dos veces. Mientras su petición espera, el invitado sigue ofreciendo a su compañero, así que un combate
+  que el anfitrión empiece entretanto lo toma como aliado, no como ayudante. Cada combate que empieza el anfitrión en el
+  mapa del invitado (el de su historia, el de un torneo) se le muestra al invitado igual.
 - **Qué ve el otro jugador.** El anfitrión envía `BattleBegin`, luego un `BattleFrame` cada 3 ticks (fase, orden
   actual, órdenes disponibles, si se puede usar la bolsa, PV y PM de los luchadores y cada figura retenida: sitio,
   orientación, clip y su inicio) y luego `BattleEnd`. El campo del invitado se detiene y dibuja sus propios actores
-  donde los ponen los frames; la pantalla `coop_battle` muestra las barras de vida, las órdenes del que empezó y la
-  ayuda del ayudante. La cámara del ayudante se gira hacia el combate cuando empieza y vuelve cuando termina.
+  donde los ponen los frames; su pantalla `battle` muestra el combate como el HUD del propio anfitrión en su piel (con las
+  órdenes actuales y el estado de los compañeros, y la carga de remate y la placa Folder de su propio compañero, desde
+  la presentación del anfitrión), y la pantalla
+  `coop_battle` solo la caja final. La cámara del ayudante se gira hacia el combate cuando empieza y vuelve
+  cuando termina.
 - **Qué puede hacer cada jugador.** El que empezó da las órdenes (los comandos de la tira, el remate) y cierra el
   cuadro final; los demás ven en su lugar a quién esperan (`Esperando a que <nombre> continúe...`,
-  `BattleMirror::waitingFor`) hasta que lo cierra. Los dos pueden lanzar un objeto **de su propia bolsa** (el objeto del invitado sale de su bolsa; el
+  `BattleMirror::waitingFor`) hasta que lo cierra. El titular del cuadro final dice cómo acabó el combate (victoria,
+  derrota o huida; el resultado del frame, `coop_battle.outcome`), no la invitación con la que empezó. Los dos pueden lanzar un objeto **de su propia bolsa** (el objeto del invitado sale de su bolsa; el
   juego del anfitrión presta uno y lo lanza) y **animar** (una pulsación de la carga del remate). En el anfitrión, un
   combate del invitado bloquea la tira y el botón del remate del anfitrión; su bolsa funciona.
   Los botones de la pantalla se usan con el ratón o con las flechas y confirmar; el botón extra del campo pide el
@@ -796,12 +930,41 @@ invitado es `ally`, da órdenes a su propio compañero y le lanza objetos, y el 
 botín. Un compañero lejos u ocupado queda fuera y su jugador ayuda como arriba. Cada compañero huye o cae por su cuenta;
 el equipo solo pierde cuando no queda ningún compañero.
 
+**Ningún combate mientras un compañero muere.** En el original no empieza ningún encuentro mientras se ven la muerte y
+el renacer del huevo: el script de la muerte retiene al jugador, así que ninguna charla ni roce llega a un combate. En
+cooperativo no empieza ningún combate mientras el compañero del anfitrión, o el de un invitado en su mapa, muere o
+espera a renacer (la escena de la muerte corre o espera; la oferta del invitado lo dice): el combate de historia del
+anfitrión se rechaza y su sección acaba donde está, sin huida a la pantalla anterior (el NPC puede volver a
+empezarlo), la petición de un invitado espera y luego se rechaza porque un compañero renace, y la historia de un
+invitado que muere acaba su sección igual. El jugador que lo pidió ve un aviso de que el combate espera al renacer de un
+compañero. Un invitado cuyo compañero muere se queda en su mapa de despertar, fuera de los movimientos del
+anfitrión, hasta que acaba el script del renacer; luego vuelve a seguir al anfitrión. Una sección de muerte que un
+cambio de mapa descarta antes de correr se vuelve a pedir mientras el compañero sigue muerto. La escena de una muerte,
+una evolución o una vida perdida es solo de ese jugador: los demás jugadores y sus compañeros no se dibujan en su
+escenario negro y se oscurecen con su escenario. Un jugador solo no cambia.
+
 Límites de esta primera versión: los efectos de las técnicas, los números de daño y las marcas de estado solo se dibujan
 en el anfitrión; el invitado ve moverse a los luchadores y las barras de vida. Los luchadores de torneo que no son NPC
 del mapa no se dibujan en el invitado. El objeto del ayudante se dibuja lanzado desde el domador del anfitrión. Los
 enemigos saltan a los sitios del anfitrión cuando empieza el combate (hasta entonces cada juego simula sus propios
-NPC). Los objetos que caen solo aparecen en el mundo del anfitrión. Mientras el anfitrión tiene su menú abierto, el
-combate espera para los dos.
+NPC). Los objetos que caen solo aparecen en el mundo del anfitrión. El combate ya no espera al menú ni
+a la pausa del anfitrión (#415). Un combate que otro jugador mira o pelea va a la velocidad original: el combate rápido del
+anfitrión (`battle_speed`) solo acelera sus propios combates, porque los invitados animan los frames a 1x. En el
+anfitrión, un combate del invitado muestra la bolsa, la cuenta atrás de revivir y la carga del remate del compañero al
+que da órdenes el anfitrión. En el campo, el cuerpo de otro jugador no detiene a un compañero (a un domador sí), así que
+un compañero que queda sobre otro domador tras un combate se aparta caminando en vez de ponerse detrás de su jugador.
+
+Los mensajes del combate (el enlace de cada invitado lleva los suyos):
+
+| Tipo | Nombre | Canal | Dirección | Contenido |
+|---|---|---|---|---|
+| `0x64` | `BattleAsk` | fiable | cliente → anfitrión | El número de petición del invitado, el mapa, las ranuras NPC de los enemigos, las marcas de combate fijo y predefinido, y el luchador de su compañero. |
+| `0x65` | `BattleBegin` | fiable | anfitrión → cliente | Número de combate, quien lo empezó, la petición que responde, mapa, ranuras NPC de los enemigos, la especie de cada luchador, combate fijo, los jugadores de los aliados, si es un combate Folder y (versión de protocolo 15) los ids de los cuatro movimientos equipados de cada luchador, vacíos los de los enemigos, que nombran las órdenes de los compañeros en el HUD del invitado. |
+| `0x67` | `BattleRefused` | fiable | anfitrión → cliente | El número de petición y por qué (ocupado, no está aquí, falló, un compañero renace). |
+| `0x68` | `BattleFrame` | no fiable | anfitrión → cliente | Número de combate y de frame, fase; del compañero propio del invitado (el que pelea, para un ayudante) su comando actual, la tira, la bolsa y (versión de protocolo 15) el progreso y la meta de su carga de remate y, en un combate Folder, su placa (orden activa con fase y progreso, compromiso, órdenes en espera con sus objetivos, objetivo, postura, barra de defensa y su capacidad, segundos de rotura, el aviso de la última orden); si se carga un remate; de cada luchador PV, PM, máximos, caído, segundos para revivir y (versión de protocolo 15) orden actual, postura, estado y si se ve su barra de PV; las figuras retenidas; los objetos lanzados; (versión de protocolo 15) cómo acabó el combate, cuando ya acabó. |
+| `0x69` | `BattleAction` | fiable | cliente → anfitrión | Un comando, una orden, una postura, un ánimo, el cierre de la caja final, o un objeto lanzado con el compañero al que vuela (luchador más uno, 0 para el propio o el que pelea). |
+| `0x6B` | `BattleEnd` | fiable | anfitrión → cliente | Resultado, los NPC que dejaron el mapa, bits y el botín del compañero de este invitado. |
+| `0x80` | `BattleOffer` | fiable | cliente → anfitrión | Si el compañero del invitado puede unirse a los combates del anfitrión, y como qué luchador; (versión de protocolo 15) si muere o espera a renacer. |
 
 ### 6.2 Intercambio de objetos (#360)
 
@@ -1057,7 +1220,7 @@ Lo hecho, por ticket (las issues #351 a #362 son las historias de jugador; sigue
 |---|---|
 | Partidas que el cooperativo nunca toca (#350) | §5.6 |
 | Autoridad, jugadores, mapas, interpolación (#353 a #356, #358) | §5.7 |
-| Mundo compartido: triggers, cofres, objetos del suelo, puertas, NPCs al momento (#357) | §5.8 |
+| Mundo compartido: triggers, cofres, objetos del suelo, cacas, puertas, NPCs al momento (#357) | §5.8 |
 | Salas de cuatro, diagnóstico de sincronía (#352, #359) | §5.9, [buscador de salas](coop-browser-4p.md) |
 | Unirse y volver a una partida en curso (#352, #356) | §5.10 |
 | Combates con todos los compañeros (#351, #362) y dificultad cooperativa (#361) | §6.1, [combate cooperativo](coop-combat.md), [dificultad cooperativa](coop-difficulty.md) |

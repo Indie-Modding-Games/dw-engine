@@ -912,6 +912,7 @@ rules; they are shortcuts for routes and debugging:
 | `clock_speed("<multiplier>")` | Accelerates the clock: 1 is one game minute per real second, 600 is ten hours |
 | `hd_scenery("on"\|"off")` | Turns the high-definition scenery on or off, like its options row (and saves it the same) |
 | `battle_speed("normal"\|"key"\|"fast")` | Changes the battle speed, like its "Quick battles" options row (and saves it the same) |
+| `battle_system("classic"\|"folder")` | Switches the game's battle system for the next battles, like its "Battle system" options row; only when the game's mode offers both ([Folder battle](../architecture/folder-battle.md)) |
 | `shop_job_mode("improved"\|"original")` | Switches Monochromon's shop job, like its options row (and saves it the same); the stage 4 route plays the original |
 | `model_characters("on"\|"off")` | Turns the 3D characters on or off for the game (it does not save it) |
 | `save("slot_NN")` | Saves the game in that manual slot (`save("slot_01")`); the old autosaves (`autosave_NN`) are never written. An autotest only saves with `--saves` |

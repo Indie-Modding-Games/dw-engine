@@ -1,4 +1,10 @@
+#include <dwe/game/field/npcs.hpp>
+#include <dwe/game/partner/effects.hpp>
+#include <dwe/game/partner/partner.hpp>
+#include <dwe/game/partner/state.hpp>
 #include <dwe/game/save/migration.hpp>
+#include <dwe/game/story/partner_routines.hpp>
+#include <dwe/game/story/story_runner.hpp>
 #include <dwe/game/story/story_state_yaml.hpp>
 #include <dwe/session/game_session.hpp>
 #include <dwe/session/story_adapter.hpp>
@@ -302,6 +308,44 @@ TEST_CASE("co-op keeps a player's own story facts out of the shared world") {
   CHECK_FALSE(story.playerOwnVariable(259));
 }
 
+TEST_CASE("co-op: the meat farm's day count is each player's, so every player gets the meat") {
+  const TestPacks packs{{"data/digimon.yaml", digimonTable},
+                        {"data/new_game_story.yaml", newGameStory}};
+  const auto session = storySession(packs);
+  CHECK(session.story->playerOwnVariable(31));
+  // The other day counters place NPCs on the maps: the world's.
+  CHECK_FALSE(session.story->playerOwnVariable(28));
+  CHECK_FALSE(session.story->playerOwnVariable(30));
+}
+
+TEST_CASE("co-op: the canyon shop's job runs on each player's own counter") {
+  const TestPacks packs{{"data/digimon.yaml", digimonTable},
+                        {"data/new_game_story.yaml", newGameStory}};
+  const auto session = storySession(packs);
+  // The customers served, the tally's bytes and what each turn tells the scripts.
+  for (const std::int32_t variable : {123, 243, 244, 110, 117, 248}) {
+    CHECK_MESSAGE(session.story->playerOwnVariable(variable), variable);
+  }
+  CHECK(session.story->playerOwnTrigger(101));
+  // The shopkeeper joining the city is the world's.
+  CHECK_FALSE(session.story->playerOwnTrigger(247));
+  CHECK_FALSE(session.story->playerOwnVariable(1));
+}
+
+TEST_CASE("co-op: the variables scripts hand to the engine's routines stay in each game") {
+  const TestPacks packs{{"data/digimon.yaml", digimonTable},
+                        {"data/new_game_story.yaml", newGameStory}};
+  const auto session = storySession(packs);
+  // A routine's map object and animation, a mood bubble's character and face, the bird's map and
+  // entrance: set right before the call that reads them, in the game that runs the script.
+  CHECK(session.story->playerOwnVariable(247));
+  CHECK(session.story->playerOwnVariable(248));
+  // The roll a map entry keeps for its doors (the Toy Mansion) is each game's too.
+  CHECK(session.story->playerOwnVariable(110));
+  CHECK_FALSE(session.story->playerOwnVariable(246));
+  CHECK_FALSE(session.story->playerOwnVariable(249));
+}
+
 TEST_CASE("a story section saved at version 1 still loads") {
   const TestPacks packs{{"data/digimon.yaml", digimonTable},
                         {"data/new_game_story.yaml", newGameStory}};
@@ -411,4 +455,206 @@ TEST_CASE("the tuned chance leaves the original's conditions and other rolls alo
   const MapEntries original = enterRepeatedly(std::nullopt, Unlisted);
   CHECK(unlisted.placed == original.placed);
   CHECK(unlisted.laterRolls == original.laterRolls);
+}
+
+namespace {
+
+// A map whose entry names script 1, whose section 7 (an NPC's) runs a few frames.
+constexpr std::string_view EventMapHead = R"lua(-- dwx lua 3: a module of the tests
+local story <const> = story
+return { script = 0, sections = { [19] = function()
+  story.set_script(1, 19)
+  return story.ENDED
+end } }
+)lua";
+constexpr std::string_view EventScript = R"lua(-- dwx lua 3: a module of the tests
+local story <const> = story
+return { script = 1, sections = {
+  [0] = function() return story.ENDED end,
+  [7] = function()
+    story.delay(5)
+    return story.ENDED
+  end,
+} }
+)lua";
+
+} // namespace
+
+TEST_CASE("co-op: an NPC in another player's event is left be, and this game's event names its "
+          "NPC while it runs (#417)") {
+  const TestPacks packs{{"data/digimon.yaml", digimonTable},
+                        {"data/new_game_story.yaml", newGameStory},
+                        {"story/000.lua", EventMapHead},
+                        {"story/001.lua", EventScript}};
+  const auto [session, story] = storySession(packs);
+  const auto settle = [&] {
+    for (int tick = 0; tick < 120 && story->scriptRunning(); ++tick) {
+      session->tick(dwe::session::testing::Tick);
+    }
+  };
+  story->mapEntered(19);
+  settle();
+  REQUIRE_FALSE(story->scriptRunning());
+  const std::vector<dwe::game::field::NpcContact> touch{
+      {.scriptId = 7, .entity = {}, .cause = dwe::game::field::NpcContactCause::Touch}};
+  const std::vector<std::int32_t> otherEvent{7};
+  story->runNpcContacts(touch, otherEvent);
+  CHECK_FALSE(story->scriptRunning());
+  CHECK_FALSE(story->eventNpc().has_value());
+
+  story->runNpcContacts(touch);
+  REQUIRE(story->scriptRunning());
+  CHECK(story->eventNpc() == std::optional<std::int32_t>{7});
+  settle();
+  CHECK_FALSE(story->scriptRunning());
+  CHECK_FALSE(story->eventNpc().has_value());
+}
+
+TEST_CASE("a dead partner's death section a map entry dropped before it ran is asked for again") {
+  // The host of a co-op test loaded a save with its partner dead: the first map entry ran over the
+  // death section it had just asked for, and the partner stayed dead with no scene for hours.
+  // partner_impl.c: tickDeathCondition calls the section on every frame until its scene starts.
+  constexpr std::int32_t ClearedVariable = 255;
+  constexpr std::int32_t MapHead = 37;
+  const TestPacks packs{{"data/digimon.yaml", digimonTable},
+                        {"data/new_game_story.yaml", newGameStory}};
+  auto adapter =
+      std::make_unique<StoryAdapter>(dwe::session::StoryAdapterDesc{.files = &packs.files()});
+  StoryAdapter* story = adapter.get();
+  auto ownedScenes =
+      std::make_unique<dwe::session::StoryScenes>(dwe::session::StoryScenesDesc{.story = story});
+  dwe::session::StoryScenes* scenes = ownedScenes.get();
+  std::vector<std::unique_ptr<SessionSystem>> systems;
+  systems.push_back(std::move(adapter));
+  systems.push_back(std::move(ownedScenes));
+  const auto session = newGameWith(packs, std::move(systems));
+  REQUIRE(story->runner() != nullptr);
+  dwe::game::partner::PartnerState dead = session->partner().state();
+  dead.life.lives = 0;
+  dead.life.phase = dwe::game::partner::LifePhase::DiedOtherwise;
+  REQUIRE(session->partner().restore(dead).has_value());
+  const auto asksForDeath = [&] {
+    REQUIRE(story->state().setVariable(ClearedVariable, 7).has_value());
+    scenes->tick(*session, {});
+    return story->scriptRunning() && story->state().variable(ClearedVariable).value_or(-1) == 0;
+  };
+
+  CHECK(asksForDeath());
+  REQUIRE(scenes->playsDeath());
+  story->runner()->enterMap(MapHead);
+  REQUIRE_FALSE(story->scriptRunning());
+  CHECK(asksForDeath());
+}
+
+namespace {
+
+// A stand-in for the death section of the map-head script on a partner with lives and lifetime
+// left (MAPHEAD 0x4DE: the lost life, routine 9) and the head section of map 37.
+constexpr std::string_view DeathMapHead = R"lua(-- dwx lua 4: a stand-in for script 0
+local story <const> = story
+local ENDED <const> = story.ENDED
+return { script = 0, sections = {
+  [0x04de] = function()
+    story.call_partner_routine(9)
+    story.wait_for_entity(255)
+    return ENDED
+  end,
+  [37] = function()
+    return ENDED
+  end,
+} }
+)lua";
+
+struct DeathPlay {
+  std::unique_ptr<dwe::session::GameSession> session;
+  StoryAdapter* story = nullptr;
+  dwe::session::StoryScenes* scenes = nullptr;
+
+  // The partner scenes the session starts within `frames` frames.
+  std::vector<dwe::game::story::PartnerScene> run(int frames) {
+    std::vector<dwe::game::story::PartnerScene> started;
+    for (int frame = 0; frame < frames; ++frame) {
+      session->tick(1.0 / 60.0);
+      if (auto request = scenes->takePartnerScene()) {
+        started.push_back(request->scene);
+        scenes->partnerSceneFinished();
+      }
+    }
+    return started;
+  }
+};
+
+DeathPlay deathPlay(const TestPacks& packs) {
+  auto adapter =
+      std::make_unique<StoryAdapter>(dwe::session::StoryAdapterDesc{.files = &packs.files()});
+  StoryAdapter* story = adapter.get();
+  auto ownedScenes =
+      std::make_unique<dwe::session::StoryScenes>(dwe::session::StoryScenesDesc{.story = story});
+  dwe::session::StoryScenes* scenes = ownedScenes.get();
+  std::vector<std::unique_ptr<SessionSystem>> systems;
+  systems.push_back(std::move(adapter));
+  systems.push_back(std::move(ownedScenes));
+  auto session = newGameWith(packs, std::move(systems));
+  REQUIRE(story->runner() != nullptr);
+  REQUIRE(scenes->playsDeath());
+  return {.session = std::move(session), .story = story, .scenes = scenes};
+}
+
+constexpr int SceneFrames = 30;
+
+dwe::game::partner::BattleConsequences defeat() {
+  dwe::game::partner::BattleConsequences lost;
+  lost.result = dwe::game::partner::BattleResult::Lost;
+  lost.livesLost = 1;
+  return lost;
+}
+
+} // namespace
+
+TEST_CASE("a lost life whose scene started costs one life when the host changes the map after") {
+  // Co-op QA: a guest lost a battle, its lost life's scene played and the host led the group to
+  // another map. The death section must not run again for that life.
+  using dwe::game::story::PartnerScene;
+  constexpr std::int32_t ClearedVariable = 255;
+  constexpr std::int32_t MapHead = 37;
+  const TestPacks packs{{"data/digimon.yaml", digimonTable},
+                        {"data/new_game_story.yaml", newGameStory},
+                        {"story/000.lua", DeathMapHead}};
+  DeathPlay play = deathPlay(packs);
+  dwe::game::partner::Partner& partner = play.session->partner();
+  const std::int32_t lives = partner.state().life.lives;
+  REQUIRE(lives > 1);
+
+  partner.applyBattle(defeat(), play.session->clock());
+  CHECK(play.run(SceneFrames) == std::vector{PartnerScene::BattleLostLife});
+  REQUIRE(play.story->state().setVariable(ClearedVariable, 7).has_value());
+  play.story->runner()->enterMap(MapHead);
+  CHECK(play.run(SceneFrames).empty());
+  CHECK(play.story->state().variable(ClearedVariable).value_or(-1) == 7);
+  CHECK(partner.state().life.lives == lives - 1);
+  CHECK(partner.alive());
+}
+
+TEST_CASE("a partner saved dead with lives left lives on after its lost life and loses the next") {
+  // Co-op QA: the host's save had its partner dead with three lives (a debug command gave them
+  // back). The death section played the lost life (murd.c: MURD_tick with lives left), the partner
+  // stayed dead and no defeat took a life from it again.
+  using dwe::game::story::PartnerScene;
+  const TestPacks packs{{"data/digimon.yaml", digimonTable},
+                        {"data/new_game_story.yaml", newGameStory},
+                        {"story/000.lua", DeathMapHead}};
+  DeathPlay play = deathPlay(packs);
+  dwe::game::partner::Partner& partner = play.session->partner();
+  dwe::game::partner::PartnerState dead = partner.state();
+  constexpr std::int32_t Lives = 3;
+  dead.life.lives = Lives;
+  dead.life.phase = dwe::game::partner::LifePhase::DiedOtherwise;
+  REQUIRE(dead.life.remainingLifetime > 0);
+  REQUIRE(partner.restore(dead).has_value());
+
+  CHECK(play.run(SceneFrames) == std::vector{PartnerScene::BattleLostLife});
+  CHECK(partner.alive());
+  partner.applyBattle(defeat(), play.session->clock());
+  CHECK(partner.state().life.lives == Lives - 1);
+  CHECK(play.run(SceneFrames) == std::vector{PartnerScene::BattleLostLife});
 }

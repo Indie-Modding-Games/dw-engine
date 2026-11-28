@@ -15,6 +15,7 @@
     "poolLayout": { "description": "What the partner menu's HP and MP bars fill with: the maximum against the cap, as the original game (maximum), or the amount left over the maximum (current).", "enum": ["maximum", "current"] },
     "tabsLayout": { "description": "Which tabs the pause menu's player page offers in the original layout: all of them (all), or the profile, the chart and the city only, walked with the tab keys too and with a Back tab (minimal).", "enum": ["all", "minimal"] },
     "medalsLayout": { "description": "Where the pause menu's player page shows the medals in the original layout: on a page of their own (page), or in a box on the profile, without their tab (profile).", "enum": ["page", "profile"] },
+    "stripLayout": { "description": "How the battle's command strip draws its commands: as named buttons (text), which a Folder battle groups into techniques, stances and actions, or as the original game's icons (icons).", "enum": ["text", "icons"] },
     "boxLayout": { "description": "How the screen's boxes open: at once (modern), or growing from a grey outline as in the original game.", "enum": ["modern", "original"] },
     "styleName": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$" },
     "assetId": { "description": "An asset id: the path without its extension.", "type": "string", "pattern": "^[a-z0-9_]+(/[a-z0-9_]+)*$" },
@@ -67,7 +68,7 @@
       "properties": {
         "pause_menu": { "type": "object", "additionalProperties": false, "properties": { "menu": { "$ref": "#/$defs/menuLayout" }, "box": { "$ref": "#/$defs/boxLayout" }, "tabs": { "$ref": "#/$defs/tabsLayout" }, "medals": { "$ref": "#/$defs/medalsLayout" } } },
         "partner_menu": { "type": "object", "additionalProperties": false, "properties": { "menu": { "$ref": "#/$defs/menuLayout" }, "box": { "$ref": "#/$defs/boxLayout" }, "pages": { "$ref": "#/$defs/pagesLayout" }, "pool": { "$ref": "#/$defs/poolLayout" } } },
-        "battle": { "type": "object", "additionalProperties": false, "properties": { "menu": { "$ref": "#/$defs/menuLayout" } } },
+        "battle": { "type": "object", "additionalProperties": false, "properties": { "menu": { "$ref": "#/$defs/menuLayout" }, "strip": { "$ref": "#/$defs/stripLayout" } } },
         "main_menu": { "type": "object", "additionalProperties": false, "properties": { "menu": { "$ref": "#/$defs/menuLayout" }, "picture": { "$ref": "#/$defs/pictureLayout" } } },
         "save_slots": { "type": "object", "additionalProperties": false, "properties": { "menu": { "$ref": "#/$defs/menuLayout" }, "picture": { "$ref": "#/$defs/pictureLayout" } } },
         "new_game_rules": { "type": "object", "additionalProperties": false, "properties": { "menu": { "$ref": "#/$defs/menuLayout" }, "picture": { "$ref": "#/$defs/pictureLayout" } } },

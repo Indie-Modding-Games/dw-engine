@@ -145,6 +145,23 @@ Requirement requirementFrom(const assets::EvolutionRequirementEntry& row, TableR
           .battlesAreMaximum = (row.flags & BattlesAreMaximumFlag) != 0};
 }
 
+std::optional<Species> modelStandIn(const assets::DigimonTable& digimon, Species species,
+                                    std::span<const Species> sources) {
+  if (sources.empty()) {
+    return std::nullopt;
+  }
+  const auto nameOf = [&digimon](Species index) -> std::string_view {
+    const auto row = std::ranges::find(digimon.digimon, index, &assets::DigimonRow::index);
+    return row == digimon.digimon.end() ? std::string_view{} : std::string_view{row->name};
+  };
+  const std::string_view name = nameOf(species);
+  const auto named = std::ranges::find_if(sources, [&](Species source) {
+    const std::string_view sourceName = nameOf(source);
+    return !sourceName.empty() && name.size() > sourceName.size() && name.ends_with(sourceName);
+  });
+  return named != sources.end() ? *named : sources.front();
+}
+
 } // namespace
 
 core::Result<EvolutionTables> EvolutionTables::build(const assets::DigimonTable& digimon,
@@ -197,16 +214,30 @@ core::Result<EvolutionTables> EvolutionTables::build(const assets::DigimonTable&
     }
   }
   // evolution.c: EVOLUTION_PATHS[currentDigimon - 1]: entry i is the chart of type i + 1.
+  // A target without a model is left out: evolving into it would leave nothing to draw.
   for (const assets::EvolutionPathEntry& row : evolution.paths) {
     std::vector<Species> targets;
     for (const assets::TableReference& target : row.to) {
-      if (const auto species = resolver.species(target, EvolutionTableRole); species) {
+      if (const auto species = resolver.species(target, EvolutionTableRole);
+          species && tables.modelled_.contains(*species)) {
         targets.push_back(*species);
       }
     }
     if (const auto owner =
             ownerOf(resolver.species(row.digimon, EvolutionTableRole), row.index, 1)) {
       tables.paths_.insert_or_assign(*owner, std::move(targets));
+      if (!tables.modelled_.contains(*owner)) {
+        std::vector<Species> sources;
+        for (const assets::TableReference& source : row.from) {
+          if (const auto species = resolver.species(source, EvolutionTableRole);
+              species && tables.modelled_.contains(*species)) {
+            sources.push_back(*species);
+          }
+        }
+        if (const auto standIn = modelStandIn(digimon, *owner, sources)) {
+          tables.drawnAs_.insert_or_assign(*owner, *standIn);
+        }
+      }
     }
   }
   // item.c: handleEvoItems: EVOLUTION_ITEM_TARGET, as dwx extracts it into the item effects.
@@ -399,8 +430,13 @@ const StatReference* EvolutionTables::statReference(Species target) const {
   return found == statReferences_.end() ? nullptr : &found->second;
 }
 
+Species EvolutionTables::drawnAs(Species species) const {
+  const auto found = drawnAs_.find(species);
+  return found == drawnAs_.end() ? species : found->second;
+}
+
 const StatReference* EvolutionTables::cheatReference(Species target) const {
-  if (!modelled_.contains(target)) {
+  if (!drawable(target)) {
     return nullptr;
   }
   if (const StatReference* own = statReference(target);

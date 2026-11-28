@@ -16,6 +16,7 @@ namespace dwe::app {
 
 // The first course a player runs in a co-op game says once that the world's time goes on.
 inline constexpr std::string_view CoopTrainingClockText = "online.coop.training_clock";
+inline constexpr std::string_view CoopSleepWaitText = "online.coop.sleep_wait";
 
 // One guest the host tells the clock and the trainings to.
 struct CoopTrainingPeer {

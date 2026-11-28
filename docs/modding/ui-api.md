@@ -67,6 +67,11 @@ between game versions.
 
 | Version | Changes |
 |---|---|
+| 0.37.0 | `helper` in `battle.state()`: a co-op guest whose partner is not in the fight, whose strip hints its cheer key |
+| 0.36.0 | How the host's battle ended on a co-op guest's end box: `coop_battle.outcome` (victory, fled or defeat), which the `coop_battle` headline names instead of the battle's invitation |
+| 0.35.0 | The ally a co-op guest's next item flies to: `battle.ally.<n>.throw_target` and `throw_target` in `battle.allies()` (the skins light that ally's card with the class `throw-target`), and `bag.throw_pick`, set while the bag is a guest's battle bag whose Q and E pick it (the bag shows that hint) |
+| 0.34.0 | The graphics notice's reason: `software_notice.kind`, `software_notice.reason` and its values `software_notice.<value>` ([graphics diagnosis](../architecture/graphics-diagnosis.md)) |
+| 0.33.0 | The Folder battle's order panel: `battle.folder()` and its `battle.folder.*` settings (the active order, its phase, the waiting orders, the target, each waiting order's foe, the defense bar and the break, the stance, the commit point, the foes' letters and which foes the orders aim at, the move that replaced an order), and the `battle_system` option and the `strip` skin layout option ([Folder battle](../architecture/folder-battle.md)); each co-op ally's current order (`order_key` in `battle.allies()`) |
 | 0.32.0 | Software mode ([software mode](../architecture/software-mode.md)): the options `auto_quality`, `render_scale` and `frame_limit`, and the `software_notice` notice with the `software_mode` setting |
 | 0.31.0 | The partner menu marks the partner's boosted technique (`partner.technique.<n>.boosted`, `partner.technique.choice.<n>.boosted`: its power and MP are already the boosted ones), and the `boosted_techniques` option arrives ([battle](../modules/game/battle.md#boosted-techniques)) |
 | 0.30.0 | The field's need meters and danger alert: `partner.gauges()` (hunger, the toilet and tiredness as they build up: `hud.gauge.<n>.label`, `need`, `value`, `max` and `fill`), `field.dangers()` and its event `field.danger` (the marks over the wild monsters that would crush the partner: `hud.danger.<n>.visible`, `x`, `y` and `hud.danger.revision`), and the options `need_meters` and `danger_alert` |
@@ -109,7 +114,7 @@ versus, the online rooms, the co-op game's tag and notices and the story boxes (
 ## Reference
 
 <!-- ui-api:generated -->
-UI API version: **0.32.0**.
+UI API version: **0.37.0**.
 
 ### `ui`
 
@@ -346,6 +351,7 @@ UI API version: **0.32.0**.
 | `quick_battle_start` | option | yes/no | Quick battle start. |
 | `difficulty` | option | text | Difficulty: normal or easy. |
 | `shop_job_mode` | option | text | The canyon shop job: improved or original. |
+| `battle_system` | option | text | The game's battle system, classic or folder; the next battle plays it. Fixed unless the game's mode offers both. |
 | `coop_difficulty` | option | text | How co-op battles scale their enemies: off, standard or hard. |
 | `coop_open_to_join` | option | yes/no | Whether a co-op game this player hosts takes new players once under way. |
 | `roaming_rare_chance` | option | text | How often the roaming rares appear: original, percent_5, percent_10, percent_25 or percent_50. |
@@ -362,6 +368,10 @@ UI API version: **0.32.0**.
 | `whamon_in_water` | option | yes/no | Whamon in the water. |
 | `boosted_techniques` | option | yes/no | Boosted techniques. |
 | `auto_quality` | option | yes/no | Automatic quality: the game adjusts the graphics to the frame time. |
+| `graphics_preset` | option | text | Graphics preset: performance, balanced or quality (the default look); custom when the options match none. |
+| `graphics.mode` | setting | text | How the game draws: card, compatible (the Vulkan 1.2 path) or processor. |
+| `graphics.gpu` | setting | text | The graphics device's name. |
+| `graphics.auto_reason` | setting | text | Why the automatic quality chose the look: software, integrated, compatible or slow; empty when it does not choose. |
 | `render_scale` | option | text | Render scale: 100, 75 or 50 (percent). |
 | `frame_limit` | option | text | Frame limit: off, 60 or 30. |
 | `smooth_motion` | option | yes/no | Smooth motion. |
@@ -407,6 +417,9 @@ UI API version: **0.32.0**.
 | Name | Kind | Value | What it is |
 |---|---|---|---|
 | `software_mode` | setting | yes/no | Whether the game draws without a graphics card (software mode); the notice shows once a run. |
+| `software_notice.kind` | setting | text | software (no graphics card) or compatible (the card in the Vulkan 1.2 mode). |
+| `software_notice.reason` | setting | text | Why, as a reason code of docs/architecture/graphics-diagnosis.md; empty if unknown. |
+| `software_notice.<value>` | setting | text | The reason's values: gpu, adapter, dedicated, driver, minimum and api. |
 
 ### `field_item_notice`
 
@@ -504,6 +517,7 @@ UI API version: **0.32.0**.
 | `coop_battle.item.<n>.name_key` | setting | text | The text key of an item's name. |
 | `coop_battle.item.<n>.count` | setting | number | How many of an item this player has. |
 | `coop_battle.waiting` | setting | yes/no | Whether the end box is up and this player waits on the starter to close it. |
+| `coop_battle.outcome` | setting | text | How the battle ended, for the end box: victory, fled or defeat; empty before it ends. |
 | `coop_battle.starter.name` | setting | text | The name of the player who started the battle; empty when it has none. |
 | `coop_battle.starter.name_key` | setting | text | Without a name, the text key that names the starter (Host, Guest {number}). |
 | `coop_battle.starter.number` | setting | number | The number in the starter's name_key text. |
@@ -622,6 +636,7 @@ UI API version: **0.32.0**.
 | `bag.slot.<n>.<id>` | setting | number or text | A slot: empty, name, description, description_species, count, dimmed, usable, discardable, item_color, icon, icon_rect, favorite. |
 | `bag.result` | setting | text | The text key of the last bag action's message. |
 | `bag.result_item` | setting | text | The item of the last bag action. |
+| `bag.throw_pick` | setting | yes/no | Whether this bag is a co-op guest's battle bag, whose tab_previous and tab_next pick the partner its item flies to. |
 | `field.player_x` | setting | number | The player's position in the window as a percentage, from where the boxes grow. |
 | `field.player_y` | setting | number | The player's position in the window as a percentage, from where the boxes grow. |
 | `partner_menu.portrait` | report | yes/no | Whether the game draws the partner in 3D over the status page (an improvement). |
@@ -820,6 +835,9 @@ UI API version: **0.32.0**.
 | `battle.menu.<n>.available` | setting | yes/no | Whether the command can be given now. |
 | `battle.menu.<n>.current` | setting | yes/no | Whether it is the command the partner follows now. |
 | `battle.menu.<n>.mp_cost` | setting | number | The MP the move costs the partner now; 0 for the other commands. |
+| `battle.menu.<n>.problem` | setting | text | In a folder battle, the text key of why the move cannot be ordered now (not enough MP, finisher not ready...); empty when it can. |
+| `battle.menu.<n>.area` | setting | text | In a folder battle, a technique's area: around_self, around_target or global; empty when it reaches its target alone. |
+| `battle.menu.<n>.friendly_fire` | setting | yes/no | In a folder battle, whether the technique also hits the partner's own side. |
 | `battle.menu.motion` | setting | number | Goes up each time the strip or the partner's bars move, or the icon under the cursor blinks. |
 | `battle.menu.top` | setting | number | The strip's top edge, in lines from the screen's center. |
 | `battle.menu.bottom` | setting | number | The strip's bottom edge. |
@@ -835,6 +853,10 @@ UI API version: **0.32.0**.
 | `battle.fighter.<n>.max_mp` | setting | number | A fighter's maximum MP. |
 | `battle.fighter.<n>.fainted` | setting | yes/no | Whether it has fainted. |
 | `battle.fighter.<n>.hp_bar` | setting | yes/no | Whether its HP bar is shown now (an enemy's, for a while after taking damage). |
+| `battle.fighter.<n>.id` | setting | number | Its number in the battle, the one battle.hp_bars names an enemy by. |
+| `battle.fighter.<n>.tag` | setting | text | A foe's letter (A, B...) when another foe is of its species; empty otherwise. |
+| `battle.fighter.<n>.targeted` | setting | yes/no | In a Folder battle, whether the next orders aim at this foe. |
+| `battle.fighter.<n>.queued` | setting | yes/no | In a Folder battle, whether the active or a waiting order aims at this foe. |
 | `battle.ally.count` | setting | number | How many other players' partners fight beside the partner (co-op; 0 otherwise). |
 | `battle.ally.<n>.name` | setting | text | The text key of an ally's name. |
 | `battle.ally.<n>.status` | setting | text | The text key of an ally's status ailment, or empty. |
@@ -845,6 +867,8 @@ UI API version: **0.32.0**.
 | `battle.ally.<n>.fainted` | setting | yes/no | Whether an ally has fainted. |
 | `battle.ally.<n>.hp_bar` | setting | yes/no | Always on for an ally. |
 | `battle.ally.<n>.revive_seconds` | setting | number | The countdown to revive a fainted ally; -1 without one. |
+| `battle.ally.<n>.order` | setting | text | The text key of an ally's current order: its command, its Folder move or stance. |
+| `battle.ally.<n>.throw_target` | setting | yes/no | In a co-op guest's battle, whether its next thrown item flies to this ally (tab_previous and tab_next pick it while the bag is open). |
 | `battle.finisher.progress` | setting | number | How much the finisher gauge has charged. |
 | `battle.finisher.goal` | setting | number | How much it has to charge to be full. |
 | `battle.finisher.ready` | setting | yes/no | Whether the finisher is ready. |
@@ -855,6 +879,28 @@ UI API version: **0.32.0**.
 | `battle.match_seconds` | setting | number | The clock of a cup battle; -1 in the other battles. |
 | `battle.bag.available` | setting | yes/no | Whether the bag can be opened. |
 | `battle.bag.open` | setting | yes/no | Whether the bag is open over the battle. |
+| `battle.folder.active` | setting | yes/no | Whether the battle is a Folder battle: the strip gives orders and stances. |
+| `battle.folder.move` | setting | text | The text key of the active order's move, or empty. |
+| `battle.folder.phase` | setting | text | The active order's phase: processing, positioning, preparing, executing, recovering or empty. |
+| `battle.folder.phase_percent` | setting | number | How far a timed phase is, in percent. |
+| `battle.folder.queue.count` | setting | number | How many orders wait. |
+| `battle.folder.queue.<n>.move` | setting | text | The text key of a waiting order's move, the next first. |
+| `battle.folder.queue.<n>.target` | setting | text | The name key of the foe a waiting order aims at; empty when it aims at none. |
+| `battle.folder.queue.<n>.tag` | setting | text | The letter of the foe a waiting order aims at (battle.fighter.&lt;n&gt;.tag). |
+| `battle.folder.active_target` | setting | text | The name key of the foe the active order aims at; empty when it aims at none. |
+| `battle.folder.active_tag` | setting | text | The letter of the foe the active order aims at. |
+| `battle.folder.committed` | setting | yes/no | Whether the active order's technique has thrown what lands: a hit no longer stops it. |
+| `battle.folder.stance` | setting | text | The stance the partner moves by now: aggressive, hold, distance or guard (hold while the defense is broken). |
+| `battle.folder.broken_seconds` | setting | number | The seconds the broken defense lasts yet. |
+| `battle.folder.bar` | setting | number | The partner's defense bar: the damage taken lately. |
+| `battle.folder.bar_max` | setting | number | The defense bar's capacity; full, the defense breaks. |
+| `battle.folder.broken` | setting | yes/no | Whether the partner's defense is broken now. |
+| `battle.folder.target` | setting | text | The name key of the foe the next orders aim at; empty without one. |
+| `battle.folder.target_tag` | setting | text | The letter of the foe the next orders aim at. |
+| `battle.folder.notice` | setting | text | For a few seconds after an order ends other than done, the text key of how (cancelled, interrupted, invalid, replaced); empty otherwise. |
+| `battle.folder.notice_move` | setting | text | The move name key of the order the notice tells about. |
+| `battle.folder.notice_reason` | setting | text | The text key of why that order ended; empty when the ending says it all. |
+| `battle.folder.notice_by` | setting | text | A replaced order's notice: the move name key of the order that took its place. |
 | `battle.item_in_flight` | setting | yes/no | Whether a thrown item is on its way to the partner. |
 | `battle.end.outcome` | setting | text | The text key of the result in the end box. |
 | `battle.end.count` | setting | number | How many lines the end box has. |
@@ -887,6 +933,7 @@ UI API version: **0.32.0**.
 | `battle.hp_bars` | setting | text | The enemies' health bars: nine values each. |
 | `battle.markers` | setting | text | The 1P and COM markers of a cup battle between two of the same species: three values each. |
 | `battle.death_countdown` | setting | text | The countdown over the fainted partner: seven values, or empty. |
+| `battle.stun_signs` | setting | text | The stun signs over the fighters: four values each (left, top, width, height as percentages). |
 | `battle.shout.revision` | setting | number | Goes up each time the player's shout changes. |
 | `battle.shout.shown` | setting | yes/no | Whether the player's shout is shown. |
 | `battle.shout.text` | setting | text | The text key of the shout. |
@@ -904,16 +951,18 @@ UI API version: **0.32.0**.
 | `battle_close` | command | — | Closes the battle's end box. For an addon, only in the end phase. |
 | `battle_end_count` | command | — | A step of the count of the bits at the battle's end. For an addon, only in the end phase. |
 | `battle_end_counted` | command | — | The count of the bits at the battle's end has finished. For an addon, only in the end phase. |
-| `battle.state(): table` | query | table | The battle: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds and match_seconds (or nil) and cup (a cup battle). |
-| `battle.fighters(): table` | query | table | The fighters, the partner first: name_key, status_key, hp, max_hp, mp, max_mp, fainted and hp_bar. |
+| `battle.state(): table` | query | table | The battle: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds and match_seconds (or nil), cup (a cup battle) and helper (a co-op guest whose partner is not in the fight: no orders, its finisher key cheers). |
+| `battle.fighters(): table` | query | table | The fighters, the partner first: name_key, status_key, hp, max_hp, mp, max_mp, fainted, hp_bar, id, tag, targeted and queued. |
 | `battle.allies(): table` | query | table | The other players' partners fighting beside this player's in a co-op battle (empty otherwise): name_key, status_key, hp, max_hp, mp, max_mp, fainted and revive_seconds (a fallen ally's countdown, or nil). |
-| `battle.commands(): table` | query | table | The command strip, the finisher first: command, label_key, icon, available, current and mp_cost. |
+| `battle.commands(): table` | query | table | The command strip, the finisher first: command, label_key, icon, available, current, mp_cost, problem_key (folder battle: why the move cannot be ordered now, or ""), area and friendly_fire (folder battle: the technique's area, "" for one target, and whether it hits allies). |
 | `battle.finisher(): table` | query | table | The finisher: progress, goal, ready, charging (the aura), charge (as a percentage) and gauge (the charge gauge's top-left corner over the partner: x, y as percentages, or nil). |
+| `battle.folder(): table` | query | table | The folder battle's order panel: active, move_key, phase, phase_percent, committed, active_target_key, active_tag, queue (move keys), queue_targets (their foes' name keys), queue_tags, target_key, target_tag, stance, bar, bar_max, broken, broken_seconds and notice (an order that just ended other than done: key, move_key, reason_key, by_key; or nil). |
 | `battle.strip(): table` | query | table | Where the strip and the partner's bars are when entering and leaving: top, bottom, blink, hp_x and mp_x (or nil). |
 | `battle.intro(): table` | query | table | The opening: step, anger (3 marks), flee (8), anger_scale, flash and pieces (the banner's pieces, with key). |
 | `battle.numbers(): table` | query | table | The numbers over the fighters: x, y (percentage), dx, dy, value, kind (damage, gain, poison) and icon. |
 | `battle.hp_bars(): table` | query | table | The enemies' health bars: always and bars (enemy, x, y, left, top, fill, red, green, hp). |
 | `battle.markers(): table` | query | table | The 1P and COM markers: fighter (0 the partner, 1 the rival), x and y (percentage). |
+| `battle.stun_signs(): table` | query | table | The stun signs over the fighters: left, top, width and height (percentage). |
 | `battle.death_countdown(): table?` | query | table | The countdown over the fainted partner (x, y, digit, digit_scale, badge_scale, turn, palette), or nil. |
 | `battle.shout(): table?` | query | table | The player's shout (text_key, x, y, node_x, node_y, line, hop, scale), or nil. |
 | `battle.result(): table` | query | table | The end box: outcome_key, lines (parts, name_key, subject_key, amount), stats (value, max, gain), bits, money, count_delay_frames and wait_frames. |

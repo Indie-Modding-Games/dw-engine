@@ -14,6 +14,7 @@ use serde::Serialize;
 use crate::content::content_folder;
 use crate::custom_images::CustomImages;
 use crate::failure::{code, Failure, Result};
+use crate::graphics_step::GraphicsStep;
 use crate::log::logs_folder;
 use crate::store::Game;
 
@@ -26,12 +27,16 @@ pub fn game_log(data: &Path) -> PathBuf {
 pub struct GraphicsFlags {
     pub compatibility: bool,
     pub low_performance: bool,
+    /// Keeps the game off Vulkan 1.4 (graphics_step.rs).
+    pub vulkan13: bool,
 }
 
 pub const COMPATIBLE_FLAG: &str = "--compatible";
 pub const LOW_PERFORMANCE_FLAG: &str = "--low-performance";
+pub const VULKAN13_FLAG: &str = "--vulkan13";
 /// The first releases whose game knows each flag; an older game refuses the whole command line.
 const FIRST_WITH_MODES: &str = "0.1.0-beta.1127";
+const FIRST_WITH_VULKAN13: &str = "0.1.0-beta.1136";
 
 /// A development build ("dev", or anything that is not a version) knows every flag.
 fn knows(game: &Game, since: &str) -> bool {
@@ -45,8 +50,15 @@ pub fn knows_modes(game: &Game) -> bool {
     knows(game, FIRST_WITH_MODES)
 }
 
+pub fn knows_vulkan13(game: &Game) -> bool {
+    knows(game, FIRST_WITH_VULKAN13)
+}
+
 /// DeviceLostExitCode in the game's common.hpp.
 pub const DEVICE_LOST_EXIT_CODE: i32 = 113;
+/// GraphicsStartExitCode in the game's common.hpp: no GPU path could make the device. No older
+/// game exits with it.
+pub const GRAPHICS_START_EXIT_CODE: i32 = 114;
 /// Windows closes a program that stopped responding with 0xCFFFFFFF.
 pub const WINDOWS_HANG_EXIT_CODE: i32 = 0xCFFF_FFFF_u32 as i32;
 /// An older game never returned it on purpose.
@@ -57,22 +69,35 @@ const FIRST_WITH_DEVICE_LOST_CODE: &str = "0.1.0-beta.1133";
 pub enum ExitReason {
     DeviceLost,
     WindowsHang,
+    GraphicsStart,
 }
 
 pub fn exit_reason(game: &Game, code: Option<i32>) -> Option<ExitReason> {
     match code? {
         DEVICE_LOST_EXIT_CODE if knows(game, FIRST_WITH_DEVICE_LOST_CODE) => Some(ExitReason::DeviceLost),
         WINDOWS_HANG_EXIT_CODE => Some(ExitReason::WindowsHang),
+        GRAPHICS_START_EXIT_CODE => Some(ExitReason::GraphicsStart),
         _ => None,
     }
 }
 
 impl GraphicsFlags {
+    /// The switches plus what the graphics step adds (graphics_step.rs); the software step changes
+    /// the driver, not the flags.
+    pub fn with_step(self, step: GraphicsStep) -> Self {
+        Self {
+            compatibility: self.compatibility || step == GraphicsStep::Compatible,
+            vulkan13: self.vulkan13 || step == GraphicsStep::Vulkan13,
+            ..self
+        }
+    }
+
     /// The flags that are on and that this game knows.
     pub fn args(&self, game: &Game) -> Vec<&'static str> {
         [
             (self.compatibility, COMPATIBLE_FLAG, FIRST_WITH_MODES),
             (self.low_performance, LOW_PERFORMANCE_FLAG, FIRST_WITH_MODES),
+            (self.vulkan13, VULKAN13_FLAG, FIRST_WITH_VULKAN13),
         ]
         .into_iter()
         .filter(|&(on, _, since)| on && knows(game, since))
@@ -162,17 +187,29 @@ mod tests {
         };
         assert!(args(GraphicsFlags { compatibility: true, ..Default::default() }).contains(&"--compatible".to_string()));
         assert!(args(GraphicsFlags { low_performance: true, ..Default::default() }).contains(&"--low-performance".to_string()));
-        assert_eq!(args(GraphicsFlags { compatibility: true, low_performance: true }).len(), 4, "both flags, next to --content");
+        assert_eq!(args(GraphicsFlags { compatibility: true, low_performance: true, vulkan13: false }).len(), 4, "both flags, next to --content");
+        assert!(args(GraphicsFlags { vulkan13: true, ..Default::default() }).contains(&"--vulkan13".to_string()));
+    }
+
+    #[test]
+    fn the_graphics_step_adds_its_flag() {
+        let switches = GraphicsFlags { low_performance: true, ..Default::default() };
+        assert_eq!(switches.with_step(GraphicsStep::Card), switches);
+        assert!(switches.with_step(GraphicsStep::Vulkan13).vulkan13);
+        let compatible = switches.with_step(GraphicsStep::Compatible);
+        assert!(compatible.compatibility && compatible.low_performance && !compatible.vulkan13);
+        assert_eq!(switches.with_step(GraphicsStep::Software), switches);
     }
 
     #[test]
     fn an_older_game_gets_only_the_flags_it_knows() {
-        let all = GraphicsFlags { compatibility: true, low_performance: true };
+        let all = GraphicsFlags { compatibility: true, low_performance: true, vulkan13: true };
         let game = |version: &str| Game { dir: "/g".into(), version: version.into(), commit: String::new(), extractor_version: None };
         assert!(all.args(&game("0.1.0-beta.1126")).is_empty());
         assert_eq!(all.args(&game("0.1.0-beta.1127")), ["--compatible", "--low-performance"]);
-        assert_eq!(all.args(&game("0.2.0")).len(), 2);
-        assert_eq!(all.args(&game("dev")).len(), 2);
+        assert_eq!(all.args(&game("0.1.0-beta.1136")), ["--compatible", "--low-performance", "--vulkan13"]);
+        assert_eq!(all.args(&game("0.2.0")).len(), 3);
+        assert_eq!(all.args(&game("dev")).len(), 3);
         assert!(GraphicsFlags::default().args(&game("dev")).is_empty());
     }
 
@@ -189,6 +226,8 @@ mod tests {
         assert_eq!(exit_reason(&game("dev"), Some(2)), None);
         assert_eq!(exit_reason(&game("dev"), None), None, "a signal is no exit code");
         assert_eq!(serde_json::to_string(&ExitReason::DeviceLost).unwrap(), r#""device-lost""#);
+        assert_eq!(exit_reason(&game("0.1.0-beta.1100"), Some(114)), Some(ExitReason::GraphicsStart));
+        assert_eq!(serde_json::to_string(&ExitReason::GraphicsStart).unwrap(), r#""graphics-start""#);
     }
 
     #[test]

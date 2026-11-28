@@ -94,6 +94,9 @@ public:
   // (EvolutionTables::cheatTargets), in the tables' order; empty before the rules are read.
   [[nodiscard]] std::vector<std::string> cheatTargets() const;
 
+  // EvolutionTables::drawnAs by name; an unknown species is returned as it is.
+  [[nodiscard]] std::string drawnSpecies(std::string_view species) const;
+
   // The level of a form of the tables; Level::None for an unknown one.
   [[nodiscard]] game::evolution::Level levelOf(std::string_view species) const;
   // The level of the form an evolution item turns into, if it is one.

@@ -18,8 +18,16 @@ namespace dwe::game::story {
 
 // The original's outcome, as start_battle writes it into a variable: -1, 0 or 1. NotStarted is
 // dwe's own: the battle could not start (no enemy on the map, a species missing from the content);
-// the story takes it as a flight, never as a win, and logs it as an error.
-enum class BattleOutcome : std::int8_t { Defeat = -1, Fled = 0, Victory = 1, NotStarted = 2 };
+// the story takes it as a flight, never as a win, and logs it as an error. Refused is co-op's: the
+// shared world holds its battles (one runs, a partner dies); the section ends where it stands, with
+// no flight, so the NPC can start it again.
+enum class BattleOutcome : std::int8_t {
+  Defeat = -1,
+  Fled = 0,
+  Victory = 1,
+  NotStarted = 2,
+  Refused = 3
+};
 
 // The numbers of the scripted battle, from the ruleset.
 struct StoryBattleRules {

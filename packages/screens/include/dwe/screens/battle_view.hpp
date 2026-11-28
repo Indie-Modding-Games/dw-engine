@@ -7,6 +7,7 @@
 #include <dwe/session/battle_adapter.hpp>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -40,6 +41,26 @@ inline constexpr std::string_view BagAvailableSetting = "battle.bag.available";
 inline constexpr std::string_view BagOpenSetting = "battle.bag.open";
 inline constexpr std::string_view ItemInFlightSetting = "battle.item_in_flight";
 inline constexpr std::string_view MatchSecondsSetting = "battle.match_seconds";
+// The Folder battle's HUD (docs/architecture/folder-battle.md).
+inline constexpr std::string_view FolderActiveSetting = "battle.folder.active";
+inline constexpr std::string_view FolderMoveSetting = "battle.folder.move";
+inline constexpr std::string_view FolderPhaseSetting = "battle.folder.phase";
+inline constexpr std::string_view FolderPhasePercentSetting = "battle.folder.phase_percent";
+inline constexpr std::string_view FolderQueueList = "battle.folder.queue";
+inline constexpr std::string_view FolderBarSetting = "battle.folder.bar";
+inline constexpr std::string_view FolderBarMaxSetting = "battle.folder.bar_max";
+inline constexpr std::string_view FolderBrokenSetting = "battle.folder.broken";
+inline constexpr std::string_view FolderTargetSetting = "battle.folder.target";
+inline constexpr std::string_view FolderNoticeSetting = "battle.folder.notice";
+inline constexpr std::string_view FolderNoticeMoveSetting = "battle.folder.notice_move";
+inline constexpr std::string_view FolderNoticeReasonSetting = "battle.folder.notice_reason";
+inline constexpr std::string_view FolderNoticeBySetting = "battle.folder.notice_by";
+inline constexpr std::string_view FolderActiveTargetSetting = "battle.folder.active_target";
+inline constexpr std::string_view FolderActiveTagSetting = "battle.folder.active_tag";
+inline constexpr std::string_view FolderTargetTagSetting = "battle.folder.target_tag";
+inline constexpr std::string_view FolderStanceSetting = "battle.folder.stance";
+inline constexpr std::string_view FolderBrokenSecondsSetting = "battle.folder.broken_seconds";
+inline constexpr std::string_view FolderCommittedSetting = "battle.folder.committed";
 
 // A command's label: a technique's or the finisher's move name, the others the original's command
 // name (battle_main.c: BTL_COMMAND_NAMES; vs_main.c: VS_renderMoveName).
@@ -52,6 +73,16 @@ inline constexpr std::string_view MatchSecondsSetting = "battle.match_seconds";
 [[nodiscard]] std::string commandIconOf(game::battle::Command command,
                                         const game::battle::Fighter& fighter,
                                         const game::battle::MoveCatalog& moves);
+// The Folder battle's words on its HUD (docs/architecture/folder-battle.md): a stance's name
+// ("aggressive"...), an order phase's ("processing"..., empty while idle), the text key of why an
+// order cannot go on and of how one ended other than done (empty when that says nothing).
+[[nodiscard]] std::string_view stanceName(game::battle::Stance stance);
+// The one status a fighter's row names: flattened, stunned, confused, poisoned, in that order.
+[[nodiscard]] game::battle::StatusEffect shownStatusOf(const game::battle::StatusState& status);
+[[nodiscard]] std::string_view orderPhaseName(game::battle::OrderPhase phase);
+[[nodiscard]] std::string orderProblemKey(game::battle::OrderProblem problem);
+[[nodiscard]] std::string orderEndKey(game::battle::OrderEnd end,
+                                      game::battle::OrderProblem problem);
 // The whole seconds a fainted partner's revive countdown shows (the ending rules' revive frames,
 // shown from reviveCountdownShownAt); none while it stands, before the countdown shows or for an
 // enemy.
@@ -75,6 +106,19 @@ struct FighterView {
   // A co-op ally's revive countdown in whole seconds while it shows (as the partner's
   // BattleView::reviveSeconds); none otherwise.
   std::optional<std::int32_t> reviveSeconds;
+  // Its number in the battle, which the enemies' HP bars name it by.
+  std::size_t id = 0;
+  // A twin foe's letter ("A", "B"...) in the battle's order, the HUD's mark for it; empty
+  // otherwise.
+  std::string tag;
+  // In the Folder battle, the foe the next orders aim at and a foe an order aims at.
+  bool targeted = false;
+  bool queued = false;
+  // A co-op ally's current order: its command's, Folder move's or stance's text key; empty for the
+  // others.
+  std::string orderKey;
+  // A co-op ally a guest's next thrown item flies to (the guest picks it in its bag).
+  bool throwTarget = false;
 
   friend bool operator==(const FighterView&, const FighterView&) = default;
 };
@@ -93,6 +137,13 @@ struct CommandEntry {
   std::string icon;
   // The MP a technique costs the partner now (Battle::partnerMoveCost); 0 for the other commands.
   std::int32_t mpCost = 0;
+  // Folder only: the text key of why a technique or the finisher cannot be ordered now
+  // (Battle::orderProblem).
+  std::string problemKey;
+  // Folder only: a technique's area (Battle::folderTechnique): "around_self", "around_target",
+  // "global" or empty for one target; and whether it also hits the partner's own side.
+  std::string area;
+  bool friendlyFire = false;
 
   friend bool operator==(const CommandEntry&, const CommandEntry&) = default;
 };
@@ -128,6 +179,42 @@ struct BattleView {
   bool bagAvailable = false;
   bool bagOpen = false;
   bool itemInFlight = false;
+  // The Folder battle's HUD for the own partner; nothing in the Classic battle.
+  struct Folder {
+    // The active order's move name key and phase ("processing"... "recovering"), progress in
+    // percent.
+    std::string moveKey;
+    std::string phase;
+    std::int32_t phasePercent = 0;
+    // The waiting orders' move name keys, next first, and each one's foe name key (empty for none).
+    std::vector<std::string> queue;
+    std::vector<std::string> queueTargets;
+    std::vector<std::string> queueTargetTags;
+    std::string activeTargetKey;
+    std::string activeTargetTag;
+    // The name key of the foe the next orders aim at (Change picks it); empty without one.
+    std::string targetKey;
+    std::string targetTag;
+    // The stance the partner moves by now ("aggressive", "hold", "distance", "guard"); the break
+    // holds it, for brokenSeconds more seconds.
+    std::string stance;
+    std::int32_t brokenSeconds = 0;
+    // The active order's technique has thrown what lands: a hit no longer stops it.
+    bool committed = false;
+    std::int32_t bar = 0;
+    std::int32_t barMax = 0;
+    bool broken = false;
+    // After an order ends other than done, for a few seconds: the text key of how, its move's name
+    // key and the key of why (empty when the ending says it all).
+    std::string noticeKey;
+    std::string noticeMoveKey;
+    std::string noticeReasonKey;
+    // A replaced order's notice: the move of the order that took its place.
+    std::string noticeByKey;
+
+    friend bool operator==(const Folder&, const Folder&) = default;
+  };
+  std::optional<Folder> folder;
 };
 
 // A line of the end box as the original builds it in BTL_END_BOX_TEXTBUFFER (battle_hud.c:

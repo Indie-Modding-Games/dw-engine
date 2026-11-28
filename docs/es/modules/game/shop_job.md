@@ -27,6 +27,10 @@ auto result = haggle.offer(3);       // reacción, venta, lo que suma, si se va
   (especie, humor y rechazos); cada oferta da una reacción por la distancia al presupuesto y cuesta paciencia si no
   compra; charlar sube el presupuesto un nivel una vez; despedir acaba sin enfado.
 - **Pagas** (`payTierOf`): las tres del original por la cuenta y el premio encima.
+- **Cooperativo**: cada jugador hace su propio trabajo. Los clientes atendidos, la cuenta, el resultado de cada turno y
+  la frase de la mitad son estado de historia propio de cada jugador (`player_own_variables` y `player_own_triggers` en
+  las reglas de la historia), así que un jugador que abre la tienda nunca arranca ni mueve el medidor del otro (#423,
+  [multijugador](../../architecture/multiplayer.md)). Que Monochromon se una a la ciudad sigue compartido.
 
 ## Paridad con el original
 

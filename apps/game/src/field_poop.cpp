@@ -18,6 +18,8 @@ namespace dwe::app {
 namespace {
 
 constexpr std::string_view OpenMenuCommand = "open_menu";
+// A co-op guest's eat waits this long for the host's word, then is dropped (as an item's take).
+constexpr float EatWaitSeconds = 10.0F;
 
 // partner_impl.c: createPoopPile: the cloud's x is (tile x - 50) * 100 + 50 and its z
 // (50 - tile y) * 100 - 50, the middle of the tile in the original's axes.
@@ -52,9 +54,13 @@ void FieldPoop::placeOne() {
   const game::field::Field& field = scene_->field();
   const game::field::CharacterState partner = field.partner();
   const assets::CollisionCell cell = assets::collisionCellAt(partner.position);
+  const std::optional<session::PendingPile> pending = poop_->nextPending();
   const std::optional<game::partner::Tile> placed =
       poop_->placePending(*session_, field.mapId(), {.x = cell.column, .y = cell.row},
                           assets::yawToOriginal(partner.yaw));
+  if (placed && pending && coopGuest_) {
+    share_.left.push_back({.map = field.mapId(), .tile = *placed, .size = pending->size});
+  }
   if (placed) {
     // partner_impl.c: createPoopPile puffs a cloud over the pile's tile (createCloudFX).
     scene_->fieldEffects().addCloud(((placed->x - PileTileOrigin) * PileTileSide) + PileTileHalf,
@@ -189,6 +195,16 @@ bool FieldPoop::tick(float seconds) {
   case Step::Eat:
     // Sub state 3: handleEatingPoop at the clip's end.
     if (scene_->partnerClipFinished()) {
+      if (coopGuest_) {
+        share_.eat = {.state = FieldPileShare::Eat::State::Asked,
+                      .mapId = field.mapId(),
+                      .tile = pileTile_,
+                      .number = 0,
+                      .size = 0};
+        eatWait_ = 0.0F;
+        step_ = Step::EatAsked;
+        return false;
+      }
       const std::optional<std::int32_t> size = poop_->remove(field.mapId(), pileTile_);
       if (size) {
         session_->eatPoop(*size);
@@ -199,9 +215,44 @@ bool FieldPoop::tick(float seconds) {
       return size.has_value();
     }
     return false;
+  case Step::EatAsked:
+    return settleEat(seconds);
   case Step::None:
     break;
   }
+  return false;
+}
+
+bool FieldPoop::settleEat(float seconds) {
+  using State = FieldPileShare::Eat::State;
+  FieldPileShare::Eat& eat = share_.eat;
+  switch (eat.state) {
+  case State::Granted:
+    (void)poop_->remove(eat.mapId, eat.tile);
+    session_->eatPoop(eat.size);
+    core::logDebug("[port:poop] partnerTickEatShit (partner.c:721): handleEatingPoop, size {}, the "
+                   "host's pile",
+                   eat.size);
+    eat = {};
+    finish();
+    return true;
+  case State::Refused:
+    core::logInfo("coop: the pile at ({}, {}) was gone on the host; the partner eats nothing",
+                  eat.tile.x, eat.tile.y);
+    break;
+  case State::None:
+  case State::Asked:
+  case State::Sent:
+    eatWait_ += seconds;
+    if (eatWait_ <= EatWaitSeconds) {
+      return false;
+    }
+    core::logWarning("coop: no answer from the host on eating the pile at ({}, {}); dropped",
+                     eat.tile.x, eat.tile.y);
+    break;
+  }
+  eat = {};
+  finish();
   return false;
 }
 

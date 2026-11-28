@@ -77,7 +77,11 @@ void PoopPiles::fill(std::size_t slot, std::string_view map, Tile tile, std::int
 
 Tile PoopPiles::place(std::string_view map, Tile tile, std::int32_t rotation, std::int32_t size,
                       ruleset::Random& random) {
-  tile = inFront(tile, rotation);
+  return placeAt(map, inFront(tile, rotation), size, random);
+}
+
+Tile PoopPiles::placeAt(std::string_view map, Tile tile, std::int32_t size,
+                        ruleset::Random& random) {
   while (find(map, tile)) {
     tile = step(tile, random.below(Directions));
   }
@@ -141,6 +145,29 @@ std::vector<PoopPile> PoopPiles::onMap(std::string_view map) const {
     }
   }
   return piles;
+}
+
+void PoopPiles::replaceMap(std::string_view map, std::span<const PoopPile> piles) {
+  for (PoopPile& pile : slots_) {
+    if (pile.size != 0 && pile.map == map) {
+      pile = {};
+    }
+  }
+  std::size_t slot = 0;
+  for (const PoopPile& pile : piles) {
+    if (pile.size <= 0) {
+      continue;
+    }
+    while (slot < slots_.size() && slots_[slot].size != 0) {
+      ++slot;
+    }
+    if (slot < slots_.size()) {
+      fill(slot, map, pile.tile, pile.size);
+      continue;
+    }
+    fill(cursor_, map, pile.tile, pile.size);
+    cursor_ = (cursor_ + 1) % slots_.size();
+  }
 }
 
 void PoopPiles::restore(std::vector<PoopPile> slots, std::size_t cursor) {

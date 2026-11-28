@@ -5,6 +5,9 @@
 #include <dwe/game/field/field.hpp>
 #include <dwe/net/peer_link.hpp>
 
+#include <glm/vec3.hpp>
+
+#include <algorithm>
 #include <cstdint>
 #include <map>
 #include <optional>
@@ -12,6 +15,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "coop_world_state.hpp"
@@ -60,7 +64,9 @@ public:
        std::optional<game::coop::PlayerId> as = {});
   // A guest left, dropped or went quiet: its record and its track go.
   void leave(game::coop::PlayerId id);
-  // A message received on guest `from`'s link (its PlayerState, WorldAsk and ItemClaim matter).
+  // The roster goes to every guest with the next tick.
+  void setPartner(game::coop::PlayerId id, std::string species);
+  // Only PlayerState, PartnerForm, WorldAsk and ItemClaim matter.
   void receive(game::coop::PlayerId from, const game::coop::Message& message, net::Millis now);
   // After the host's field tick: the host's pose and map into the authority, the guests' bodies
   // driven or put in place, and what to send (corrections, the roster when it changed).
@@ -72,19 +78,36 @@ public:
   // guests' asks taken (applied here, then sent to everyone) or left out, the guests' claims on
   // chests and ground items answered (the first claim on an item still there gets it), the whole
   // story to a guest that joined and to everyone when the map changed, and the ground's list
-  // whenever it changed. The host's own takes need no claim: its game is the world.
+  // whenever it changed. The host's own takes need no claim: its game is the world; likewise the
+  // guests' poop piles left and eaten (an eat answered).
   [[nodiscard]] CoopWorldShare share(CoopWorldView& view);
   [[nodiscard]] const game::coop::WorldLedger& ledger() const { return ledger_; }
+  // Guests not to draw on map `mapId`: in a scene of their own (PlayerState::away) or reporting
+  // another map.
+  [[nodiscard]] std::vector<game::coop::PlayerId> away(std::string_view mapId) const;
 
 private:
+  struct OwnerHeld;
+  // `partner` smooths the guest's partner as its body; without it the partner follows the body.
+  // Returns how far the partner was moved beside another on its machine, for the body to follow.
+  glm::vec3 showHeld(game::field::Field& field, game::coop::PlayerId id, const OwnerHeld& held,
+                     std::optional<game::field::CharacterState> partner = std::nullopt);
+  [[nodiscard]] std::optional<game::field::CharacterState>
+  partnerAt(game::coop::PlayerId id, std::string_view mapId, net::Millis now) const;
+  void forgetTracks(game::coop::PlayerId id);
   // Whether a claim's item is still there; taking it off the world (and telling the guests) if so.
   bool grant(CoopWorldView& view, const game::coop::ItemClaim& claim, CoopWorldShare& share,
              bool& chestsMayChange);
+  // In arrival order, each once.
+  void takePileAsks(CoopWorldView& view, CoopWorldShare& share);
 
   game::coop::WorldAuthority authority_;
   game::coop::WorldLedger ledger_;
   CoopStoryBaseline facts_;
   CoopGroundTracker ground_;
+  CoopPileTracker piles_;
+  std::vector<std::pair<game::coop::PlayerId, game::coop::PileAsk>> pileAsks_;
+  std::map<game::coop::PlayerId, std::uint32_t> lastPileAsk_;
   std::vector<std::pair<game::coop::PlayerId, game::coop::WorldAsk>> asks_;
   std::vector<std::pair<game::coop::PlayerId, game::coop::ItemClaim>> claims_;
   // Each guest's last claim answered: a claim sent again is answered once.
@@ -93,11 +116,25 @@ private:
   std::set<game::coop::PlayerId> synced_;
   std::optional<std::uint32_t> syncSerial_;
   std::map<game::coop::PlayerId, game::coop::PoseTrack> tracks_;
+  std::map<game::coop::PlayerId, game::coop::PoseTrack> partnerTracks_;
+  struct OwnerHeld {
+    std::optional<game::coop::ActionClip> action;
+    std::optional<game::coop::HeldPartner> partner;
+  };
+  std::map<game::coop::PlayerId, OwnerHeld> held_;
+  // Course partners on the host's screen this tick, for machineSpotBeside.
+  std::vector<glm::vec3> takenSpots_;
   // Guests put in the field on the current map (the others get a correction on the next tick).
   std::set<game::coop::PlayerId> placed_;
   std::optional<std::uint32_t> mapSerial_;
   std::uint32_t rosterSent_ = 0;
   std::map<game::coop::PlayerId, game::coop::StateVerdict> verdicts_;
+  struct Whereabouts {
+    std::uint32_t sequence = 0;
+    std::string mapId;
+    bool away = false;
+  };
+  std::map<game::coop::PlayerId, Whereabouts> whereabouts_;
 };
 
 // A guest's side of the shared world: it follows the host's corrections of its own player, keeps
@@ -110,35 +147,59 @@ public:
   [[nodiscard]] game::coop::PlayerId self() const { return self_; }
   void receive(const game::coop::Message& message);
   // Where the host put this guest's player and the field has yet to take it: on this map a place,
-  // on another a map change that arrives at the host's spot (FieldScene::moveCoopSelf).
+  // on another a map change that arrives at the host's spot (FieldScene::moveCoopSelf). `reload`:
+  // the host reloaded the group's map (a script's warp reset the room), so this game reloads too.
   struct Move {
     std::string map;
     std::optional<std::int32_t> exit;
     assets::SpawnPoint at;
+    bool reload = false;
   };
   // Before the guest's field tick, with the field and whether it still goes to the map the last
-  // move asked for: the move to make now, if any. Once the player stands where the host said, the
-  // reports carry that correction's epoch.
+  // move asked for, or its own death holds it on its wake map: the move to make now, if any. Once
+  // the player stands where the host said, the reports carry that correction's epoch. Waits
+  // ZoneLeadTicks first, so the zone notice shows before this game's fade.
   [[nodiscard]] std::optional<Move> apply(const game::field::Field& field, bool moving);
+  static constexpr std::uint32_t ZoneLeadTicks = 45;
+  // Once per change, when its lead starts.
+  struct ZoneChange {
+    std::string map;
+    std::uint16_t epoch = 0;
+  };
+  [[nodiscard]] std::optional<ZoneChange> takeZoneChange() {
+    return std::exchange(zoneChange_, {});
+  }
+  [[nodiscard]] bool leadingToZone() const { return zoneLead_.has_value(); }
   // After the field tick `tick` (it counts the guest's ticks): the state to report, every few
-  // ticks, while the player stands on the map the host put it on.
+  // ticks, while the player stands on the map the host put it on. `away`: the player is in a scene
+  // of its own (PlayerState::away), reported without a pose.
   [[nodiscard]] std::optional<game::coop::PlayerState>
-  report(const game::field::Field& field, bool moving, std::uint64_t tick) const;
+  report(const game::field::Field& field, bool moving, std::uint64_t tick, bool away = false) const;
+  // Told at most once a second while the host's roster lists another, so a lost form is retold.
+  [[nodiscard]] std::optional<game::coop::PartnerForm> partnerForm(std::string_view species,
+                                                                   std::uint64_t tick);
   // The session's players as the host last listed them (none before its first roster).
   [[nodiscard]] const std::optional<game::coop::Roster>& roster() const { return roster_; }
   [[nodiscard]] bool inSession(game::coop::PlayerId id) const;
+  // A player that left keeps its bodies while the shown battle still fights with its partner,
+  // as the host keeps them until that battle ends.
+  [[nodiscard]] bool keepsBodies(game::coop::PlayerId id,
+                                 std::span<const game::coop::PlayerId> fighting) const {
+    return inSession(id) || std::ranges::contains(fighting, id);
+  }
   // The partner species the roster gives player `id` (empty when none).
   [[nodiscard]] std::string partnerOf(game::coop::PlayerId id) const;
   // After the tick, the world's interactions (#357): what this game changed of the shared world
   // goes to the host as an ask, and the item notice's take as a claim; the host's changes and
   // syncs are applied once each, in order; on the host's map the ground is the host's; the host's
-  // answer to the claim goes to the notice.
+  // answer to the claim goes to the notice. Poop piles go through the host likewise.
   [[nodiscard]] CoopWorldShare share(CoopWorldView& view);
   [[nodiscard]] std::uint32_t worldRevision() const { return replica_.revision(); }
 
 private:
   // Sends the notice's take to the host (an item of this game's own ground is granted at once).
   void claim(const CoopWorldView& view, CoopWorldShare& share);
+  void sharePiles(CoopWorldView& view, CoopWorldShare& share);
 
   game::coop::PlayerId self_;
   game::coop::WorldReplica replica_;
@@ -148,12 +209,23 @@ private:
   std::vector<game::coop::Message> worldIn_;
   std::uint32_t claims_ = 0;
   std::vector<game::coop::ClaimAnswer> answers_;
+  std::vector<game::coop::PoopPiles> pilesIn_;
+  std::vector<game::coop::PileAnswer> pileAnswers_;
+  std::uint32_t pileAsks_ = 0;
   // The newest correction applied: states carry it so the host drops ones from before.
   std::uint16_t epoch_ = 0;
   std::optional<game::coop::PlayerCorrection> pending_;
   // The move asked for pending_, until the field arrives.
   bool asked_ = false;
+  std::string placedOn_;
+  std::optional<std::uint32_t> zoneLead_;
+  std::optional<ZoneChange> zoneChange_;
+  // The host's map edits that came while this game was loading their map, for once it stands there.
+  std::vector<game::coop::WorldEdit> heldEdits_;
+  std::string heldMap_;
   std::optional<game::coop::Roster> roster_;
+  std::string formSent_;
+  std::optional<std::uint64_t> formSentAt_;
 };
 
 // The presence check of what is shared per map, such as battles (#351): whether `player` stands on
@@ -163,8 +235,10 @@ private:
                                   std::span<const game::coop::PlayerId> here,
                                   game::coop::PlayerId player);
 
-// The guest's side, against its scene: the host's move of its player, before the field tick.
-void applyCoopMove(FieldScene& scene, CoopGuestWorld& guest);
+// The guest's side, against its scene: the host's move of its player, before the field tick. While
+// `ownDeath` (PlaySession::ownDeathHoldsMap) the move waits: the guest's partner dies and is reborn
+// on its own wake map, as in its solo game.
+void applyCoopMove(FieldScene& scene, CoopGuestWorld& guest, bool ownDeath);
 
 // The other players' doors and mechanisms on this game's map (#357), as its own scripts' edits.
 void applyCoopMapEdits(FieldScene& scene, std::span<const game::coop::WorldEdit> edits);
@@ -174,6 +248,7 @@ void applyCoopMapEdits(FieldScene& scene, std::span<const game::coop::WorldEdit>
 // the guest is not on that map, and gone once the roster no longer lists the player.
 // `hostPartner` is the host's partner species for a roster that does not give it.
 void presentCoopPlayers(FieldScene& scene, const PresentedCoopWorld* world,
-                        const CoopGuestWorld& guest, std::string_view hostPartner);
+                        const CoopGuestWorld& guest, std::string_view hostPartner,
+                        std::span<const game::coop::PlayerId> fighting);
 
 } // namespace dwe::app

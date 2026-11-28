@@ -59,9 +59,13 @@ token ni la dirección, y deja fuera las que ya juegan. La fase de cada sala:
 | `ready` | el anfitrión dice que los dos eligieron con qué juegan |
 | `playing` | el anfitrión dice que empezó la partida: fuera de la lista |
 
-El anfitrión manda `ready`, `playing` y `closed` a `POST /v1/rooms/<código>/state` con su token (el juego lo manda como
-un WebSocket que recibe una respuesta). Una sala que se cierra antes de que llegue un invitado sale de la lista con ella;
-una cuyos jugadores se encontraron sigue hasta que el anfitrión dice `closed`, o 10 minutos después de su último aviso.
+El anfitrión manda `connected`, `ready`, `playing` y `closed` a `POST /v1/rooms/<código>/state` con su token (el juego
+lo manda como un WebSocket que recibe una respuesta), y repite el estado de la sala cada minuto mientras dura. Una sala
+que se cierra antes de que llegue un invitado sale de la lista con ella; una cuyos jugadores se encontraron sigue hasta
+que el anfitrión dice `closed`, o 3 minutos después de su último aviso, así que un anfitrión que se colgó no deja salas
+fantasma (#416). Un aviso tardío del vestíbulo nunca devuelve al vestíbulo una partida en marcha. Una sala de más
+plazas cuyo anfitrión dejó su vestíbulo con invitados dentro sigue en la lista solo como llena: nadie puede entrar en
+una sala que ya no existe.
 `GET /v1/info` dice lo que sabe hacer el servidor (`public-rooms`, `room-state`, y `relay` cuando tiene TURN).
 
 Límites: 50 salas públicas abiertas como mucho, una por dirección, seis salas por minuto y cinco lecturas de la lista

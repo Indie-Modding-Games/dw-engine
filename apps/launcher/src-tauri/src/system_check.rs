@@ -12,6 +12,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
+use crate::diagnosis::{self, Advice, Diagnosis, Meanwhile};
 use crate::launch::GraphicsFlags;
 use crate::log_line;
 use crate::store::Game;
@@ -54,6 +55,11 @@ pub struct Probe {
     pub detail: String,
     pub devices: u32,
     pub gpu: Option<Gpu>,
+    /// The GPU passed only the Vulkan 1.2 compatible floor ("floor=1.2"); the game then uses that
+    /// mode on its own.
+    pub compatible: bool,
+    /// Why, as the game found it (diagnosis.rs); None from a game older than that.
+    pub diagnosis: Option<Diagnosis>,
 }
 
 /// Reads what `dwe-game --check-system` printed; None when it is not that (a game older than
@@ -87,7 +93,14 @@ pub fn parse(text: &str) -> Option<Probe> {
         api: text("api"),
         driver: text("driver"),
     });
-    Some(Probe { result, detail: text("detail"), devices: text("devices").parse().unwrap_or(0), gpu })
+    Some(Probe {
+        result,
+        detail: text("detail"),
+        devices: text("devices").parse().unwrap_or(0),
+        gpu,
+        compatible: text("floor") == "1.2",
+        diagnosis: values.get("diagnosis").and_then(|json| diagnosis::parse(json)),
+    })
 }
 
 /// How the game will draw.
@@ -96,6 +109,9 @@ pub fn parse(text: &str) -> Option<Probe> {
 pub enum Graphics {
     /// A GPU the renderer can use.
     Hardware,
+    /// A GPU that runs the game only in the Vulkan 1.2 compatible mode (an old driver), which the
+    /// game uses without being asked.
+    Compatible,
     /// Only the computer's own software driver: it works, slowly.
     Software,
     /// No GPU can run it: the package's software driver (slow, but it starts).
@@ -106,18 +122,22 @@ pub enum Graphics {
     Unknown,
 }
 
-/// The decision from the probe with the computer's drivers and, when that found nothing, the
-/// probe with the package's software driver (None: there is none, or it gave no answer).
-pub fn decide(system: Option<&Probe>, fallback: Option<&Probe>) -> Graphics {
+/// The decision from the probe with the computer's drivers, whether the GPU passes with
+/// --compatible (`rescued`) and, when nothing passed, the probe with the package's software
+/// driver (None: there is none, or it gave no answer).
+pub fn decide(system: Option<&Probe>, rescued: bool, fallback: Option<&Probe>) -> Graphics {
     match system {
         None => Graphics::Unknown,
         Some(probe) if probe.result == ProbeResult::Ok => {
             if probe.gpu.as_ref().is_some_and(|g| g.kind == "software") {
                 Graphics::Software
+            } else if probe.compatible {
+                Graphics::Compatible
             } else {
                 Graphics::Hardware
             }
         }
+        Some(_) if rescued => Graphics::Compatible,
         Some(_) => match fallback {
             Some(probe) if probe.result == ProbeResult::Ok => Graphics::Fallback,
             _ => Graphics::Blocked,
@@ -157,6 +177,8 @@ pub fn driver_page(vendor: Vendor) -> Option<&'static str> {
 
 /// Windows' own updates, which also bring GPU drivers.
 pub const WINDOWS_UPDATE: &str = "ms-settings:windowsupdate";
+/// Settings › System › Display › Graphics, where Windows picks the GPU per program.
+pub const WINDOWS_GRAPHICS: &str = "ms-settings:display-advancedgraphics";
 
 /// The package's software driver manifest, when this game has one (Linux and Windows packages).
 pub fn software_manifest(game: &Game) -> Option<PathBuf> {
@@ -237,7 +259,7 @@ pub fn run_probe(program: &Path, extra_args: &[&str], env: &[(OsString, OsString
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
         command.creation_flags(CREATE_NO_WINDOW);
     }
-    let mut child = match command.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::null()).spawn() {
+    let mut child = match command.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn() {
         Ok(child) => child,
         Err(error) => {
             log_line!("the system check did not start: {error}");
@@ -245,9 +267,17 @@ pub fn run_probe(program: &Path, extra_args: &[&str], env: &[(OsString, OsString
         }
     };
     let start = Instant::now();
-    loop {
+    let mut stderr = child.stderr.take();
+    let errors = std::thread::spawn(move || {
+        let mut text = String::new();
+        if let Some(pipe) = stderr.as_mut() {
+            let _ = pipe.take(64 * 1024).read_to_string(&mut text);
+        }
+        text
+    });
+    let status = loop {
         match child.try_wait() {
-            Ok(Some(_)) => break,
+            Ok(Some(status)) => break status,
             Ok(None) if start.elapsed() < timeout => std::thread::sleep(Duration::from_millis(50)),
             _ => {
                 let _ = child.kill();
@@ -256,10 +286,17 @@ pub fn run_probe(program: &Path, extra_args: &[&str], env: &[(OsString, OsString
                 return None;
             }
         }
-    }
+    };
     let mut output = String::new();
     child.stdout.take()?.read_to_string(&mut output).ok()?;
-    parse(&output)
+    let errors = errors.join().unwrap_or_default();
+    parse(&output).or_else(|| {
+        diagnosis::loader_missing(&errors, status.code()).then(|| {
+            let detail = errors.lines().next().unwrap_or("the Vulkan loader is missing").to_string();
+            log_line!("the system check could not start: {detail}");
+            Probe { result: ProbeResult::NoVulkan, detail: detail.clone(), devices: 0, gpu: None, compatible: false, diagnosis: Some(diagnosis::no_loader(&detail)) }
+        })
+    })
 }
 
 /// What the game's GPU check found, with the probe the decision rests on.
@@ -272,44 +309,85 @@ pub struct GraphicsCheck {
     /// Why the computer's drivers were not enough (the probe's result), when they were not.
     pub reason: Option<ProbeResult>,
     pub detail: String,
-    /// The computer's drivers failed the check but pass it with --compatible, which is off: the
-    /// page offers that switch whether or not the software driver took over.
+    /// The computer's drivers fail the Vulkan 1.3 check but pass it with --compatible, which Play
+    /// then adds by itself (a game older than its own fallback to that mode).
     pub compat_rescues: bool,
     /// The extra environment the game starts with (the software driver's), not for the page.
     #[serde(skip)]
     pub env: Vec<(OsString, OsString)>,
+    /// Why, most actionable first, as the page shows it (diagnosis.rs).
+    pub advice: Vec<Advice>,
+    pub meanwhile: Option<Meanwhile>,
+    /// What "Copy details" copies.
+    pub report: String,
+    #[serde(skip)]
+    pub diagnosis: Option<Diagnosis>,
 }
 
 impl GraphicsCheck {
     /// No answer: the game starts as before.
     pub fn unknown() -> Self {
-        Self { graphics: Graphics::Unknown, gpu: None, vendor: Vendor::Other, reason: None, detail: String::new(), compat_rescues: false, env: Vec::new() }
+        Self {
+            graphics: Graphics::Unknown,
+            gpu: None,
+            vendor: Vendor::Other,
+            reason: None,
+            detail: String::new(),
+            compat_rescues: false,
+            env: Vec::new(),
+            advice: Vec::new(),
+            meanwhile: None,
+            report: String::new(),
+            diagnosis: None,
+        }
+    }
+
+    /// The GPU offers Vulkan 1.4, so --vulkan13 is a step of its own.
+    pub fn offers_vulkan14(&self) -> bool {
+        self.gpu.as_ref().is_some_and(|g| {
+            let mut parts = g.api.split('.').map(|p| p.parse::<u32>().unwrap_or(0));
+            let (major, minor) = (parts.next().unwrap_or(0), parts.next().unwrap_or(0));
+            major > 1 || (major == 1 && minor >= 4)
+        })
     }
 }
 
 /// Checks the game's GPU with the computer's drivers and the chosen Vulkan floor (`compatibility`);
-/// when they fail, also with --compatible (to offer it) and with the package's software driver.
+/// when they fail, also with --compatible (which Play then adds) and, when that fails too, with the
+/// package's software driver.
 pub fn check_graphics(game: &Game, compatibility: bool) -> GraphicsCheck {
     let program = game.game_program();
     let chosen = GraphicsFlags { compatibility, ..Default::default() }.args(game);
     let relaxed = GraphicsFlags { compatibility: true, ..Default::default() }.args(game);
     let system = run_probe(&program, &chosen, &[], PROBE_TIMEOUT);
     let failed = system.as_ref().is_some_and(|p| p.result != ProbeResult::Ok);
-    let compat_rescues =
-        failed && chosen != relaxed && run_probe(&program, &relaxed, &[], PROBE_TIMEOUT).is_some_and(|p| p.result == ProbeResult::Ok);
-    let software = if failed { software_manifest(game) } else { None };
+    let rescue = if failed && chosen != relaxed { run_probe(&program, &relaxed, &[], PROBE_TIMEOUT) } else { None };
+    let compat_rescues = rescue.as_ref().is_some_and(|p| p.result == ProbeResult::Ok);
+    let software = if failed && !compat_rescues { software_manifest(game) } else { None };
     let env = software.as_deref().map(software_env).unwrap_or_default();
     let fallback = software.as_ref().and_then(|_| run_probe(&program, &chosen, &env, PROBE_TIMEOUT));
-    let graphics = decide(system.as_ref(), fallback.as_ref());
-    let gpu = system.as_ref().and_then(|p| p.gpu.clone());
+    let graphics = decide(system.as_ref(), compat_rescues, fallback.as_ref());
+    let gpu = if compat_rescues { rescue.as_ref() } else { system.as_ref() }.and_then(|p| p.gpu.clone());
+    let reason = system.as_ref().filter(|p| p.result != ProbeResult::Ok || p.compatible).map(|p| p.result);
+    let found = system.as_ref().and_then(|p| p.diagnosis.clone());
+    let reasons = match (&found, system.as_ref()) {
+        (Some(d), _) => d.reasons.clone(),
+        (None, Some(probe)) => diagnosis::legacy(probe),
+        (None, None) => Vec::new(),
+    };
+    let advice = diagnosis::advise_all(&reasons, std::env::consts::OS, false);
     let check = GraphicsCheck {
         graphics,
         vendor: vendor(gpu.as_ref().map_or(0, |g| g.vendor_id)),
         gpu,
-        reason: system.as_ref().filter(|p| p.result != ProbeResult::Ok).map(|p| p.result),
+        reason,
         detail: system.as_ref().map(|p| p.detail.clone()).unwrap_or_default(),
         compat_rescues,
         env: if graphics == Graphics::Fallback { env } else { Vec::new() },
+        report: diagnosis::report(found.as_ref(), &advice, &[]),
+        advice,
+        meanwhile: diagnosis::meanwhile(graphics),
+        diagnosis: found,
     };
     log_line!(
         "system check: {:?} ({}{})",
@@ -317,6 +395,9 @@ pub fn check_graphics(game: &Game, compatibility: bool) -> GraphicsCheck {
         check.gpu.as_ref().map_or("no GPU".to_string(), |g| format!("{}, {}", g.name, g.driver)),
         check.reason.map_or(String::new(), |r| format!(", {r:?}: {}", check.detail)),
     );
+    if !check.advice.is_empty() {
+        log_line!("graphics reasons: {}", check.advice.iter().map(|a| a.code.as_str()).collect::<Vec<_>>().join(", "));
+    }
     check
 }
 
@@ -417,6 +498,11 @@ mod tests {
         let old = probe("dwe-check-system 1\nresult=unsuitable\ndetail=x=y\ndevices=1\ngpu=Old\nvendor=0x8086\nkind=integrated\napi=1.2.0\ndriver=0x1\n");
         assert_eq!(old.detail, "x=y");
         assert_eq!(old.gpu.unwrap().vendor_id, 0x8086);
+        assert!(!old.compatible, "an older game prints no floor");
+
+        let compatible = probe("dwe-check-system 1\nresult=ok\ndetail=no 1.3\ndevices=1\nfloor=1.2\ngpu=Old\nvendor=0x1002\nkind=discrete\napi=1.2.170\ndriver=AMD\n");
+        assert!(compatible.compatible);
+        assert!(!probe(NVIDIA).compatible);
     }
 
     #[test]
@@ -433,12 +519,15 @@ mod tests {
         let gpu = probe(NVIDIA);
         let software = probe("dwe-check-system 1\nresult=ok\ndetail=\ndevices=1\ngpu=llvmpipe\nvendor=0x10005\nkind=software\napi=1.4.318\ndriver=Mesa\n");
         let none = probe("dwe-check-system 1\nresult=no-device\ndetail=\ndevices=0\n");
-        assert_eq!(decide(Some(&gpu), None), Graphics::Hardware);
-        assert_eq!(decide(Some(&software), None), Graphics::Software);
-        assert_eq!(decide(Some(&none), Some(&software)), Graphics::Fallback);
-        assert_eq!(decide(Some(&none), None), Graphics::Blocked);
-        assert_eq!(decide(Some(&none), Some(&none)), Graphics::Blocked);
-        assert_eq!(decide(None, None), Graphics::Unknown);
+        let old = probe("dwe-check-system 1\nresult=ok\ndetail=\ndevices=1\nfloor=1.2\ngpu=Old\nvendor=0x1002\nkind=discrete\napi=1.2.170\ndriver=AMD\n");
+        assert_eq!(decide(Some(&gpu), false, None), Graphics::Hardware);
+        assert_eq!(decide(Some(&software), false, None), Graphics::Software);
+        assert_eq!(decide(Some(&old), false, None), Graphics::Compatible);
+        assert_eq!(decide(Some(&none), true, Some(&software)), Graphics::Compatible, "the card in 1.2 before the software driver");
+        assert_eq!(decide(Some(&none), false, Some(&software)), Graphics::Fallback);
+        assert_eq!(decide(Some(&none), false, None), Graphics::Blocked);
+        assert_eq!(decide(Some(&none), false, Some(&none)), Graphics::Blocked);
+        assert_eq!(decide(None, false, None), Graphics::Unknown);
     }
 
     #[test]
@@ -535,7 +624,7 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
-    fn the_compatible_switch_is_offered_even_when_the_software_driver_takes_over() {
+    fn a_card_that_passes_only_with_compatible_plays_on_it() {
         use std::os::unix::fs::PermissionsExt;
         let answer = |result: &str| format!("printf 'dwe-check-system 1\\nresult={result}\\ndetail=\\ndevices=1\\n'");
         let fake = |dir: &Path, knows_compatible: bool| {
@@ -559,8 +648,9 @@ mod tests {
         let new = tempfile::tempdir().unwrap();
         fake(new.path(), true);
         let strict = check_graphics(&game(new.path(), "dev"), false);
-        assert_eq!(strict.graphics, Graphics::Fallback);
+        assert_eq!(strict.graphics, Graphics::Compatible);
         assert!(strict.compat_rescues);
+        assert!(strict.env.is_empty(), "the card, not the software driver");
         let relaxed = check_graphics(&game(new.path(), "dev"), true);
         assert_eq!(relaxed.graphics, Graphics::Hardware);
         assert!(!relaxed.compat_rescues);

@@ -306,6 +306,9 @@ button:focus .original-look, button.original-look:focus {
    sight under a lighter scrim. */
 #scrim.battle-bag { background-color: #05080c40; }
 #scrim.battle-bag #tabs { display: none; }
+/* It opens at the left under the command strip, clear of the partner's card below it and the foes' list on the right. */
+#scrim.battle-bag { align-items: flex-start; justify-content: flex-start; }
+#scrim.battle-bag #panel { width: 620dp; margin: 120dp 0 0 24dp; }
 
 /* The status page (the original skin's style loads after this one and overrides each of these rules): the model in
    its own box at the top left (an addition: the original draws its stats over the
@@ -772,3 +775,20 @@ button:focus .original-look, button.original-look:focus {
 #scrim.favorite-food.status-extras #panel:not(.skin-original) #status-mistakes,
 #scrim.favorite-food.status-extras #panel:not(.skin-original) #status-battles { top: 142dp; }
 #scrim.favorite-food.status-extras #panel:not(.skin-original) #conditions { top: 168dp; }
+
+/* A co-op guest's battle bag: the keys that pick the partner its item flies to. */
+#throw-hint {
+	display: block;
+	position: relative;
+	margin: 6dp 0 0 0;
+	font-size: 18dp;
+	color: #c8d3dc;
+}
+
+#throw-hint.hidden {
+	display: none;
+}
+
+#throw-hint .key {
+	margin-right: 6dp;
+}

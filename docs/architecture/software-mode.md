@@ -1,7 +1,7 @@
 # Software mode
 
 When no graphics card can run the game, the launcher starts it on lavapipe, Mesa's Vulkan driver that draws with the
-processor ([launcher: compatibility mode](../modules/apps/launcher.md#computer-requirements)). The game notices it on
+processor ([launcher: without a graphics card](../modules/apps/launcher.md#computer-requirements)). The game notices it on
 its own, starts from a cheap preset, adjusts the quality to the frame time while it runs and tells the player once per
 run. Everything stays an option the player can change.
 
@@ -47,7 +47,7 @@ is on screen (no movie, no load), and only on the automatic options:
 - A **window** lasts 3 s and at least 20 frames. It measures each frame's busy time: the frame time without the
   frame limit's wait. A frame of more than 1 s (a load) starts the window again.
 - **Down** one level when the window's mean busy time is over the budget (1 / frame limit, or 1/30 without a limit)
-  by 8 %.
+  by 8 %, and **two** levels when it is 75 % over (a slow machine reaches a playable level in one window).
 - **Up** one level when the 90th percentile leaves 40 % of the budget unused.
 - **Hysteresis.** After a change the first 2 s are not counted, and a level the tuner had to leave becomes the
   ceiling for the rest of the run, so it never swings between two levels. Between the two thresholds nothing
@@ -69,10 +69,45 @@ They are in Options > Graphics in every mode, after vertical sync, and saved in 
 
 ## The notice
 
-`ui/software_notice` shows for 12 s at start, over everything and taking no input: "Playing without a graphics
-card", that the processor draws the game so it may be slow, that the quality adjusts itself and where to change it,
-and how to fix it (install or update the graphics card's driver from its maker's site). It is translated into the
-nine languages (`localization/<lang>/software_notice.yaml`). The `software_mode` setting says whether it applies.
+`ui/software_notice` shows for 12 s at start (a movie does not count, so it is seen after the intro), over everything
+and taking no input: "Playing without a graphics card", that the processor draws the game so it may be slow, that the
+quality adjusts itself and where to change it, and how to fix it (install or update the graphics card's driver from
+its maker's site). It is translated into the nine languages (`localization/<lang>/software_notice.yaml`). The
+`software_mode` setting says whether it applies. When the launcher knows why there is no graphics card
+(`DWE_GRAPHICS_REASON`, [graphics diagnosis](graphics-diagnosis.md)), the last line names that reason and its fix
+instead. The same notice, titled "Compatible graphics mode", shows once a run when the card runs on the compatible
+Vulkan 1.2 path (`software_notice.kind`).
+
+## Weak graphics cards and presets
+
+A graphics card that runs the game but may struggle, an integrated one or one on the compatible Vulkan 1.2 path
+(`game.cpp`, `weakGpu`), starts the options the player has not chosen from the **Balanced** preset and turns
+automatic quality on unless the player turned it off. `SlowFrameWatch` (`software_mode.hpp`) then looks at 5 s
+windows while a field is on screen: when most frames take longer than 25 ms (under 40 fps) it steps one preset
+lighter, waits 3 s and never steps back up. A discrete card on the Vulkan 1.3 or 1.4 path starts exactly as before,
+with the default look; autotests and `--low-performance` keep their own start.
+
+Options › Graphics has a **Preset** row (`graphics_preset`: performance, balanced, quality; "custom" when the options
+match none) that sets every graphics option at once and saves them as the player's choice, and a **Graphics mode**
+row that shows the mode with the launcher's words (graphics card, compatible graphics, no graphics card); its description names the
+device and, while automatic quality is choosing, why (`graphics.auto_reason`: software, integrated, compatible,
+slow).
+
+| Preset | Render scale | Shadows | Model textures | Scenery | Lighting, vivid colors | Antialiasing |
+|---|---|---|---|---|---|---|
+| Performance | 75 % | Off | Pixels | Smooth | Off | Off |
+| Balanced | 100 % | Round | Smooth | Smooth | On | Off |
+| Quality (the default look) | 100 % | Sun | Upscaled | Upscaled | On | On |
+
+The frame limit and automatic quality are not part of a preset. The interface is drawn at the window's size after
+the scene is stretched, so it stays sharp at 75 and 50 % render scale.
+
+## The pipeline cache
+
+Every pipeline is built through one `VkPipelineCache` (`Device::pipelineCache`), loaded at start from
+`<user data>/cache/pipelines.bin` and written back 15 s into the run and when the game closes, only when it grew.
+A file whose header names another GPU, device or driver (`VkPipelineCacheHeaderVersionOne`) is ignored. Autotests and
+control runs keep none.
 
 ## Measurements and minimum requirements
 
@@ -101,3 +136,19 @@ less work per core than this one:
 - **Better:** 6 threads or more at 3.5 GHz or more reach full scale at 30 fps.
 
 Below that the game still runs, but under 30 fps even at level 0.
+
+### First start
+
+Measured on 2026-11-28 on the same machine, quiet (load average 3 to 12), with `--new-game --start twna02` and fresh
+user data each time; three runs per row, all within 0.1 s of each other.
+
+| `LP_NUM_THREADS` | Start to field, first run | Second run | Pipelines built | Their build time (slowest) |
+|---|---|---|---|---|
+| 2 | 1.7 s | 1.7 s | 61 | 0.9 s (145 ms) |
+| 4 | 1.7 s | 1.7 s | 61 | 0.9 s (148 ms) |
+
+Every pipeline is built before the field shows, so none of them stutters during play. lavapipe keeps no data in a
+`VkPipelineCache` (the file stays at its 32-byte header) and its own Mesa shader cache did not change the time either,
+so on a computer without a graphics card the second start is as fast as the first. The game's pipeline cache is for
+the drivers that do fill it. While the machine was busy with other jobs (load average 30 to 55) the same start took
+2 to 22 s, which is what a player with a lot running in the background can expect.

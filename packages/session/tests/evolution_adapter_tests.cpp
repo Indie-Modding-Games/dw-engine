@@ -341,10 +341,15 @@ TEST_CASE("the developer's evolve refuses a form with no model and keeps the par
   const TestPacks packs;
   TableFixture fixture;
   fixture.form("mtet").boneCount = 0;
+  fixture.evolution.paths.at(static_cast<std::size_t>(TableFixture::index("mtet")) - 1).from = {
+      std::string{"ggdr"}};
   EvolutionAdapter* adapter = nullptr;
   auto session = sessionWithEvolution(packs, fixture, adapter);
   const std::string before = session->partner().state().species;
   CHECK_FALSE(std::ranges::contains(adapter->cheatTargets(), "mtet"));
+  CHECK(adapter->drawnSpecies("mtet") == "ggdr");
+  CHECK(adapter->drawnSpecies("agum") == "agum");
+  CHECK(adapter->drawnSpecies("nobody") == "nobody");
   const auto evolved = adapter->evolveByCheat(*session, "mtet");
   REQUIRE_MESSAGE(evolved.has_value(), errorOf(evolved));
   CHECK_FALSE(*evolved);

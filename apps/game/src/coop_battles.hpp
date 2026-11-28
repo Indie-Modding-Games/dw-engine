@@ -5,6 +5,8 @@
 #include <dwe/game/coop/battle.hpp>
 #include <dwe/game/coop/protocol.hpp>
 #include <dwe/input/input_state.hpp>
+#include <dwe/screens/command_menu.hpp>
+#include <dwe/screens/partner_bars.hpp>
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/ui/ui.hpp>
 
@@ -15,6 +17,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "battle_screen.hpp"
@@ -97,13 +100,19 @@ public:
   void hostLeft(PlaySession* play);
   // No game is played any more: everything goes.
   void reset();
+  [[nodiscard]] std::vector<game::coop::PlayerId> fighting() const { return mirror_.fighting(); }
+  // The notice for this player since the last call: its battle waits for a partner's rebirth.
+  [[nodiscard]] std::optional<std::string_view> takeNotice() {
+    return std::exchange(notice_, std::nullopt);
+  }
 
 private:
   void hostTick(PlaySession& play);
-  void answer(PlaySession& play, const Peer& from, const game::coop::BattleAsk& ask);
+  void answer(PlaySession& play, game::coop::PlayerId from, const game::coop::BattleAsk& ask);
   void apply(PlaySession& play, game::coop::PlayerId from, const game::coop::BattleAction& action);
   void endBattle(PlaySession& play);
   void offerAllies(PlaySession& play);
+  [[nodiscard]] bool partnersDying(const PlaySession& play) const;
   [[nodiscard]] std::vector<BattleScreen::CoopAlly> freeAllies(const PlaySession& play,
                                                                game::coop::PlayerId starter) const;
   [[nodiscard]] game::battle::CoopScaling
@@ -114,6 +123,7 @@ private:
   [[nodiscard]] game::coop::BattleFrame frameOf(const PlaySession& play, game::coop::PlayerId to);
   void guestTick(PlaySession& play, CoopGameplayBridge& bridge);
   void sendOffer(PlaySession& play, CoopGameplayBridge& bridge);
+  void followPurse(PlaySession& play);
   void startShowing(PlaySession& play, const game::coop::BattleBegin& begin);
   void applySpoils(PlaySession& play, const game::coop::BattleEnd& end);
   void showFrame(PlaySession& play);
@@ -125,7 +135,15 @@ private:
   void lookBack(PlaySession& play);
   void pickTarget(const ui::UiValue& value);
   void publish(const PlaySession& play);
+  [[nodiscard]] screens::BattleView hudViewOf(const PlaySession& play) const;
+  void publishHud(const PlaySession& play);
+  void publishHudBars(const PlaySession& play);
+  void stepHud();
+  void hideHud();
+  bool handleHud(const ui::UiCommand& command);
+  void openHudBag();
   void hideDocument();
+  void walkAway(PlaySession& play);
   void send(CoopGameplayBridge* bridge, game::coop::Message message);
   void sendTo(game::coop::PlayerId to, game::coop::Message message);
   void sendAll(const game::coop::Message& message);
@@ -143,6 +161,7 @@ private:
   game::coop::BattleMirror mirror_;
   // The guest's ask waiting for its answer, and whether the battle shown is the one it asked for.
   std::optional<std::uint32_t> asked_;
+  std::optional<std::string_view> notice_;
   bool ownBattle_ = false;
   // Whether this player's partner fights in the host's battle beside the host's.
   bool allyBattle_ = false;
@@ -150,13 +169,14 @@ private:
   // that one is a fixed fight (its enemies stay where it left them).
   bool watching_ = false;
   bool shownFixedFight_ = false;
+  bool shownFolder_ = false;
   std::optional<std::uint32_t> shownFrame_;
   // The fighters as the last frame with them showed them (the end's frames have none).
   std::vector<game::coop::BattleFighterState> fighters_;
-  // The partner the guest's items fly to (a fighter's number), when it picked one.
-  std::optional<std::size_t> target_;
+  CoopThrowPick target_;
   CoopBattleSounds sounds_;
   CoopThrowFollower throws_;
+  CoopThrowPurse purse_;
   std::vector<game::coop::PlayerId> throwing_;
   std::optional<game::battle::StatusVisuals> glows_;
   std::vector<FieldScene::StatusBody> glowBodies_;
@@ -164,6 +184,16 @@ private:
   // The guest's actions from its document, sent on the next tick.
   std::vector<game::coop::BattleAction> actions_;
   bool documentShown_ = false;
+  struct FoeHp {
+    std::int32_t hp = 0;
+    std::optional<std::uint64_t> hitAt;
+  };
+  bool hudShown_ = false;
+  bool hudBag_ = false;
+  screens::CommandMenuMotion hudMenu_;
+  screens::PartnerBarsMotion hudBars_;
+  std::optional<game::battle::Fighter> hudPartner_;
+  std::vector<FoeHp> hudFoes_;
   // Whether the helper's camera was turned to the battle.
   bool cameraOnBattle_ = false;
 };

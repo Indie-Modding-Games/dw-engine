@@ -96,6 +96,7 @@ la pone en el nodo 1 del compañero tal como se veía al aparecer. `BattleScreen
 | Ajuste | Valor | Qué es |
 |---|---|---|
 | `battle.death_countdown` | texto | Vacío si no se ve; si no, siete valores: x e y del ancla en % de la ventana, la cifra (5 a 1), la escala de la cifra y la de la estrella (1 tal cual), el giro en grados y la paleta de la estrella (0 a 2) |
+| `battle.stun_signs` | texto | Vacío sin un luchador aturdido; si no, cuatro valores por cada cartel de aturdimiento que el campo dibuja sobre un luchador: izquierda, arriba, ancho y alto en % de la ventana (el cartel mide 40 x 44 píxeles de la pantalla de 240 líneas del original sobre el pie de su poste). El documento de batalla aparta de ellos las barras de los enemigos |
 
 | Regla | Decomp | Aquí | Test | Estado |
 |---|---|---|---|---|

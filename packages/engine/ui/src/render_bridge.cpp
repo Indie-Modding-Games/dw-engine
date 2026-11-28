@@ -12,6 +12,7 @@
 #include <cstring>
 #include <span>
 #include <stop_token>
+#include <utility>
 #include <vector>
 
 namespace dwe::ui {
@@ -270,7 +271,13 @@ Rml::TextureHandle RenderBridge::LoadTexture(Rml::Vector2i& dimensions, const Rm
 
 Rml::TextureHandle RenderBridge::GenerateTexture(Rml::Span<const Rml::byte> source,
                                                  Rml::Vector2i dimensions) {
-  return createTexture(dimensions, std::as_bytes(std::span{source.data(), source.size()}));
+  const bool sharp = std::exchange(nextGeneratedSharp_, false);
+  const Rml::TextureHandle texture =
+      createTexture(dimensions, std::as_bytes(std::span{source.data(), source.size()}));
+  if (texture != 0 && sharp) {
+    sharpTextures_.insert(texture);
+  }
+  return texture;
 }
 
 void RenderBridge::ReleaseTexture(Rml::TextureHandle texture) {

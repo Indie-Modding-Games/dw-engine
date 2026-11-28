@@ -123,6 +123,7 @@ function renderNotice() {
   let body = null;
   let pick = false;
   let actions = null;
+  let content = null;
   const addons = addonsView();
   if (addons.crashed_last_time && !addons.safe_mode) {
     title = t("crashTitle");
@@ -138,7 +139,7 @@ function renderNotice() {
     body = state.discMoved ? t("discMovedBody", { path: state.discMoved }) : t("discMovedNone");
     pick = true;
   } else if (requirementNotice()) {
-    ({ title, body, actions } = requirementNotice());
+    ({ title, body, actions, content } = requirementNotice());
   } else if (state.status.content_outdated) {
     title = t("outdatedTitle");
     body = t("outdatedBody");
@@ -155,7 +156,9 @@ function renderNotice() {
   }
   notice.hidden = !title;
   if (!title) return;
-  notice.append(el("h2", { text: title }), el("p", { text: body }));
+  notice.append(el("h2", { text: title }));
+  if (body) notice.append(el("p", { text: body }));
+  if (content) notice.append(content);
   if (pick) notice.append(dropzoneButton());
   if (actions) notice.append(actions);
 }
@@ -163,6 +166,7 @@ function renderNotice() {
 // ---- What this computer needs (check_system) -------------------------------------------------
 
 const MAKERS = { nvidia: "NVIDIA", amd: "AMD", intel: "Intel" };
+const STEP_MODES = { vulkan13: "req.stepVulkan13", compatible: "req.stepCompatible", software: "req.stepSoftware" };
 const LAUNCH_MODES = { auto: "s.launchModeAuto", skip: "s.launchModeSkip", software: "s.launchModeSoftware" };
 
 function switchRow(id, label, hint, checked, onchange, disabled = false) {
@@ -172,8 +176,9 @@ function switchRow(id, label, hint, checked, onchange, disabled = false) {
   return el("div", { class: "row between" }, el("label", { for: id, class: "row-label" }, el("span", { text: label }), el("span", { class: "muted small", text: hint })), input);
 }
 
-// The computer's drivers fail the Vulkan 1.3 check but pass it with --compatible, still off.
-const compatRescues = (graphics, s) => Boolean(graphics?.compat_rescues && !s?.compatibility_mode);
+// The computer's drivers fail the Vulkan 1.3 check but pass it with --compatible, still off, and
+// nothing put the game on the card that way (an older check could leave the software driver on).
+const compatRescues = (graphics, s) => Boolean(graphics?.compat_rescues && !s?.compatibility_mode && graphics?.graphics !== "compatible");
 
 async function setCompatibility(on) {
   await settingCall(() => api.setGraphicsSwitch("compatibility", on));
@@ -229,6 +234,102 @@ function againButton(primary = false) {
 
 const gpuName = (graphics) => (graphics?.gpu?.name ? t("req.gpuName", { name: graphics.gpu.name }) : "");
 
+// ---- Why the graphics card cannot run the game (src-tauri/src/diagnosis.rs) --------------------
+
+// The programs behind the Vulkan layers that overlays and recorders install, by layer name.
+const OVERLAYS = [
+  ["VK_LAYER_OBS_HOOK", "OBS"], ["VK_LAYER_OW_", "Overwolf"], ["VK_LAYER_RTSS", "RivaTuner"],
+  ["VK_LAYER_bandicam", "Bandicam"], ["VK_LAYER_reshade", "ReShade"], ["VK_LAYER_MANGOHUD", "MangoHud"],
+  ["VK_LAYER_EOS", "Epic Games"], ["VK_LAYER_VALVE_steam_overlay", "Steam"], ["VK_LAYER_AMD_switchable", "AMD switchable graphics"],
+  ["VK_LAYER_GAMEPP", "GamePP"], ["VK_LAYER_TENCENT", "WeGame"],
+];
+// The reasons whose cause can be the driver or the card itself: a sentence says which.
+const FIX_SENTENCE = new Set(["vulkan-too-old", "missing-features", "gpu-unsuitable"]);
+
+function overlayNames(layers) {
+  const names = [];
+  for (const layer of layers.split(", ")) {
+    const known = OVERLAYS.find(([prefix]) => layer.toLowerCase().startsWith(prefix.toLowerCase()));
+    const name = known ? known[1] : layer;
+    if (!names.includes(name)) names.push(name);
+  }
+  return names.join(", ");
+}
+
+function adviceValues(advice) {
+  const values = { ...advice.params };
+  if (values.layers) values.programs = overlayNames(values.layers);
+  for (const key of ["gpu", "adapter", "dedicated"]) values[key] ??= t("why.yourCard");
+  values.maker = MAKERS[values.vendor] ?? t("why.yourCardMaker");
+  values.dedicatedMaker = MAKERS[values.dedicatedVendor] ?? t("why.yourCardMaker");
+  return values;
+}
+
+const reasonText = (advice, part) => t(`why.reason.${advice.code}.${part}`, adviceValues(advice));
+
+const linkButton = (link) =>
+  el("button", { class: "button", type: "button", text: t(`why.link.${link}`), onclick: () => api.openDriverPage(link).catch(showFailure) });
+
+// One reason in full (what happened, why, the steps, the buttons, what the game does meanwhile),
+// the others in a line each, and the report for "Copy details".
+function adviceBlock({ advice, meanwhile, report }, { details = true, links = true } = {}) {
+  if (!advice?.length) return null;
+  const [first, ...rest] = advice;
+  const values = adviceValues(first);
+  const why = [reasonText(first, "why")];
+  if (FIX_SENTENCE.has(first.code) && first.fix) why.push(t(`why.fix.${first.fix}`));
+  const box = el(
+    "div",
+    { class: "advice" },
+    el("p", { class: "advice-what", text: reasonText(first, "what") }),
+    el("p", { class: "advice-why", text: why.join(" ") }),
+    el("p", { class: "advice-label", text: t("why.stepsLabel") }),
+    el("ol", { class: "advice-steps" }, ...first.steps.map((step) => el("li", { text: t(`why.step.${step}`, values) }))),
+    links && first.links.length ? el("div", { class: "row" }, ...first.links.map(linkButton)) : null,
+    meanwhile ? el("p", { class: "advice-meanwhile", text: t(`why.meanwhile.${meanwhile}`) }) : null,
+  );
+  if (rest.length) {
+    box.append(
+      el("p", { class: "advice-label", text: t("why.alsoLabel") }),
+      el("ul", { class: "advice-more" }, ...rest.map((a) => el("li", { text: `${reasonText(a, "what")} ${t(`why.step.${a.steps[0]}`, adviceValues(a))}` }))),
+    );
+  }
+  if (details && report) {
+    const pre = el("pre", { text: report });
+    const copy = el("button", { class: "button", type: "button", text: t("copyDetails") });
+    copy.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(report);
+        copy.textContent = t("copied");
+      } catch {
+        box.querySelector("details").open = true;
+      }
+    });
+    box.append(el("details", { class: "message-details" }, el("summary", { text: t("showDetails") }), pre), el("div", { class: "row" }, copy));
+  }
+  return box;
+}
+
+// A computer whose card works but is integrated, short of memory or not the dedicated one gets a
+// kind word once per card (kept by the webview).
+const tipKey = (graphics) => `dwe.gpuTip.${graphics?.gpu?.name ?? ""}`;
+function tipSeen(graphics) {
+  try {
+    return localStorage.getItem(tipKey(graphics)) === "1";
+  } catch {
+    return false;
+  }
+}
+function hideTip(graphics) {
+  try {
+    localStorage.setItem(tipKey(graphics), "1");
+  } catch {
+    // Without storage it shows again next time.
+  }
+  state.compatSeen = true;
+  renderAll();
+}
+
 // The home notice for a missing requirement, most blocking first: no room to read the disc or to
 // play, no GPU at all, then the compatibility mode (a heads-up the player can put away).
 function requirementNotice() {
@@ -246,13 +347,29 @@ function requirementNotice() {
     };
   }
   const graphics = req.graphics;
+  const advice = adviceBlock(graphics ?? {});
   if (graphics?.graphics === "blocked") {
     const base = t(req.os === "linux" ? "req.blockedBodyLinux" : "req.blockedBody", { gpu: gpuName(graphics) });
     const rescue = compatRescues(graphics, s);
     return {
       title: t("req.blockedTitle"),
-      body: rescue ? `${base} ${t("req.vulkan12Rescue")}` : base,
-      actions: el("div", { class: "row" }, ...(rescue ? [compatButton(), againButton()] : [againButton(true)]), ...driverButtons(req)),
+      body: advice ? (rescue ? t("req.vulkan12Rescue") : null) : rescue ? `${base} ${t("req.vulkan12Rescue")}` : base,
+      content: advice,
+      actions: el("div", { class: "row" }, ...(rescue ? [compatButton(), againButton()] : [againButton(true)]), ...(advice ? [] : driverButtons(req))),
+    };
+  }
+  if (graphics?.graphics === "compatible" && !state.compatSeen) {
+    return {
+      title: t("req.compatCardTitle"),
+      body: advice ? null : t("req.compatCardBody", { gpu: gpuName(graphics) }),
+      content: advice,
+      actions: el(
+        "div",
+        { class: "row" },
+        el("button", { class: "button primary", type: "button", text: t("req.compatOk"), onclick: () => { state.compatSeen = true; renderAll(); } }),
+        ...(advice ? [] : driverButtons(req)),
+        againButton(),
+      ),
     };
   }
   if ((graphics?.graphics === "fallback" || graphics?.graphics === "software") && !state.compatSeen) {
@@ -260,15 +377,24 @@ function requirementNotice() {
     const body = t(graphics.graphics === "fallback" ? "req.compatBody" : "req.compatSoftwareBody", { gpu: gpuName(graphics) });
     return {
       title: t("req.compatTitle"),
-      body: rescue ? `${body} ${t("req.vulkan12Rescue")}` : body,
+      body: advice ? (rescue ? t("req.vulkan12Rescue") : null) : rescue ? `${body} ${t("req.vulkan12Rescue")}` : body,
+      content: advice,
       actions: el(
         "div",
         { class: "row" },
         rescue ? compatButton() : null,
         el("button", { class: `button${rescue ? "" : " primary"}`, type: "button", text: t("req.compatOk"), onclick: () => { state.compatSeen = true; renderAll(); } }),
-        ...driverButtons(req),
+        ...(advice ? [] : driverButtons(req)),
         againButton(),
       ),
+    };
+  }
+  if (graphics?.graphics === "hardware" && advice && !state.compatSeen && !tipSeen(graphics)) {
+    return {
+      title: t("why.cardTitle"),
+      body: null,
+      content: advice,
+      actions: el("div", { class: "row" }, el("button", { class: "button primary", type: "button", text: t("req.compatOk"), onclick: () => hideTip(graphics) })),
     };
   }
   return null;
@@ -297,12 +423,12 @@ function renderPills() {
   );
   if (s.game_running) pills.push(statusPill("is-running", el("span", { class: "dot is-live" }), el("span", { text: t("pill.running") })));
   const graphics = state.requirements?.graphics?.graphics;
-  if (graphics === "fallback" || graphics === "software") {
+  if (graphics === "fallback" || graphics === "software" || graphics === "compatible") {
     pills.push(
       el("li", { class: "status-pill is-compat" },
         el("button", { type: "button", class: "pill-button", onclick: () => { state.compatSeen = false; renderAll(); } },
           el("span", { class: "dot is-warn" }),
-          el("span", { text: t("pill.compat") }))),
+          el("span", { text: t(graphics === "compatible" ? "pill.compatCard" : "pill.compat") }))),
     );
   }
   const task = state.task;
@@ -572,25 +698,61 @@ function showFailure(failure) {
 
 function exitText(exit) {
   const path = (...keys) => keys.map((key) => t(key)).join(" › ");
+  const where = path("nav.settings", "st.general", "req.title");
+  if (exit.advice?.length) {
+    const lost = exit.reason === "device-lost" || exit.reason === "windows-hang";
+    const title = exit.reason === "graphics-start" ? t("gameStartTitle") : lost ? t("gameLostTitle") : t("gameFailedTitle");
+    return [title, exit.next_step ? t("gameNextStep", { mode: t(STEP_MODES[exit.next_step]), where }) : ""];
+  }
+  if (exit.next_step) {
+    const lost = exit.reason === "device-lost" || exit.reason === "windows-hang";
+    const lines = [t(lost ? "gameLostEarlyBody" : "gameStartBody"), t("gameNextStep", { mode: t(STEP_MODES[exit.next_step]), where })];
+    return [t(lost ? "gameLostTitle" : "gameStartTitle"), lines.join(" ")];
+  }
+  if (exit.reason === "graphics-start") {
+    const lines = [t("gameStartBody"), t("gameStartLast")];
+    return [t("gameStartTitle"), lines.join(" ")];
+  }
   if (exit.reason === "device-lost") {
     const lines = [t("gameLostBody")];
     if (exit.offer_compatible) lines.push(t("gameLostCompatible", { mode: t("req.vulkan12Title"), where: path("nav.settings", "st.general", "req.title") }));
     if (exit.offer_software) lines.push(t("gameLostSoftware", { mode: t("s.launchModeSoftware"), where: path("nav.settings", "st.advanced", "s.launchTitle") }));
-    if (exit.log.length > 0) lines.push(t("gameLogLines"));
     return [t("gameLostTitle"), lines.join(" ")];
   }
-  if (exit.reason === "windows-hang") return [t("gameHangTitle"), exit.log.length > 0 ? `${t("gameHangBody")} ${t("gameLogLines")}` : t("gameHangBody")];
+  if (exit.reason === "windows-hang") return [t("gameHangTitle"), t("gameHangBody")];
   return [t("gameFailedTitle"), exit.code == null ? t("gameFailedSignal") : t("gameFailedBody", { code: exit.code })];
 }
 
-function showMessage(title, body, log = null) {
+// Copies a failure's details for a bug report; the selection fallback covers a webview without
+// the clipboard API.
+async function copyText(text, node) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    $("messageDetails").open = true;
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    document.execCommand("copy");
+  }
+  $("messageCopy").textContent = t("copied");
+}
+
+function showMessage(title, body, log = null, advice = null, report = null) {
   $("messageTitle").textContent = title;
   $("messageBody").textContent = body;
-  $("messageLog").hidden = !log;
+  $("messageBody").hidden = !body;
+  $("messageAdvice").replaceChildren(...[advice].filter(Boolean));
+  state.messageReport = report;
+  $("messageDetails").hidden = !log;
+  $("messageDetails").open = false;
   $("messageLog").textContent = log ?? "";
+  $("messageCopy").hidden = !log;
+  $("messageCopy").textContent = t("copyDetails");
   const dialog = $("messageDialog");
   if (!dialog.open) dialog.showModal();
-  $("messageLog").scrollTop = $("messageLog").scrollHeight;
   $("messageDismiss").focus();
 }
 
@@ -868,16 +1030,25 @@ function registerBuiltIns() {
       const gpu = graphics?.gpu;
       const text = {
         hardware: t("req.gpuHardware", { name: gpu?.name ?? "", driver: gpu?.api ? `${gpu.driver}, Vulkan ${gpu.api}` : gpu?.driver ?? "" }),
+        compatible: t("req.gpuCompatible", { name: gpu?.name ?? "", driver: gpu?.api ? `${gpu.driver}, Vulkan ${gpu.api}` : gpu?.driver ?? "" }),
         software: t("req.gpuSoftware", { gpu: gpuName(graphics) }),
         fallback: t("req.gpuFallback", { gpu: gpuName(graphics) }),
         blocked: t("req.gpuBlocked", { gpu: gpuName(graphics) }),
         unknown: graphics ? t("req.gpuNoAnswer") : t("req.gpuUnknown"),
       }[kind];
       lines.push(el("p", { class: `status-line ${kind === "hardware" ? "accent" : kind === "unknown" ? "muted" : "warning"}`, role: "status", text }));
-      if (kind === "fallback" || kind === "software" || kind === "blocked") lines.push(el("div", { class: "row" }, ...driverButtons(req)));
+      const advice = adviceBlock(graphics ?? {});
+      if (advice) lines.push(advice);
+      else if (kind === "fallback" || kind === "software" || kind === "blocked" || kind === "compatible") lines.push(el("div", { class: "row" }, ...driverButtons(req)));
       if (compatRescues(graphics, s)) {
         lines.push(el("p", { class: "muted small", text: t("req.vulkan12Rescue") }), el("div", { class: "row" }, compatButton()));
       }
+    }
+    if (s?.graphics_step && s.graphics_step !== "card" && s.launch_mode === "auto") {
+      lines.push(
+        el("p", { class: "status-line warning", role: "status", text: t("req.stepLine", { mode: t(STEP_MODES[s.graphics_step]) }) }),
+        el("div", { class: "row" }, el("button", { class: "button", type: "button", text: t("req.stepReset"), onclick: () => settingCall(() => api.resetGraphicsStep()) })),
+      );
     }
     if (s) {
       const graphicsSwitch = (what) => (on) => settingCall(() => api.setGraphicsSwitch(what, on));
@@ -1144,6 +1315,11 @@ function renderAll() {
 function wireControls() {
   $("aboutButton").addEventListener("click", showAbout);
   $("messageDismiss").addEventListener("click", () => $("messageDialog").close());
+  $("messageDetails").addEventListener("toggle", () => {
+    if ($("messageDetails").open) $("messageLog").scrollTop = $("messageLog").scrollHeight;
+  });
+  $("messageCopy").addEventListener("click", () =>
+    copyText(state.messageReport ?? `${$("messageTitle").textContent}\n${$("messageBody").textContent}\n\n${$("messageLog").textContent}`, $("messageLog")));
   $("stopButton").addEventListener("click", () => api.cancel());
   $("configureButton").addEventListener("click", () => togglePopup("configure"));
   $("configureButton").addEventListener("keydown", (e) => {
@@ -1197,7 +1373,8 @@ async function start() {
     if (state.update?.launcher_plan === "wait" || state.update?.game_plan === "wait") checkUpdates();
     if (exit.failed) {
       const [title, body] = exitText(exit);
-      showMessage(title, body, exit.log.join("\n"));
+      const advice = adviceBlock(exit, { details: false });
+      showMessage(title, body, advice ? exit.report : exit.log.join("\n"), advice, advice ? exit.report : null);
     }
   });
   await onDragDrop((event) => {

@@ -12,6 +12,10 @@
 
 namespace dwe::net {
 
+// A public room's state is re-sent this often (apps/versus-signal/src/directory.ts,
+// ROOM_REFRESH_MS and STATE_MAX_AGE_MS), so a crashed host's entry leaves the list soon.
+inline constexpr Millis RoomRefreshEvery{60 * 1000};
+
 // A room's phase (docs/plan/online-rooms.md, "Room states"), the same the signaling server's
 // directory keeps (apps/versus-signal/src/room.ts, RoomPhase):
 // - Connecting: the room is being made or joined (no code yet, or the guest is on its way).
@@ -26,10 +30,13 @@ enum class RoomPhase : std::uint8_t { Connecting, Open, Connected, Ready, Playin
 
 struct RoomSessionDesc {
   bool hosting = false;
+  // The room is in the public list. A private room sends no notices, though a room of more than two
+  // seats gets a token for its next seats.
+  bool listed = false;
   // The code the guest joins with (the host gets its own from the server).
   std::string code;
   // The signaling server and how to open sockets to it, for a public room host's notices (empty:
-  // none are sent; a private room sends none either).
+  // none are sent).
   std::string server;
   SocketOpener open;
 };
@@ -56,12 +63,14 @@ public:
   void close(std::string reason = {});
   // Moves the host's notices on.
   void poll();
+  // poll(), and once the guests are in, re-sends the room's state every RoomRefreshEvery.
+  void poll(Millis now);
 
   [[nodiscard]] RoomPhase phase() const { return phase_; }
   [[nodiscard]] bool hosting() const { return desc_.hosting; }
   [[nodiscard]] const std::string& code() const { return code_; }
   // A public room: its host has a token for the directory.
-  [[nodiscard]] bool listed() const { return !token_.empty(); }
+  [[nodiscard]] bool listed() const { return desc_.listed && !token_.empty(); }
   // Why it closed (the link's failure, if that was it), and the reason given to close().
   [[nodiscard]] PeerFailure failure() const { return failure_; }
   [[nodiscard]] const std::string& closeReason() const { return reason_; }
@@ -69,7 +78,7 @@ public:
   // The last notice the server refused or never answered, by its error ("bad-token",
   // "no-room", "unreachable"...); empty while they all went through.
   [[nodiscard]] const std::string& noticeError() const { return noticeError_; }
-  // The notices the server took, in order ("ready", "playing", "closed").
+  // The notices the server took, in order ("connected", "ready", "playing", "closed").
   [[nodiscard]] const std::deque<std::string>& sentNotices() const { return sent_; }
 
 private:
@@ -90,6 +99,9 @@ private:
   std::string noticeState_;
   std::string noticeError_;
   std::deque<std::string> sent_;
+  std::optional<Millis> toldAt_;
+  // A server that predates the «connected» notice refused it: the lobby is not repeated to it.
+  bool connectedRefused_ = false;
 };
 
 } // namespace dwe::net

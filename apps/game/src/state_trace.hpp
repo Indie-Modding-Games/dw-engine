@@ -59,6 +59,16 @@ struct TraceFighter {
   std::int32_t pending = 0;
   // The original's number of the move being used, or -1 for none.
   std::int32_t move = -1;
+  struct Orders {
+    std::int32_t phase = 0;
+    std::int32_t frames = 0;
+    std::int32_t queued = 0;
+    std::int32_t stance = 0;
+    std::int32_t lastEnd = 0;
+    std::int32_t lastProblem = 0;
+    std::int32_t bar = 0;
+  };
+  std::optional<Orders> orders;
 };
 
 struct TraceBattle {

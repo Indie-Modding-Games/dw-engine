@@ -122,6 +122,10 @@ bool StoryBattles::fixedFight() const {
 }
 
 TaskStep StoryBattles::afterBattle(BattleOutcome outcome) {
+  if (outcome == BattleOutcome::Refused) {
+    core::logInfo("{}", messages::PortBattleRefused);
+    return TaskEnded{};
+  }
   if (outcome == BattleOutcome::NotStarted) {
     // A failure of dwe's own: a win would run the rest of the section (and maybe the story) for a
     // fight that never happened; as a flight the section ends, the player is back on the screen
@@ -151,6 +155,7 @@ TaskStep StoryBattles::afterBattle(BattleOutcome outcome) {
     return afterFlight(true);
   case BattleOutcome::Victory:
   case BattleOutcome::NotStarted:
+  case BattleOutcome::Refused:
     break;
   }
   const bool fixed = fixedFight();

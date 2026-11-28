@@ -461,9 +461,55 @@ bool Field::drivePlayer(PlayerId id, std::optional<CharacterState> state) {
   return true;
 }
 
+bool Field::drivePartner(PlayerId id, std::optional<CharacterState> state) {
+  auto* player = otherPlayer(id);
+  if (player == nullptr || !player->partner) {
+    return false;
+  }
+  if (!state && player->drivenPartner) {
+    const Transform& body = world_->registry().get<Transform>(player->fieldPlayer.entity);
+    player->partner->follow.forgetTrail(originalPointOf(body.position));
+  }
+  player->drivenPartner = state;
+  return true;
+}
+
+std::optional<PlayedClip> Field::scriptedClipOf(scene::Entity entity) const {
+  const auto* scripted = world_->registry().try_get<const ScriptedActor>(entity);
+  if (scripted == nullptr || !scripted->clip) {
+    return std::nullopt;
+  }
+  return PlayedClip{.clip = *scripted->clip, .starts = scripted->starts};
+}
+
+void Field::showOwnerClip(scene::Entity entity, std::optional<PlayedClip> clip) {
+  entt::registry& registry = world_->registry();
+  if (clip) {
+    auto& scripted = registry.get_or_emplace<ScriptedActor>(entity);
+    scripted.clip = clip->clip;
+    scripted.starts = clip->starts;
+    return;
+  }
+  if (const auto* scripted = registry.try_get<const ScriptedActor>(entity);
+      scripted != nullptr && scripted->velocity == glm::vec3{0.0F}) {
+    registry.remove<ScriptedActor>(entity);
+  }
+}
+
 void Field::placeDrivenPlayers() {
   entt::registry& registry = world_->registry();
   for (PlayerRuntime& player : otherPlayers_) {
+    if (player.drivenPartner && player.partner) {
+      OtherPartner& partner = *player.partner;
+      Transform& transform = registry.get<Transform>(partner.entity);
+      transform.position = player.drivenPartner->position;
+      transform.yaw = player.drivenPartner->yaw;
+      partner.follow.place(originalPointOf(transform.position),
+                           assets::yawToOriginal(transform.yaw));
+      partner.motion = player.drivenPartner->motion;
+      registry.get<AnimationIntent>(partner.entity) = {.motion = partner.motion,
+                                                       .speedScale = 1.0F};
+    }
     if (!player.driven) {
       continue;
     }
@@ -581,7 +627,7 @@ void Field::placeOtherPartner(const PlayerRuntime& player, OtherPartner& partner
 void Field::moveOtherPartners(std::int32_t frames) {
   entt::registry& registry = world_->registry();
   for (PlayerRuntime& player : otherPlayers_) {
-    if (!player.partner) {
+    if (!player.partner || player.drivenPartner) {
       continue;
     }
     OtherPartner& partner = *player.partner;
@@ -1405,6 +1451,7 @@ void Field::placeOtherPlayersNearHost() {
     player.fieldPlayer.path.clear();
     player.fieldPlayer.waitingAtWarp = false;
     player.driven.reset();
+    player.drivenPartner.reset();
     world_->registry().get<AnimationIntent>(player.fieldPlayer.entity) = {};
     if (player.partner) {
       placeOtherPartner(player, *player.partner);
@@ -2162,19 +2209,8 @@ void Field::movePartner(float seconds) {
                 .playerRadius = static_cast<std::int32_t>(std::lround(rules_.player.radius)),
                 .npcBlocks =
                     [&](OriginalPoint from, OriginalPoint to) {
-                      const glm::vec3 worldFrom = worldPointOf(from, height);
-                      const glm::vec3 worldTo = worldPointOf(to, height);
-                      if (npcs_.blocks(worldFrom, worldTo, radius)) {
-                        return true;
-                      }
-                      const GroundSquare nextPartner{.centre = ground(worldTo), .half = radius};
-                      return std::ranges::any_of(otherPlayers_, [&](const PlayerRuntime& other) {
-                        const GroundSquare player{
-                            .centre =
-                                ground(registry.get<Transform>(other.fieldPlayer.entity).position),
-                            .half = rules_.player.radius};
-                        return overlaps(nextPartner, player);
-                      });
+                      return npcs_.blocks(worldPointOf(from, height), worldPointOf(to, height),
+                                          radius);
                     },
                 .mood = partnerMood_,
                 .randomBelow = partnerRandom_});
@@ -2361,6 +2397,17 @@ bool Field::placePartnerOffScreen() {
     return true;
   }
   return false;
+}
+
+void Field::placePlayerWithPartner(assets::SpawnPoint spot) {
+  placeAt(player_, spot.position, spot.yaw);
+  lastPlayerCell_ = assets::collisionCellAt(spot.position);
+  playerTrail_.enter(lastPlayerCell_);
+  lastTrigger_ = collision_.trigger(assets::originalCellAt(spot.position)).value_or(0);
+  follow_.forgetTrail(originalPointOf(spot.position));
+  if (!scriptedClipOf(partner_)) {
+    placePartnerNearPlayer();
+  }
 }
 
 void Field::placePartnerNearPlayer() {

@@ -28,7 +28,7 @@ struct TestGlyph {
   std::array<std::string_view, CellHeight> rows;
 };
 
-constexpr std::array<TestGlyph, 8> Glyphs{{
+constexpr std::array<TestGlyph, 10> Glyphs{{
     {"a", 8, {"", "", "", ".####", "#....#", "#....#", "######", "#....#", ".####", "", ""}},
     {"A",
      12,
@@ -40,6 +40,8 @@ constexpr std::array<TestGlyph, 8> Glyphs{{
     {"é", 8, {"", "", "#####", "", "", "", "", "", "", "", ""}},
     {"e", 8, {"", "", "", ".####", "#....#", "######", "#", "#....#", ".####", "", ""}},
     {"E", 12, {"#########", "#", "#", "#", "########", "#", "#", "#", "#", "#########", ""}},
+    {"j", 6, {".#", "", "", ".#", ".#", ".#", ".#", ".#", ".#", ".#", "##"}},
+    {"1", 8, {"..#", ".##", "..#", "..#", "..#", "..#", "..#", "..#", "..#", ".###", ""}},
 }};
 
 struct TestFont {
@@ -206,14 +208,14 @@ TEST_CASE("a space advances as far as the glyph before it only in the dialogue f
   CHECK(previous == 8);
 }
 
-TEST_CASE("glyphs land on the original's grid of 4 pixels, rounding down") {
-  CHECK(onGlyphGrid(0.0F, 1) == 0.0F);
-  CHECK(onGlyphGrid(5.0F, 1) == 4.0F);
-  CHECK(onGlyphGrid(8.0F, 1) == 8.0F);
-  CHECK(onGlyphGrid(11.0F, 1) == 8.0F);
-  // Three times larger, the grid is 12 pixels.
-  CHECK(onGlyphGrid(15.0F, 3) == 12.0F);
-  CHECK(onGlyphGrid(24.0F, 3) == 24.0F);
+TEST_CASE("a glyph leaves at most three blank columns after its ink, except a digit") {
+  const BitmapFont font = parsed(Glyphs.size());
+  CHECK(font.glyph(U'j')->advance == 5);
+  CHECK(font.glyph(U'i')->advance == 4);
+  CHECK(font.glyph(U'!')->advance == 5);
+  CHECK(font.glyph(U'a')->advance == 8);
+  CHECK(font.glyph(U'A')->advance == 12);
+  CHECK(font.glyph(U'1')->advance == 8);
 }
 
 } // namespace dwe::ui

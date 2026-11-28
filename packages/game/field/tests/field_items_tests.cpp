@@ -202,5 +202,27 @@ TEST_CASE("co-op: a chest another player took shows taken at once, and the host'
   REQUIRE(items.ground().size() == 1);
   CHECK(items.ground()[0]->cell == dwe::assets::CollisionCell{.column = 7, .row = 8});
   items.replaceGround({});
-  CHECK(items.ground().empty());
+  REQUIRE(items.ground().size() == 1);
+  CHECK_FALSE(items.ground()[0]);
+}
+
+TEST_CASE("co-op: a ground slot a notice holds stays readable when the host's list loses it") {
+  FieldItems items{{.groundSlots = 11, .chestSlots = 2, .reachCells = 1}};
+  const dwe::assets::ItemHandle item = table().handleOf(table().entries().front());
+  REQUIRE(items.spawn(item, {.column = 1, .row = 1}, 0.0F));
+  REQUIRE(items.spawn(item, {.column = 3, .row = 1}, 0.0F));
+  const std::vector<std::optional<dwe::game::field::GroundItem>> host{
+      dwe::game::field::GroundItem{.item = item, .cell = {.column = 1, .row = 1}, .position = {}}};
+  items.replaceGround(host);
+  REQUIRE(items.ground().size() == 2);
+  CHECK(items.ground()[0]);
+  CHECK_FALSE(items.ground()[1]);
+  items.replaceGround({});
+  REQUIRE(items.ground().size() == 2);
+  CHECK_FALSE(items.ground()[0]);
+  CHECK_FALSE(items.groundAt(1));
+  CHECK_FALSE(items.groundAt(40));
+  CHECK_FALSE(items.chestAt(40));
+  REQUIRE(items.spawn(item, {.column = 5, .row = 5}, 0.0F));
+  CHECK(items.groundAt(0));
 }

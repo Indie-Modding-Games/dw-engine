@@ -177,9 +177,10 @@ core::Result<void> FieldScene::addCoopGuest(game::field::PlayerId id,
   CoopPartner& partner = body.partner;
   if (partnerSpecies.empty() || (partner.actor && partner.species == partnerSpecies))
     return {};
-  const float scale = speciesScale_ ? speciesScale_(partnerSpecies) : 1.0F;
-  const float radius = speciesRadius_ ? speciesRadius_(partnerSpecies) * scale : 0.0F;
-  auto added = field_->addPartner(id, speciesModelOf(partnerSpecies), radius);
+  const std::string drawn = drawnSpeciesOf(partnerSpecies);
+  const float scale = speciesScale_ ? speciesScale_(drawn) : 1.0F;
+  const float radius = speciesRadius_ ? speciesRadius_(drawn) * scale : 0.0F;
+  auto added = field_->addPartner(id, speciesModelOf(drawn), radius);
   if (!added)
     return added;
   const auto entity = field_->partnerEntity(id);
@@ -189,7 +190,7 @@ core::Result<void> FieldScene::addCoopGuest(game::field::PlayerId id,
     return loaded;
   partner.shown = true;
   // It walks by its clips' root motion, as the host's partner does.
-  return field_->addPartner(id, speciesModelOf(partnerSpecies), radius,
+  return field_->addPartner(id, speciesModelOf(drawn), radius,
                             battleClipsOf(*partner.actor->model));
 }
 
@@ -232,28 +233,48 @@ void FieldScene::removeCoopPlayer(game::field::PlayerId id) {
   coopBodies_.erase(found);
 }
 
+void FieldScene::showCoopGuest(game::field::PlayerId id, bool shown) {
+  const auto found = coopBodies_.find(id);
+  if (found == coopBodies_.end() || !found->second.fieldBody || !found->second.player) {
+    return;
+  }
+  CoopBody& body = found->second;
+  body.shown = shown;
+  if (body.partner.actor && !body.partner.actor->fighter) {
+    body.partner.shown = shown;
+  }
+}
+
 core::Result<void> FieldScene::loadCoopPartner(CoopPartner& partner, scene::Entity entity,
                                                std::string_view species) {
-  auto model = assets::AssetId::parse(speciesModelOf(species));
+  const std::string drawn = drawnSpeciesOf(species);
+  auto model = assets::AssetId::parse(speciesModelOf(drawn));
   if (!model)
     return std::unexpected{model.error()};
-  const ClipStandIns standIns = speciesClips_ ? speciesClips_(species) : ClipStandIns{};
+  const ClipStandIns standIns = speciesClips_ ? speciesClips_(drawn) : ClipStandIns{};
   auto actor = loadActor(PartnerCharacter, entity, partnerMover_, *model, MissingClips::StandIn,
-                         standIns, species);
+                         standIns, drawn);
   if (!actor)
     return std::unexpected{actor.error()};
   if (partner.actor)
     models_->remove(partner.actor->handle);
   partner.actor = std::move(*actor);
   partner.species = std::string{species};
-  partner.scale = speciesScale_ ? speciesScale_(species) : 1.0F;
+  partner.scale = speciesScale_ ? speciesScale_(drawn) : 1.0F;
   return {};
 }
 
-core::Result<void> FieldScene::presentCoopPlayer(game::field::PlayerId id,
-                                                 std::optional<game::field::CharacterState> state,
-                                                 std::optional<game::field::CharacterState> partner,
-                                                 std::string_view partnerSpecies) {
+std::string_view FieldScene::coopPartnerSpecies(game::field::PlayerId id) const {
+  const CoopPartner* partner = coopPartnerOf(id);
+  return partner != nullptr && partner->actor ? std::string_view{partner->species}
+                                              : std::string_view{};
+}
+
+core::Result<void> FieldScene::presentCoopPlayer(
+    game::field::PlayerId id, std::optional<game::field::CharacterState> state,
+    std::optional<game::field::CharacterState> partner, std::string_view partnerSpecies,
+    std::optional<game::field::PlayedClip> playerClip,
+    std::optional<game::field::PlayedClip> partnerClip) {
   CoopBody& body = coopBodies_[id];
   if (body.fieldBody) {
     return core::fail("a co-op field body is not presented");
@@ -278,7 +299,7 @@ core::Result<void> FieldScene::presentCoopPlayer(game::field::PlayerId id,
       }
       body.player = std::move(*actor);
     }
-    placeCoopProxy(body.player->entity, *state);
+    placeCoopProxy(body.player->entity, *state, playerClip);
     body.shown = true;
   }
   CoopPartner& drawn = body.partner;
@@ -292,7 +313,8 @@ core::Result<void> FieldScene::presentCoopPlayer(game::field::PlayerId id,
       world_.registry().emplace<scene::Transform>(entity);
       world_.registry().emplace<scene::AnimationIntent>(entity);
     }
-    world_.registry().emplace_or_replace<scene::ModelRef>(entity, speciesModelOf(partnerSpecies));
+    world_.registry().emplace_or_replace<scene::ModelRef>(
+        entity, speciesModelOf(drawnSpeciesOf(partnerSpecies)));
     if (auto loaded = loadCoopPartner(drawn, entity, partnerSpecies); !loaded) {
       if (fresh)
         world_.destroy(entity);
@@ -300,12 +322,14 @@ core::Result<void> FieldScene::presentCoopPlayer(game::field::PlayerId id,
       return loaded;
     }
   }
-  placeCoopProxy(drawn.actor->entity, *partner);
+  placeCoopProxy(drawn.actor->entity, *partner, partnerClip);
   drawn.shown = true;
   return {};
 }
 
-void FieldScene::placeCoopProxy(scene::Entity entity, const game::field::CharacterState& state) {
+void FieldScene::placeCoopProxy(scene::Entity entity, const game::field::CharacterState& state,
+                                std::optional<game::field::PlayedClip> clip) {
+  field_->showOwnerClip(entity, clip);
   // The state is already smoothed for this frame, so the transform draws it as it is.
   auto& transform = world_.registry().get<scene::Transform>(entity);
   transform.position = state.position;
@@ -316,10 +340,10 @@ void FieldScene::placeCoopProxy(scene::Entity entity, const game::field::Charact
 }
 
 void FieldScene::moveCoopSelf(const std::string& mapId, std::optional<std::int32_t> exit,
-                              assets::SpawnPoint at) {
-  if (field_->mapId() == mapId && !field_->mapChangePending()) {
+                              assets::SpawnPoint at, bool reload) {
+  if (field_->mapId() == mapId && !field_->mapChangePending() && !reload) {
     coopArrival_.reset();
-    field_->placeAt(field_->playerEntity(), at.position, at.yaw);
+    field_->placePlayerWithPartner(at);
     return;
   }
   coopArrival_ = CoopArrival{.map = mapId, .at = at};
@@ -522,21 +546,25 @@ core::Result<std::unique_ptr<FieldScene>> FieldScene::create(render::Renderer& r
 }
 
 core::Result<void> FieldScene::showPartnerSpecies(std::string_view species) {
+  const std::string drawn = drawnSpeciesOf(species);
   // map.c and partner.c size the partner by its species' radius in the species table.
-  partnerSpeciesScale_ = speciesScale_ ? speciesScale_(species) : 1.0F;
+  partnerSpeciesScale_ = speciesScale_ ? speciesScale_(drawn) : 1.0F;
   if (speciesRadius_) {
-    field_->setPartnerRadius(speciesRadius_(species) * partnerSpeciesScale_);
+    field_->setPartnerRadius(speciesRadius_(drawn) * partnerSpeciesScale_);
   }
-  auto model = assets::AssetId::parse(speciesModelOf(species));
+  auto model = assets::AssetId::parse(speciesModelOf(drawn));
   if (!model) {
     return std::unexpected{model.error()};
   }
   if (model->str() == partnerModel().str()) {
     return {};
   }
-  const ClipStandIns standIns = speciesClips_ ? speciesClips_(species) : ClipStandIns{};
+  if (drawn != species) {
+    core::logWarning("{}", core::formatMessage(messages::PartnerDrawnAs, species, drawn));
+  }
+  const ClipStandIns standIns = speciesClips_ ? speciesClips_(drawn) : ClipStandIns{};
   auto partner = loadActor(PartnerCharacter, partnerActor_->entity, partnerMover_, *model,
-                           MissingClips::StandIn, standIns, species);
+                           MissingClips::StandIn, standIns, drawn);
   if (!partner) {
     return std::unexpected{partner.error()};
   }
@@ -1061,15 +1089,25 @@ void FieldScene::followClock() {
   clockHour_ = hour;
   // map.c: renderMap starts the palette fade at the top of the hours where the time of day changes,
   // on maps without a fixed time; tickDaytimeTransition switches the lights when it ends.
-  if (!render::timeOfDayChangesAt(hour, schedule_) ||
-      render::timeOfDayAt(hour, schedule_) == time_) {
+  const std::optional<render::TimeOfDay> turn = timeOfDayTurn(hour, time_, schedule_, sharedClock_);
+  if (!turn) {
     return;
   }
-  time_ = render::timeOfDayAt(hour, schedule_);
+  time_ = *turn;
   if (!fixedTime_) {
     mapRenderer_->setVariant(map_.backgroundVariant(time_, false));
     lightingDelay_ = render::TimeOfDayFadeSeconds;
   }
+}
+
+void FieldScene::matchClock() {
+  clockHour_ = clock_->time().hour;
+  time_ = render::timeOfDayAt(clockHour_, schedule_);
+  if (!fixedTime_) {
+    mapRenderer_->setVariant(map_.backgroundVariant(time_, false), 0.0);
+  }
+  lightingDelay_ = 0.0;
+  applyLighting();
 }
 
 bool FieldScene::daytimeFadeRunning() const {
@@ -1077,8 +1115,8 @@ bool FieldScene::daytimeFadeRunning() const {
     return true;
   }
   const std::int32_t hour = clock_->time().hour;
-  return hour != clockHour_ && !fixedTime_ && render::timeOfDayChangesAt(hour, schedule_) &&
-         render::timeOfDayAt(hour, schedule_) != time_;
+  return hour != clockHour_ && !fixedTime_ &&
+         timeOfDayTurn(hour, time_, schedule_, sharedClock_).has_value();
 }
 
 void FieldScene::applyLighting() {
@@ -1497,8 +1535,8 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
             .additive = stage_.playerAdditive});
   }
   for (const auto& [id, body] : coopBodies_) {
-    if (body.shown && body.player && stage_.showsPlayer())
-      submit(*body.player, alpha, {});
+    if (body.shown && body.player && stage_.showsOtherPlayers())
+      submit(*body.player, alpha, {.tint = sceneryTint()});
   }
   if (stage_.showsNpcs()) {
     drawNpcs(animationSeconds, alpha);
@@ -1527,8 +1565,8 @@ void FieldScene::update(double frameSeconds, float alpha, FieldClock clock) {
   }
   for (const auto& [id, body] : coopBodies_) {
     const CoopPartner& remote = body.partner;
-    if (remote.shown && remote.actor && stage_.showsPartner())
-      submit(*remote.actor, alpha, {.scale = glm::vec3{remote.scale}});
+    if (remote.shown && remote.actor && stage_.showsOtherPlayers())
+      submit(*remote.actor, alpha, {.scale = glm::vec3{remote.scale}, .tint = sceneryTint()});
   }
   if (!paused) {
     advanceObjectSmoke(frameSeconds);

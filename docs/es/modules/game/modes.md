@@ -21,15 +21,19 @@ name: modes.classic_name              # clave de localización del nombre
 description: modes.classic_description
 ruleset: original                     # el ruleset con el que empieza
 rulesets: [original]                  # los que admite; incluye ruleset
+battle: classic                       # opcional: classic (por defecto) o folder, el combate de una partida nueva
+battles: [classic]                    # opcional: los sistemas de combate a los que puede cambiar; incluye battle
 order: 0                              # posición en la lista (luego el id)
 options:                              # opcional: nombre de opción -> el valor que fijan sus partidas
   difficulty: normal
   rare_items: false
 ```
 
-Todas las claves menos `options` y `randomizer` son obligatorias y no admite otras. `randomizer: true` deja que las
-partidas nuevas del modo sean [partidas aleatorizadas](randomizer.md) (`GameMode::randomizer`, apagado por defecto); el
-juego lo enciende solo en el Modo Folder. `options` se lee en `GameMode::options`
+Todas las claves menos `options`, `randomizer`, `battle` y `battles` son obligatorias y no admite otras.
+`randomizer: true` deja que las partidas nuevas del modo sean [partidas aleatorizadas](randomizer.md)
+(`GameMode::randomizer`, apagado por defecto); el juego lo enciende solo en el Modo Folder. El sistema de combate
+(`classic` o `folder`, [Sistemas de combate](../../architecture/folder-battle.md)) se guarda con la partida en su sección
+`mode`; una partida sin él juega `classic`. `options` se lee en `GameMode::options`
 (`OptionPin`: opción y valor como texto); el juego la aplica (`apps/game/src/mode_options.hpp`). Un paquete de encima reemplaza un modo dando la misma carpeta,
 como cualquier asset.
 

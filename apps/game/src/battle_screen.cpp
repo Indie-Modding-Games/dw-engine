@@ -359,7 +359,7 @@ void BattleScreen::stepFieldEffects(const game::battle::BattleEvents& frame) con
     if (event.kind != game::battle::EventKind::HealingShown) {
       continue;
     }
-    const game::battle::Fighter& partner = battle_->state().partner();
+    const game::battle::Fighter& partner = battle_->state().fighters.at(event.fighter);
     // The original's axes: z the other way.
     effects.addHealing({partner.position.x, 0, -partner.position.z}, partner.combatant.height,
                        partner.combatant.radius, event.amount != 0);
@@ -468,8 +468,10 @@ bool BattleScreen::reacting() const {
   if (!battle_) {
     return false;
   }
-  return battle_->state().finisher.charging || screens::deathCountdownTimerOf(*battle_) ||
-         bagShown_ || thrown_.has_value() || battle_->state().thrownItem.has_value();
+  const game::battle::FighterId own = localFighter_.value_or(game::battle::PartnerId);
+  return coopShared_ || battle_->state().finisher.charging ||
+         screens::deathCountdownTimerOf(*battle_, own) || bagShown_ || thrown_.has_value() ||
+         battle_->state().thrownItem.has_value() || battle_->thrownItemOf(own).has_value();
 }
 
 void BattleScreen::publishHpBars() {
@@ -480,9 +482,12 @@ void BattleScreen::publishHpBars() {
                           static_cast<double>(camera->viewportSize().y);
     const auto& fighters = battle_->state().fighters;
     const bool match = battle_->state().matchClock.has_value();
+    // A Folder battle keeps every foe's bar, the mark its letter and the orders go by.
+    const bool always =
+        enemyHpBarsAlways_ || battle_->system() == game::battle::BattleSystemId::Folder;
     for (game::battle::FighterId id = 1; id < fighters.size() && id <= enemyNpcs_.size(); ++id) {
       const game::battle::Fighter& enemy = fighters[id];
-      if (!screens::enemyHpBarShown({.always = enemyHpBarsAlways_,
+      if (!screens::enemyHpBarShown({.always = always,
                                      .match = match,
                                      .recentlyHit = battle_->hpBarShown(id),
                                      .standing = enemy.hp > 0 && !enemy.fainted})) {
@@ -521,13 +526,14 @@ void BattleScreen::publishHpBars() {
   }
   // command_menu.c: BTL_tickDeathCountdown, BTL_renderDeathCountdown: the countdown over the fallen
   // partner, where its node 1 showed as the countdown was added (BTL_addDeathCountdown).
+  const game::battle::FighterId own = localFighter_.value_or(game::battle::PartnerId);
   const std::optional<std::int32_t> timer =
-      battle_ ? screens::deathCountdownTimerOf(*battle_) : std::nullopt;
+      battle_ ? screens::deathCountdownTimerOf(*battle_, own) : std::nullopt;
   if (!timer) {
     deathCountdownAnchor_.reset();
   } else if (!deathCountdownAnchor_ && camera != nullptr && camera->viewportSize().y > 0.0F) {
     if (const std::optional<glm::vec2> node =
-            desc_.scene->fighterNodeOnWindow(std::nullopt, HpBarNode)) {
+            desc_.scene->fighterNodeOnWindow(npcOfFighter(own), HpBarNode)) {
       deathCountdownAnchor_ = screens::deathCountdownAnchorOf(
           {.x = node->x, .y = node->y}, static_cast<double>(camera->viewportSize().x) /
                                             static_cast<double>(camera->viewportSize().y));
@@ -536,12 +542,12 @@ void BattleScreen::publishHpBars() {
   // command_menu.c: BTL_initializeFinisherChargeup, BTL_renderFinisherChargeup: the charge gauge
   // over the partner while its finisher's aura lasts, where the point its species' height and
   // FinisherGaugeLift over its place showed as the aura started.
-  const bool charging = battle_ && battle_->state().finisher.charging &&
-                        battle_->state().finisher.fighter == game::battle::PartnerId;
+  const bool charging =
+      battle_ && battle_->state().finisher.charging && battle_->state().finisher.fighter == own;
   if (!charging) {
     finisherGaugeCorner_.reset();
   } else if (!finisherGaugeCorner_ && camera != nullptr && camera->viewportSize().y > 0.0F) {
-    const game::battle::Fighter& partner = battle_->state().partner();
+    const game::battle::Fighter& partner = battle_->state().fighters.at(own);
     const assets::DigimonRow* row =
         desc_.species != nullptr ? desc_.species->find(partner.combatant.species) : nullptr;
     const float lift =
@@ -554,10 +560,22 @@ void BattleScreen::publishHpBars() {
                                               static_cast<double>(camera->viewportSize().y));
     }
   }
+  // The stun signs the field draws over the fighters, which the bars keep off.
+  std::vector<screens::WindowFraction> stunSigns;
+  double stunAspect = 1.0;
+  if (battle_ && camera != nullptr && camera->viewportSize().y > 0.0F) {
+    stunAspect = static_cast<double>(camera->viewportSize().x) /
+                 static_cast<double>(camera->viewportSize().y);
+    for (const glm::vec2 foot : desc_.scene->stunSignsOnWindow()) {
+      stunSigns.push_back({.x = foot.x, .y = foot.y});
+    }
+  }
   screens::ScreenSettings settings = screens::settingsOf(bars);
   std::ranges::move(screens::finisherGaugeSettingsOf(finisherGaugeCorner_),
                     std::back_inserter(settings));
   std::ranges::move(screens::settingsOf(markers), std::back_inserter(settings));
+  std::ranges::move(screens::stunSignSettingsOf(stunSigns, stunAspect),
+                    std::back_inserter(settings));
   std::ranges::move(screens::settingsOf(deathCountdownAnchor_
                                             ? screens::deathCountdownLookOf(*timer)
                                             : std::nullopt,
@@ -1302,7 +1320,12 @@ void BattleScreen::shout(game::battle::Command command) {
                static_cast<double>(camera->viewportSize().y);
     }
   }
-  shout_.shout(screens::shoutTextKey(command, battle_->state().partner(), names()), node, aspect);
+  const bool remapped =
+      battle_->system() == game::battle::BattleSystemId::Folder &&
+      game::battle::folderCommandTextKey(command) != game::battle::commandTextKey(command);
+  shout_.shout(remapped ? std::string{game::battle::folderCommandTextKey(command)}
+                        : screens::shoutTextKey(command, battle_->state().partner(), names()),
+               node, aspect);
   core::logDebug("[port:battle] BTL_drawCommandShout (command_shout.c:54): command {}{}",
                  static_cast<int>(command), node ? "" : " off the camera");
   publishShout();

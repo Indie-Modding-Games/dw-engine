@@ -136,6 +136,13 @@ public:
   // Every species the developer's evolve can make the partner (cheatReference), ascending.
   [[nodiscard]] std::vector<Species> cheatTargets() const;
 
+  // Bones in the species table; no evolution or chart leads to a species without them.
+  [[nodiscard]] bool drawable(Species species) const { return modelled_.contains(species); }
+
+  // Itself when modelled, else the chart's origin whose name ends its own (WereGarurumon:
+  // Garurumon), else the first modelled origin; a species with neither is returned as it is.
+  [[nodiscard]] Species drawnAs(Species species) const;
+
   // The targets of a species' evolution chart, in the table's order, without the empty ones.
   [[nodiscard]] std::span<const Species> pathTargets(Species from) const;
 
@@ -183,6 +190,7 @@ private:
   std::set<Species> yielding_;
   // The species with a model to draw (bones in the species table).
   std::set<Species> modelled_;
+  std::map<Species, Species> drawnAs_;
 };
 
 } // namespace dwe::game::evolution

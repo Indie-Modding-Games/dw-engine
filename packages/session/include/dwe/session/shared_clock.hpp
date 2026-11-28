@@ -60,9 +60,16 @@ public:
   // The step from the guest's clock at `elapsed` towards the world's.
   [[nodiscard]] ClockFollow follow(std::int64_t elapsed, double framesPerSecond,
                                    std::int64_t framesPerMinute) const;
+  // The real seconds until a guest ahead at `elapsed` stops waiting for the world; none while the
+  // world's clock stands or before the first word.
+  [[nodiscard]] std::optional<double> waitSeconds(std::int64_t elapsed, double framesPerSecond,
+                                                  std::int64_t framesPerMinute) const;
   void reset();
 
 private:
+  [[nodiscard]] std::int64_t waitsWithin(double framesPerSecond,
+                                         std::int64_t framesPerMinute) const;
+
   std::optional<WorldTime> heard_;
   double since_ = 0.0;
 };

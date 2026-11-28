@@ -909,3 +909,38 @@ TEST_CASE(
   REQUIRE(loaded->loadFile(file));
   CHECK(loaded->mode() == "folder");
 }
+
+TEST_CASE("a game saves its battle system with the mode; a save without one plays Classic") {
+  const TestPacks packs;
+  auto created = GameSession::create({.files = &packs.files(),
+                                      .rulesetId = "original",
+                                      .rules = std::nullopt,
+                                      .modeId = "folder",
+                                      .battle = "folder",
+                                      .species = dwe::session::testing::madeUpTable(),
+                                      .seed = 7,
+                                      .storage = nullptr,
+                                      .gameVersion = "test",
+                                      .wallClock = [] { return dwe::session::testing::SaveDate; },
+                                      .systems = {}});
+  REQUIRE_MESSAGE(created.has_value(), errorOf(created));
+  GameSession& session = **created;
+  REQUIRE(session.startNewGame());
+  CHECK(session.battleSystem() == "folder");
+
+  SaveFile file = throughText(session.saveFile().value());
+  const auto loaded = newGame(packs, nullptr, 99);
+  CHECK(loaded->battleSystem() == "classic");
+  REQUIRE(loaded->loadFile(file));
+  CHECK(loaded->battleSystem() == "folder");
+  REQUIRE(loaded->setBattleSystem("classic"));
+  CHECK(loaded->battleSystem() == "classic");
+  CHECK_FALSE(loaded->setBattleSystem("turns"));
+
+  file.sections.at("mode").state.set("battle", dwe::core::YamlNode::scalar("turns"));
+  CHECK_FALSE(loaded->loadFile(file));
+  file.sections.at("mode").state = dwe::core::YamlNode::mapping();
+  file.sections.at("mode").state.set("id", dwe::core::YamlNode::scalar("folder"));
+  REQUIRE(loaded->loadFile(file));
+  CHECK(loaded->battleSystem() == "classic");
+}

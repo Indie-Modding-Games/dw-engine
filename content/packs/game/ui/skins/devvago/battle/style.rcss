@@ -146,6 +146,11 @@
 	display: none;
 }
 
+#finisher-word-dim {
+	color: #f8c80040;
+	font-effect: none;
+}
+
 #finisher-segments {
 	display: block;
 	position: absolute;
@@ -203,7 +208,8 @@
 	display: block;
 }
 
-#fight.long-finisher-key #finisher-ready {
+#fight.long-finisher-key #finisher-ready,
+#fight.finisher-crowded #finisher-ready {
 	top: 111dp;
 }
 
@@ -427,6 +433,11 @@
 	display: none;
 }
 
+/* The ally rows wait for the banner to go up: it would cover their names. */
+#fight.opening #allies {
+	display: none;
+}
+
 /* The strip's slide (command_menu.c: BTL_tickCommandMenu): logic.lua moves and stretches the frame's pieces from their
    top and the icons from theirs (9dp into their boxes) as the game moves the strip's edges. Before the banner and
    once it has gone back up it waits above the screen. After the fight it stays with the partner's bars, without the cursor or the
@@ -462,6 +473,11 @@
    BTL_removePartnerStatusBars, once the strip is back up); the bars slide out with the strip (logic.lua: draw_bars). */
 #fight.after > #partner-panel {
 	display: block;
+}
+
+/* The finisher gauge goes with the fight: only the bars stay for the end. */
+#fight.after #finisher {
+	display: none;
 }
 
 /* A tournament match's clock stays through the winner's pose too (std_main.c: STD_deinitializeCombat removes it after
@@ -702,9 +718,15 @@
 #dc-digit.digit-2 { decorator: image(death-digit-2); }
 #dc-digit.digit-1 { decorator: image(death-digit-1); }
 
-/* The original shows no button hints in battle. */
+/* The original shows no button hints in battle; a small corner hint keeps the PC keys in sight. */
 #prompts {
-	display: none;
+	right: 16dp;
+	bottom: 12dp;
+	padding: 2dp 8dp;
+	font-size: 13dp;
+	color: #9cc2d8;
+	background-color: #0a1420d0;
+	border-radius: 0dp;
 }
 
 /* The numbers over the fighters (utils2.c: drawEntityText): the digits of BI_IN with palette 4, untinted (TEXT_COLORS
@@ -803,7 +825,8 @@
    117 (grey, blue while it rises), the up arrow at x 130 and the raise left at x 142, a line at x 122. The bits box
    under it (createBitsBox: -88, 18, 176 x 66): the label at x 10, the bits at x 70, a line at y 32 and the two rows of
    text from y 36 (BTL_initializeBattleEndText: -78, 54, 156 x 24). The final balance box (createFinalBalanceBox: -88,
-   -13, 176 x 31) opens over the stats box's foot once the raises are counted. The names are yellow (#fff371). */
+   -13, 176 x 31) opened over the stats box's foot once the raises were counted; here it goes under the bits box, so
+   the last stats stay readable, and the outcome heads the boxes. The names are yellow (#fff371). */
 
 #end {
 	display: block;
@@ -813,9 +836,9 @@
 #end-panel {
 	position: absolute;
 	left: 50%;
-	top: 108dp;
+	top: 46dp;
 	width: 528dp;
-	height: 486dp;
+	height: 627dp;
 	margin-left: -264dp;
 	padding: 0;
 	border-radius: 0;
@@ -824,16 +847,27 @@
 }
 
 #end-title {
-	display: none;
+	display: block;
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 528dp;
+	height: 42dp;
+	margin: 0;
+	font-size: 36dp;
+	line-height: 42dp;
+	text-align: center;
+	color: #fff371;
+	font-effect: shadow(3dp 3dp #000000);
 }
 
 #end-boxes {
 	display: block;
 	position: absolute;
 	left: 0;
-	top: 0;
+	top: 48dp;
 	width: 528dp;
-	height: 486dp;
+	height: 579dp;
 	margin: 0;
 }
 
@@ -988,15 +1022,32 @@
 }
 
 #balance {
-	top: 195dp;
+	top: 381dp;
 	height: 93dp;
 	font-size: 33dp;
 	line-height: 36dp;
 	background-color: #293942;
 }
 
+#end-boxes.with-text #balance {
+	top: 486dp;
+}
+
 #balance.hidden {
 	display: none;
+}
+
+/* With the total, the boxes go in every skin's order: stats, total, then the bits with the text that continues. */
+#end-boxes.with-balance #balance {
+	top: 288dp;
+}
+
+#end-boxes.with-balance #bits {
+	top: 381dp;
+}
+
+#end-boxes.with-balance #end-text {
+	top: 489dp;
 }
 
 #end-text {
@@ -1111,10 +1162,25 @@
    into the same navy/cyan language as the title and pause screens. */
 #partner-panel {
 	width: 312dp;
-	height: 132dp;
+	height: auto;
+	min-height: 110dp;
+	padding-top: 6dp;
 	box-sizing: border-box;
 	border: 1dp #397ca4;
 	background-color: #0b1c2dc9;
+}
+
+.partner .fighter-head {
+	display: block;
+	height: 26dp;
+	margin: 0 12dp 4dp 12dp;
+	font-size: 20dp;
+	line-height: 26dp;
+}
+
+.partner .fighter-status {
+	float: right;
+	color: #ffb347;
 }
 
 .partner .bar-row {
@@ -1259,6 +1325,231 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 .ally .hp-label { decorator: image(battle-hp); }
 .ally .mp-label { decorator: image(battle-mp); }
 
+.ally-order {
+	font-size: 18dp;
+	line-height: 30dp;
+	margin-right: 12dp;
+	color: #9cd8ff;
+}
+
 @media (max-width: 760dp) {
 	#allies { right: 12dp; }
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The Folder battle: the charge box's navy panel at the bottom left, as far from the edges as the partner's panel
+   is from the right; its bars sit in the charge bar's sunk well. */
+#folder-panel {
+	left: 30dp;
+	bottom: 30dp;
+	box-sizing: border-box;
+	width: 580dp;
+	padding: 9dp 15dp;
+	border: 2dp #72c7ff;
+	border-radius: 0;
+	background-color: #0b1c2df2;
+	decorator: vertical-gradient(#153653 #0a1929);
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 30dp;
+	color: #d8f1ff;
+}
+
+/* A cup match's strip stands at the bottom left (#commands.match, top 504dp): the box goes up over its name. */
+#commands.match ~ #folder-panel {
+	bottom: 228dp;
+}
+
+.folder-row {
+	margin-bottom: 3dp;
+}
+
+.folder-label {
+	margin-right: 12dp;
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 33dp;
+	color: #ffe64a;
+}
+
+.folder-track {
+	height: 9dp;
+	border: 3dp #071522;
+	border-right-color: #72c7ff;
+	border-bottom-color: #72c7ff;
+	border-radius: 0;
+	background-color: #071522;
+}
+
+.folder-fill {
+	border-radius: 0;
+}
+
+#folder-bar-fill { background-color: #36bce8; }
+#folder-bar-fill.broken { background-color: #ff7775; }
+
+#folder-phase {
+	height: 3dp;
+	margin: 3dp 0 6dp 0;
+}
+
+#folder-active {
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 33dp;
+}
+
+#fight.folder #command-label {
+	display: inline;
+}
+
+#fight.folder #command-name,
+#fight.folder #command-name.problem,
+#fight.folder #command-name.reach {
+	display: block;
+	padding: 3dp 12dp;
+	border-radius: 0;
+	border: 0;
+	border-left: 3dp #ffd51e;
+	background-color: #0b1c2de8;
+}
+
+#command-problem {
+	margin-left: 15dp;
+	font-family: "Pixel Small";
+	font-size: 22dp;
+	color: #ff7775;
+}
+
+#command-reach {
+	display: block;
+	font-family: "Pixel Small";
+	font-size: 22dp;
+	color: #9fb4c8;
+}
+
+/* The key that types on the end box's text, while the text waits for it. */
+#end-more {
+	display: block;
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	font-size: 18dp;
+}
+
+#end-more.hidden {
+	display: none;
+}
+
+#folder-panel {
+	height: 156dp;
+	box-sizing: border-box;
+	overflow: hidden;
+}
+
+#folder-message,
+#folder-active,
+#folder-queue {
+	height: 30dp;
+	line-height: 30dp;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+#folder-message.status { color: #72c7ff; }
+#folder-message.notice { color: #ffb347; }
+#folder-message.broken { color: #ff7775; }
+#folder-queue { color: #a8c7d9; }
+
+#folder-active {
+	flex: 0 0 auto;
+	max-width: 60%;
+	margin-right: 10dp;
+}
+
+#folder-phase {
+	flex: 1;
+	margin: 0;
+}
+
+#folder-stance {
+	font-size: 22dp;
+	line-height: 26dp;
+	color: #72c7ff;
+	border: 2dp #72c7ff;
+	border-radius: 0;
+}
+
+#folder-stance.forced {
+	color: #ff7775;
+	border-color: #ff7775;
+}
+
+#folder-phase {
+	height: 8dp;
+}
+
+.folder-step {
+	border-radius: 0;
+	background-color: #071522;
+}
+
+.folder-step.done { background-color: #1d5a80; }
+.folder-step.now { background-color: #ffe64a; }
+#folder-lock.locked { background-color: #ffd51e; }
+
+.folder-chip {
+	font-size: 22dp;
+	line-height: 26dp;
+	color: #d8f1ff;
+	border: 2dp #2a5a80;
+	border-radius: 0;
+}
+
+.command-frame.kind-stance {
+	image-color: #9cd8ff;
+}
+
+.hb-tag {
+	border-radius: 0;
+	font-size: 20dp;
+}
+
+#finisher-percent {
+	display: none;
+}
+
+/* Without an order the target takes the whole row: the phase is hidden. */
+#folder-active.alone {
+	max-width: 100%;
+}
+
+/* A Folder battle lists its foes by letter at the left under the strip: bars of high foes can sit past the top. */
+#fight.folder #enemies {
+	display: block;
+	position: absolute;
+	left: 30dp;
+	top: 210dp;
+	width: 300dp;
+}
+
+#fight.folder.reach #enemies {
+	top: 240dp;
+}
+
+#fight.folder .fighter.enemy {
+	padding: 4dp 10dp;
+	margin: 0 0 6dp 0;
+	background-color: #0b1c2de8;
+	color: #d8f1ff;
+}
+
+#fight.folder .fighter.enemy .fighter-name {
+	font-size: 22dp;
+}
+
+/* A co-op guest's next item flies to this ally. */
+.partner.ally.throw-target {
+	border: 2dp #ffd23f;
+	background-color: #2a2410f2;
 }

@@ -25,14 +25,8 @@ struct TextRun {
   bool bitmap = false;
 };
 
-// The original draws each glyph at a multiple of this many pixels from where its text starts
-// (font.c: drawGlyph uploads the glyph to the 4-bit text area at x / 4), while the pen moves by
-// the glyphs' own advances: after a 5-pixel glyph the next one lands up to 3 pixels back.
-inline constexpr int GlyphGrid = 4;
-
-// Where a glyph whose pen is `offset` screen pixels from its text's start is drawn, for a font
-// drawn `scale` times larger: on the grid, rounding down.
-[[nodiscard]] float onGlyphGrid(float offset, int scale);
+// The original leaves 4 after the j, the 1 and the narrow capitals, which reads as a space.
+inline constexpr int MaxBlankAfterInk = 3;
 
 // Whether a character is a space: the ASCII one or the full-width one the original's text uses.
 [[nodiscard]] bool isSpace(char32_t character);
@@ -69,6 +63,9 @@ public:
   // The first row of a glyph's cell with ink, or the cell height for a glyph without ink.
   [[nodiscard]] int inkTop(const BitmapGlyph& glyph) const;
 
+  // The last column of a glyph's cell with ink, or -1 for a glyph without ink.
+  [[nodiscard]] int inkRight(const BitmapGlyph& glyph) const;
+
   // The number of characters the font answers to.
   [[nodiscard]] std::size_t characterCount() const { return glyphs_.size(); }
 
@@ -79,6 +76,9 @@ public:
 private:
   // Adds the composed glyphs whose base glyphs the font has, in new cells under the atlas's.
   void addComposedGlyphs();
+
+  // Digits keep their advance so numbers line up in columns.
+  void trimBlankAfterInk();
 
   assets::Image atlas_;
   int cellWidth_ = 0;

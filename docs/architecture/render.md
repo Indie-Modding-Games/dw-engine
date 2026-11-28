@@ -276,7 +276,9 @@ Vulkan 1.3 with dynamic rendering and synchronization2; from 1.2, descriptor ind
 update-after-bind and update-unused-while-pending of images, non-uniform indexing), buffer device address and separate
 depth layouts; anisotropic filtering ([ADR 0019](../adr/0019-bindless-descriptors.md)). When the loader and the GPU
 report Vulkan 1.4 the device is created on the 1.4 path, which uploads textures with host image copy where the driver
-offers it; `--vulkan13` keeps the 1.3 path ([rhi](../modules/engine/rhi.md)). Swapchain `B8G8R8A8_UNORM` or
+offers it; `--vulkan13` keeps the 1.3 path ([rhi](../modules/engine/rhi.md)). A 1.2 driver with the dynamic rendering
+and synchronization2 extensions runs in the compatible mode, and a device that fails on 1.4 or 1.3 falls back to the
+next path by itself. Swapchain `B8G8R8A8_UNORM` or
 `R8G8B8A8_UNORM`, with blending in gamma space. Depth: `D32_SFLOAT`, or `X8_D24` or `D16` if there is none.
 
 To test the life of the textures, `dwe-game --texture-churn` creates and destroys a texture on each frame (the little

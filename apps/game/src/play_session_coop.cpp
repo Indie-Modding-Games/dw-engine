@@ -4,10 +4,12 @@
 #include <dwe/game/field/field.hpp>
 #include <dwe/session/battle_adapter.hpp>
 #include <dwe/session/inventory_adapter.hpp>
+#include <dwe/session/story_adapter.hpp>
 
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -88,6 +90,33 @@ session::VisitingPartner PlaySession::coopFighter() const {
   return game_.systems.battle->visitorOf(*game_.session);
 }
 
+std::optional<game::battle::Fighter> PlaySession::coopBattleFighter() const {
+  if (game_.systems.battle == nullptr) {
+    return std::nullopt;
+  }
+  auto combatant = game_.systems.battle->visitingCombatant(coopFighter());
+  if (!combatant) {
+    return std::nullopt;
+  }
+  game::battle::Fighter fighter;
+  fighter.combatant = std::move(*combatant);
+  const game::battle::MoveCatalog& catalog = game_.systems.battle->catalog();
+  for (std::size_t slot = 0; slot < fighter.moves.size(); ++slot) {
+    if (const auto& id = fighter.combatant.moves.at(slot)) {
+      fighter.moves.at(slot) = catalog.find(*id);
+    }
+  }
+  return fighter;
+}
+
+const game::battle::MoveCatalog* PlaySession::coopMoves() const {
+  return game_.systems.battle != nullptr ? &game_.systems.battle->catalog() : nullptr;
+}
+
+std::optional<std::int32_t> PlaySession::eventNpc() const {
+  return game_.systems.story != nullptr ? game_.systems.story->eventNpc() : std::nullopt;
+}
+
 core::Result<void> PlaySession::applyCoopSpoils(const game::battle::BattleResult& result) {
   if (game_.systems.battle == nullptr) {
     return core::fail("no battles in this game");
@@ -128,7 +157,7 @@ std::vector<std::pair<std::string, std::int32_t>> PlaySession::coopThrowableItem
 screens::NameKeys PlaySession::coopNameKeys() const {
   const session::InventoryAdapter* inventory = game_.systems.inventory;
   return {species_ ? &*species_ : nullptr, inventory != nullptr ? &inventory->items() : nullptr,
-          nullptr};
+          coopMoves()};
 }
 
 session::InventoryAdapter* PlaySession::coopInventory() {

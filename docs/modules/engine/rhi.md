@@ -45,11 +45,22 @@ for example `vulkan: Vulkan 1.4 path (host image copy on; device 1.4.318, loader
   bindless set and no per-draw descriptors, and they would add a second branch without removing code.
 - **Vulkan 1.3**: the loader or the GPU stop at 1.3, or `--vulkan13` (`DeviceDesc::forceVulkan13`) asks for it to
   debug or compare. The instance then asks for 1.3 and nothing from 1.4 is queried.
-- **Vulkan 1.2 compatible**: `--compatible` on a GPU below 1.3. The compatible mode never takes the 1.4 path, even on
-  a 1.4 GPU.
+- **Vulkan 1.2 compatible**: `--compatible`, or the fallback below. The instance asks for 1.2, so every GPU, a 1.4 one
+  too, runs as a 1.2 one: the drivers and the validation layer see exactly what an old card would. Dynamic rendering
+  and synchronization2 come from their extensions, and their entry points (`vkCmdBeginRenderingKHR`,
+  `vkCmdPipelineBarrier2KHR`, `vkQueueSubmit2KHR`...) are loaded with `vkGetDeviceProcAddr` (`vulkan_calls.hpp`): a
+  strict driver gives no core 1.3 entry point to a 1.2 device. Mip chains are blitted with the 1.0 `vkCmdBlitImage`,
+  which every path has.
 
-`chooseVulkanPath` is a pure function (versions and feature bits in, path out) with its tests in
-`tests/vulkan_path_test.cpp`. `Device::vulkanPath` says which one runs, and the graphics report adds it to the driver
+**Fallback.** When a path cannot make the device (no GPU passes its selection, `vkCreateDevice` or the swapchain
+fails), `Device::create` tries the next one in the same call and logs why: 1.4, then 1.3, then 1.2 compatible
+(`nextVulkanAttempt`). A GPU that works keeps its first path, so nothing changes for it. When none works the game
+exits with code 114, which the launcher reads as "this graphics step does not start here"
+([launcher](../apps/launcher.md#computer-requirements)). `--check-system` follows the same chain and prints
+`floor=1.2` when only the compatible floor passed.
+
+`chooseVulkanPath` and `nextVulkanAttempt` are pure functions (versions and feature bits in, path out) with their
+tests in `tests/vulkan_path_test.cpp`. `Device::vulkanPath` says which one runs, and the graphics report adds it to the driver
 line. `NativeHandles::apiVersion` and VMA get the version of the path.
 
 `LinearAllocator` and `SlotAllocator` are the CPU bookkeeping of the ring and of the table; their tests do not need a GPU.

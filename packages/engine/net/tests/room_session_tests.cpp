@@ -170,7 +170,11 @@ TEST_CASE(
   SignalClient signal{server.open(hostUrl("wss://fake", true))};
   signal.poll();
   FakeLink link;
-  RoomSession room{{.hosting = true, .code = {}, .server = "wss://fake", .open = openerOf(server)}};
+  RoomSession room{{.hosting = true,
+                    .listed = true,
+                    .code = {},
+                    .server = "wss://fake",
+                    .open = openerOf(server)}};
   CHECK(room.phase() == RoomPhase::Connecting);
   room.observe(link);
   CHECK(room.phase() == RoomPhase::Connecting);
@@ -204,8 +208,9 @@ TEST_CASE(
   CHECK(room.phase() == RoomPhase::Playing);
   room.close();
   CHECK(room.phase() == RoomPhase::Closed);
-  CHECK(server.notices == std::vector<std::string>{"K7Q2 ready", "K7Q2 playing", "K7Q2 closed"});
-  CHECK(room.sentNotices() == std::deque<std::string>{"ready", "playing", "closed"});
+  CHECK(server.notices ==
+        std::vector<std::string>{"K7Q2 ready", "K7Q2 connected", "K7Q2 playing", "K7Q2 closed"});
+  CHECK(room.sentNotices() == std::deque<std::string>{"ready", "connected", "playing", "closed"});
   CHECK(room.noticeError().empty());
   CHECK_FALSE(room.noticesPending());
   // Closed is the end: nothing moves it again.
@@ -219,8 +224,11 @@ TEST_CASE(
     "a room session's errors: a failed link closes it, a refused notice is kept, a private room tells nothing") {
   FakeSignalServer server;
   FakeLink wrong;
-  RoomSession guest{
-      {.hosting = false, .code = "ZZZZ", .server = "wss://fake", .open = openerOf(server)}};
+  RoomSession guest{{.hosting = false,
+                     .listed = false,
+                     .code = "ZZZZ",
+                     .server = "wss://fake",
+                     .open = openerOf(server)}};
   CHECK(guest.code() == "ZZZZ");
   wrong.failWith(PeerFailure::WrongCode);
   guest.observe(wrong);
@@ -234,8 +242,11 @@ TEST_CASE(
   link.code = signal.roomCode();
   link.token = "stolen";
   link.found = true;
-  RoomSession forged{
-      {.hosting = true, .code = {}, .server = "wss://fake", .open = openerOf(server)}};
+  RoomSession forged{{.hosting = true,
+                      .listed = true,
+                      .code = {},
+                      .server = "wss://fake",
+                      .open = openerOf(server)}};
   forged.observe(link);
   forged.markReady(true);
   CHECK(forged.phase() == RoomPhase::Ready);
@@ -256,7 +267,11 @@ TEST_CASE(
   quiet.code = privately.roomCode();
   quiet.found = true;
   const std::size_t opened = server.opened.size();
-  RoomSession room{{.hosting = true, .code = {}, .server = "wss://fake", .open = openerOf(server)}};
+  RoomSession room{{.hosting = true,
+                    .listed = false,
+                    .code = {},
+                    .server = "wss://fake",
+                    .open = openerOf(server)}};
   room.observe(quiet);
   room.markReady(true);
   room.markPlaying();
@@ -272,12 +287,109 @@ TEST_CASE(
   FakeLink open;
   open.code = lonely.roomCode();
   open.token = lonely.roomToken();
-  RoomSession waiting{
-      {.hosting = true, .code = {}, .server = "wss://fake", .open = openerOf(server)}};
+  RoomSession waiting{{.hosting = true,
+                       .listed = true,
+                       .code = {},
+                       .server = "wss://fake",
+                       .open = openerOf(server)}};
   waiting.observe(open);
   waiting.close();
   CHECK(waiting.sentNotices().empty());
   CHECK(roomPhaseName(RoomPhase::Ready) == "ready");
+}
+
+TEST_CASE("a public room's host repeats its state every minute while the room lasts (#416)") {
+  FakeSignalServer server;
+  SignalClient signal{server.open(hostUrl("wss://fake", true))};
+  signal.poll();
+  FakeLink link;
+  link.code = signal.roomCode();
+  link.token = signal.roomToken();
+  RoomSession room{{.hosting = true,
+                    .listed = true,
+                    .code = {},
+                    .server = "wss://fake",
+                    .open = openerOf(server)}};
+  room.observe(link);
+  // Open: the room's own socket keeps its entry, nothing is repeated.
+  room.poll(Millis{0});
+  room.poll(RoomRefreshEvery * 3);
+  CHECK(server.notices.empty());
+  SignalClient guest{server.open(joinUrl("wss://fake", "K7Q2"))};
+  link.found = true;
+  room.observe(link);
+  Millis now = RoomRefreshEvery * 3;
+  room.poll(now);
+  room.poll(now + RoomRefreshEvery - Millis{1});
+  CHECK(server.notices.empty());
+  room.poll(now + RoomRefreshEvery);
+  CHECK(server.notices == std::vector<std::string>{"K7Q2 connected"});
+  room.markPlaying();
+  now += RoomRefreshEvery * 2;
+  room.poll(now);
+  room.poll(now + RoomRefreshEvery);
+  room.poll(now + RoomRefreshEvery * 2);
+  CHECK(server.notices ==
+        std::vector<std::string>{"K7Q2 connected", "K7Q2 playing", "K7Q2 playing", "K7Q2 playing"});
+  room.close();
+  room.poll(now + RoomRefreshEvery * 5);
+  CHECK(server.notices.back() == "K7Q2 closed");
+  CHECK(server.notices.size() == 5);
+
+  // A server that predates the «connected» notice refuses it once and hears no more of it.
+  FakeSignalServer older;
+  older.takesConnected = false;
+  SignalClient oldSignal{older.open(hostUrl("wss://fake", true))};
+  oldSignal.poll();
+  FakeLink oldLink;
+  oldLink.code = oldSignal.roomCode();
+  oldLink.token = oldSignal.roomToken();
+  oldLink.found = true;
+  RoomSession oldRoom{{.hosting = true,
+                       .listed = true,
+                       .code = {},
+                       .server = "wss://fake",
+                       .open = openerOf(older)}};
+  oldRoom.observe(oldLink);
+  for (int minute = 0; minute <= 5; ++minute) {
+    oldRoom.poll(RoomRefreshEvery * minute);
+  }
+  CHECK(oldRoom.noticeError() == "bad-state");
+  CHECK(older.notices.empty());
+  oldRoom.markReady(true);
+  oldRoom.poll(RoomRefreshEvery * 6);
+  oldRoom.poll(RoomRefreshEvery * 7);
+  CHECK(older.notices == std::vector<std::string>{"K7Q2 ready", "K7Q2 ready"});
+}
+
+TEST_CASE("a private room of more than two seats has a token for its seats but tells nothing") {
+  FakeSignalServer server;
+  SignalClient signal{server.open(hostUrl("wss://fake", false, 4))};
+  signal.poll();
+  REQUIRE_FALSE(signal.roomToken().empty());
+  FakeLink link;
+  link.code = signal.roomCode();
+  link.token = signal.roomToken();
+  link.found = true;
+  const std::size_t opened = server.opened.size();
+  RoomSession room{{.hosting = true,
+                    .listed = false,
+                    .code = {},
+                    .server = "wss://fake",
+                    .open = openerOf(server)}};
+  room.observe(link);
+  CHECK(room.phase() == RoomPhase::Connected);
+  CHECK_FALSE(room.listed());
+  room.markPlaying();
+  for (int minute = 0; minute <= 3; ++minute) {
+    room.poll(RoomRefreshEvery * minute);
+  }
+  room.close();
+  room.poll(RoomRefreshEvery * 4);
+  CHECK(server.notices.empty());
+  CHECK(room.sentNotices().empty());
+  CHECK(room.noticeError().empty());
+  CHECK(server.opened.size() == opened);
 }
 
 TEST_CASE("relay only fails at once without a relay, and with one it uses no direct route") {
@@ -326,8 +438,11 @@ TEST_CASE(
   auto host = RtcPeerLink::host(
       settings, openerOf(server),
       PublicHost{.name = "Mika", .icon = "egg", .compat = "k", .mode = "campaign"});
-  RoomSession hostRoom{
-      {.hosting = true, .code = {}, .server = "wss://fake", .open = openerOf(server)}};
+  RoomSession hostRoom{{.hosting = true,
+                        .listed = true,
+                        .code = {},
+                        .server = "wss://fake",
+                        .open = openerOf(server)}};
   host->poll(Millis{0});
   hostRoom.observe(*host);
   REQUIRE(hostRoom.phase() == RoomPhase::Open);

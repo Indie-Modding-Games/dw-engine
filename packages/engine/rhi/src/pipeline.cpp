@@ -3,6 +3,7 @@
 #include <dwe/rhi/pipeline.hpp>
 
 #include <array>
+#include <chrono>
 #include <format>
 #include <string>
 #include <utility>
@@ -173,6 +174,7 @@ core::Result<GraphicsPipeline> GraphicsPipeline::create(Device& device, const Bi
     return std::unexpected{valid.error()};
   }
   const VkDevice gpu = device.nativeHandles().device;
+  const VkPipelineCache cache = device.pipelineCache();
   if (device.lost()) {
     return core::fail(std::format("{}: the GPU device was lost", desc.name));
   }
@@ -307,21 +309,22 @@ core::Result<GraphicsPipeline> GraphicsPipeline::create(Device& device, const Bi
                          VkPipeline& multisampledPipeline) {
     pipelineInfo.flags = flags;
     multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-    VkResult status = gpuCheck(
-        "vkCreateGraphicsPipelines",
-        vkCreateGraphicsPipelines(gpu, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &single));
+    VkResult status =
+        gpuCheck("vkCreateGraphicsPipelines",
+                 vkCreateGraphicsPipelines(gpu, cache, 1, &pipelineInfo, nullptr, &single));
     if (status == VK_SUCCESS && desc.multisampled > 1) {
       // The same pipeline for multisampled targets: only the rasterization's sample count differs.
       multisample.rasterizationSamples = static_cast<VkSampleCountFlagBits>(desc.multisampled);
-      status = gpuCheck("vkCreateGraphicsPipelines (multisampled)",
-                        vkCreateGraphicsPipelines(gpu, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
-                                                  &multisampledPipeline));
+      status = gpuCheck(
+          "vkCreateGraphicsPipelines (multisampled)",
+          vkCreateGraphicsPipelines(gpu, cache, 1, &pipelineInfo, nullptr, &multisampledPipeline));
     }
     return status;
   };
 
   VkPipeline single = VK_NULL_HANDLE;
   VkPipeline multisampledPipeline = VK_NULL_HANDLE;
+  const auto started = std::chrono::steady_clock::now();
   VkResult result = build(0, single, multisampledPipeline);
   if (result != VK_SUCCESS && !device.lost()) {
     // Some drivers fail while optimizing a shader: a slower pipeline beats not starting.
@@ -339,6 +342,10 @@ core::Result<GraphicsPipeline> GraphicsPipeline::create(Device& device, const Bi
     result = build(VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT, single, multisampledPipeline);
   }
   vkDestroyShaderModule(gpu, module, nullptr);
+  core::logDebug(
+      "pipeline '{}' built in {:.1f} ms", desc.name,
+      std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started)
+          .count());
   if (result != VK_SUCCESS) {
     return core::fail(std::format("{}: could not create the pipeline (Vulkan error {})", desc.name,
                                   static_cast<int>(result)));

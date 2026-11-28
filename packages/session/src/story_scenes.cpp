@@ -223,6 +223,12 @@ private:
     case PartnerScene::SicknessLostLife:
     case PartnerScene::BattleLostLife:
       scenes_->deathPending = false;
+      if (scene != PartnerScene::Dying && scenes_->session != nullptr &&
+          scenes_->session->partner().surviveLostLife()) {
+        core::logWarning("[port:death] MURD_tick (murd.c:756): the partner was counted dead with "
+                         "{} lives left; it lives on after its lost life",
+                         scenes_->session->partner().state().life.lives);
+      }
       scenes_->dying = scenes_->session != nullptr && !scenes_->session->partner().alive();
       break;
     case PartnerScene::LostAllLives:
@@ -487,8 +493,9 @@ void StoryScenes::askForDeath(const GameSession& session) {
       game::story::RequestOutcome::Accepted) {
     return;
   }
+  // The partner counts as dying once the section starts its scene (PARTNER_STATE 8): until then
+  // tickDeathCondition calls the section again, as when a map entry drops it before it starts.
   scenes.deathPending = false;
-  scenes.dying = !session.partner().alive();
   if (auto cleared = scenes.state().setVariable(death.clearedVariable, 0); !cleared) {
     core::logWarning("{}", cleared.error().message);
   }

@@ -2,6 +2,7 @@
 
 #include <dwe/assets/entry_class.hpp>
 #include <dwe/core/error.hpp>
+#include <dwe/game/battle/folder/rules.hpp>
 #include <dwe/ruleset/ruleset.hpp>
 
 #include <array>
@@ -478,6 +479,8 @@ struct BattleRules {
   std::optional<VersusRules> versus;
   // None in a ruleset without co-op scaling: co-op battles keep the original numbers.
   std::optional<CoopScalingRules> coopScaling;
+  // None in a ruleset without the Folder battle.
+  std::optional<FolderRules> folder;
   ruleset::Quirks quirks;
   EffectRules effects;
 };

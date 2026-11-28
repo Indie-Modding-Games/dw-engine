@@ -318,6 +318,69 @@ TEST_CASE("training check: the dump's meditation lets the clip carry the partner
   check("gomi02", "mp", {.maxPath = carried(1200), .maxOffset = carried(1200), .gains = Stat::Mp});
 }
 
+namespace {
+
+// Frames the clock ran over a whole town gym boulder session; a skipped one cancels on frame one.
+std::int64_t clockOverCourse(dwe::session::ClockShare share, bool skipped) {
+  const TestPacks packs;
+  auto gym = std::make_unique<dwe::session::GymAdapter>();
+  const dwe::session::GymAdapter& adapter = *gym;
+  std::vector<std::unique_ptr<dwe::session::SessionSystem>> systems;
+  systems.push_back(std::move(gym));
+  const auto session = newGameWith(packs, std::move(systems));
+  session->shareClock(share);
+  const dwe::game::gym::GymRules& rules = adapter.rules();
+  const CourseRules& course = courseOf(rules, "trai00", "hp");
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("trai00"), {.position = dwe::session::gymWorldOf(course.spot, 0.0F)});
+  session->attachField(field);
+  for (int tick = 0; tick < 120; ++tick) {
+    field.tick(static_cast<float>(Tick));
+    session->tick(Tick);
+  }
+  FieldPorts ports{{.session = session.get(), .field = &field, .rules = &rules}};
+  CourseRun run{rules, course, false};
+  const double frameSeconds = 1.0 / session->clock().rules().framesPerSecond;
+  const std::int64_t before = session->clock().elapsedFrames();
+  field.holdForScript(true);
+  for (int tick = 0; tick < MaxTicks && !run.finished(); ++tick) {
+    const bool counting = run.record().award.has_value();
+    const bool skip = skipped && !counting && run.record().frames > 0;
+    run.tick(ports, Tick, frameSeconds,
+             GymInput{.confirm = counting && tick % ConfirmEvery == 0, .cancel = skip});
+    field.tick(static_cast<float>(Tick));
+    session->tick(Tick);
+  }
+  field.holdForScript(false);
+  REQUIRE(run.finished());
+  const std::int64_t ran = session->clock().elapsedFrames() - before;
+  session->detachField();
+  return ran;
+}
+
+} // namespace
+
+TEST_CASE("training check: alone a course stands the clock still and its award jumps one hour") {
+  for (const bool skipped : {false, true}) {
+    CAPTURE(skipped);
+    CHECK(clockOverCourse(dwe::session::ClockShare::Own, skipped) == 1200);
+  }
+}
+
+TEST_CASE("training check: in co-op a course lasts at least the world's hour it costs") {
+  // A skipped session waits for the rest of its hour; a whole one (1200 frames) is already an hour.
+  for (const auto share : {dwe::session::ClockShare::Host, dwe::session::ClockShare::Guest}) {
+    for (const bool skipped : {false, true}) {
+      CAPTURE(static_cast<int>(share));
+      CAPTURE(skipped);
+      const std::int64_t ran = clockOverCourse(share, skipped);
+      CHECK(ran >= 1200);
+      CHECK(ran <= 1300);
+    }
+  }
+}
+
 TEST_CASE("training check: every course of the game pack has its check here") {
   const TestPacks packs;
   auto gym = std::make_unique<dwe::session::GymAdapter>();

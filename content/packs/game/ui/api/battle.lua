@@ -69,6 +69,7 @@ function battle.state()
     revive_seconds = seconds("battle.revive_seconds"),
     match_seconds = match,
     cup = match ~= nil,
+    helper = ui.setting("coop_battle.shown") == true and ui.setting("coop_battle.role") == "helper",
   }
 end
 
@@ -85,33 +86,47 @@ local function fighters_of(list)
       max_mp = whole(entry(list, index, "max_mp")),
       fainted = value(entry(list, index, "fainted"), false),
       hp_bar = value(entry(list, index, "hp_bar"), false),
+      id = whole(entry(list, index, "id")),
+      tag = value(entry(list, index, "tag"), ""),
+      targeted = value(entry(list, index, "targeted"), false),
+      queued = value(entry(list, index, "queued"), false),
     }
     -- Only an ally's card has its revive countdown (the partner's is battle.state's).
     if ui.setting(entry(list, index, "revive_seconds")) ~= nil then
       found[index + 1].revive_seconds = seconds(entry(list, index, "revive_seconds"))
+    end
+    if list == "battle.ally" then
+      found[index + 1].order_key = value(entry(list, index, "order"), "")
+      found[index + 1].throw_target = value(entry(list, index, "throw_target"), false)
     end
   end
   return found
 end
 
 -- The fighters, the partner first, then the enemies: name_key, status_key (its status effect's
--- text key, or ""), hp, max_hp, mp, max_mp, fainted and hp_bar (whether its HP bar shows now: the
--- partner's always, an enemy's a while after it takes damage). In a co-op battle the partner is
--- this player's own.
+-- text key, or ""), hp, max_hp, mp, max_mp, fainted, hp_bar (whether its HP bar shows now: the
+-- partner's always, an enemy's a while after it takes damage), id (its number, as battle.hp_bars
+-- names an enemy), tag (a foe's letter when another foe is of its species, else "") and, in a
+-- Folder battle, targeted and queued (the next orders, or an order, aim at it). In a co-op battle
+-- the partner is this player's own.
 function battle.fighters()
   return fighters_of("battle.fighter")
 end
 
 -- The other players' partners fighting beside this player's in a co-op battle, with the same
--- fields as battle.fighters and revive_seconds (a fallen ally's countdown, or nil); empty in any
--- other battle.
+-- fields as battle.fighters, revive_seconds (a fallen ally's countdown, or nil), order_key (the
+-- text key of its current command, Folder move or stance) and throw_target (a guest's next item
+-- flies to it); empty in any other battle.
 function battle.allies()
   return fighters_of("battle.ally")
 end
 
 -- The command strip in the game's order, the finisher first: command (the number battle.command
 -- takes), label_key, icon (its icon in the skins' sheets, "" for the finisher), available (it can
--- be given now), current (the partner follows it now) and mp_cost (a technique's MP now, else 0).
+-- be given now), current (the partner follows it now), mp_cost (a technique's MP now, else 0) and
+-- problem_key (in a Folder battle, the text key of why a move cannot be ordered now, or ""), area
+-- and friendly_fire (in a Folder battle, the technique's area: "around_self", "around_target",
+-- "global" or "" for one target, and whether it also hits allies).
 function battle.commands()
   local list = {}
   for index = 0, whole("battle.menu.count") - 1 do
@@ -122,9 +137,61 @@ function battle.commands()
       available = value(entry("battle.menu", index, "available"), false),
       current = value(entry("battle.menu", index, "current"), false),
       mp_cost = whole(entry("battle.menu", index, "mp_cost")),
+      problem_key = value(entry("battle.menu", index, "problem"), ""),
+      area = value(entry("battle.menu", index, "area"), ""),
+      friendly_fire = value(entry("battle.menu", index, "friendly_fire"), false),
     }
   end
   return list
+end
+
+-- The Folder battle's HUD (docs/architecture/folder-battle.md): active (the battle is a Folder one:
+-- its strip gives orders and stances, battle.commands()), move_key (the active order's move, or
+-- ""), phase ("processing", "positioning", "preparing", "executing", "recovering", or ""),
+-- phase_percent (how far a timed phase is), queue (the waiting orders' move keys, the next first),
+-- queue_targets (the name key of each waiting order's foe, or "") and queue_tags (their letters),
+-- active_target_key and active_tag (the active order's foe), committed (its technique has thrown
+-- what lands: a hit no longer stops it), target_key and target_tag (the foe Change picked), stance
+-- (the one it moves by now), bar and bar_max (the partner's defense bar: full, its defense breaks),
+-- broken and broken_seconds, and notice (for a few seconds after an order ends other than done:
+-- key, how it ended; move_key; reason_key, why, or ""; by_key, the move that replaced it, or "";
+-- nil otherwise).
+function battle.folder()
+  local queue, queue_targets, queue_tags = {}, {}, {}
+  for index = 0, whole("battle.folder.queue.count") - 1 do
+    queue[index + 1] = value(entry("battle.folder.queue", index, "move"), "")
+    queue_targets[index + 1] = value(entry("battle.folder.queue", index, "target"), "")
+    queue_tags[index + 1] = value(entry("battle.folder.queue", index, "tag"), "")
+  end
+  local notice = nil
+  if value("battle.folder.notice", "") ~= "" then
+    notice = {
+      key = value("battle.folder.notice", ""),
+      move_key = value("battle.folder.notice_move", ""),
+      reason_key = value("battle.folder.notice_reason", ""),
+      by_key = value("battle.folder.notice_by", ""),
+    }
+  end
+  return {
+    active = value("battle.folder.active", false),
+    move_key = value("battle.folder.move", ""),
+    phase = value("battle.folder.phase", ""),
+    phase_percent = whole("battle.folder.phase_percent"),
+    committed = value("battle.folder.committed", false),
+    active_target_key = value("battle.folder.active_target", ""),
+    active_tag = value("battle.folder.active_tag", ""),
+    queue = queue,
+    queue_targets = queue_targets,
+    queue_tags = queue_tags,
+    stance = value("battle.folder.stance", ""),
+    broken_seconds = whole("battle.folder.broken_seconds"),
+    target_tag = value("battle.folder.target_tag", ""),
+    bar = whole("battle.folder.bar"),
+    bar_max = whole("battle.folder.bar_max"),
+    broken = value("battle.folder.broken", false),
+    target_key = value("battle.folder.target", ""),
+    notice = notice,
+  }
 end
 
 -- The finisher's gauge: progress of goal, ready (full), charging (its aura: each battle.charge()
@@ -260,6 +327,22 @@ function battle.markers()
       fighter = math.floor(values[base + 1]),
       x = values[base + 2],
       y = values[base + 3],
+    }
+  end
+  return list
+end
+
+-- The stun signs the field draws over the fighters: each {left, top, width, height} in percent of
+-- the window.
+function battle.stun_signs()
+  local values = numbers("battle.stun_signs")
+  local list = {}
+  for base = 0, #values - 4, 4 do
+    list[#list + 1] = {
+      left = values[base + 1],
+      top = values[base + 2],
+      width = values[base + 3],
+      height = values[base + 4],
     }
   end
   return list

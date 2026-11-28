@@ -65,6 +65,7 @@ care.praise: "Felicitar"
 care.scold: "Regañar"
 care.feed_hint: "Para dar de comer a tu compañero, usa comida de la bolsa."
 care.training_hint: "Se entrena en los lugares de entrenamiento del campo."
+throw_target_hint: "Elegir compañero"
 care_result.praised: "Has felicitado a tu compañero."
 care_result.scolded: "Has regañado a tu compañero."
 

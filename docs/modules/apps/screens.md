@@ -96,6 +96,7 @@ puts it on the partner's node 1 as it looked when it appeared. `BattleScreen` pu
 | Setting | Value | What it is |
 |---|---|---|
 | `battle.death_countdown` | text | Empty if it is not visible; otherwise, seven values: x and y of the anchor in % of the window, the digit (5 to 1), the digit's scale and the star's (1 as is), the rotation in degrees and the star's palette (0 to 2) |
+| `battle.stun_signs` | text | Empty without a stunned fighter; otherwise four values per stun sign the field draws over a fighter: left, top, width and height in % of the window (the sign is 40 x 44 pixels of the original's 240-line screen over the foot of its post). The battle document keeps the enemies' bars off them |
 
 | Rule | Decomp | Here | Test | Status |
 |---|---|---|---|---|

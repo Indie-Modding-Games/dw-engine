@@ -8,6 +8,7 @@
 #include <dwe/session/versus_match.hpp>
 
 #include <chrono>
+#include <thread>
 #include <utility>
 
 #include "coop_guest_profile.hpp"
@@ -209,13 +210,14 @@ void CoopScreen::type(std::string_view text, bool enter) {
 }
 
 void CoopScreen::tick(double nowSeconds) {
+  constexpr double MillisPerSecond = 1000.0;
+  const net::Millis now{static_cast<std::int64_t>(nowSeconds * MillisPerSecond)};
   if (connection_.link() == nullptr || connection_.view() == CoopConnection::View::Closed) {
-    // A room that just closed may still be telling the directory.
-    connection_.pollRoom();
+    // A room that just closed may still be saying goodbye and telling the directory.
+    connection_.settle(now);
     return;
   }
-  constexpr double MillisPerSecond = 1000.0;
-  connection_.tick(net::Millis{static_cast<std::int64_t>(nowSeconds * MillisPerSecond)});
+  connection_.tick(now);
   if (isHost_) {
     followGuests();
   }
@@ -740,6 +742,17 @@ void CoopScreen::leave() {
   remoteJoinState_.reset();
   remoteStartText_.reset();
   publish();
+}
+
+void CoopScreen::shutDown(const std::function<double()>& now, double budgetSeconds) {
+  constexpr double MillisPerSecond = 1000.0;
+  constexpr auto Step = std::chrono::milliseconds{10};
+  connection_.close();
+  const double end = now() + budgetSeconds;
+  while (!connection_.settled() && now() < end) {
+    connection_.settle(net::Millis{static_cast<std::int64_t>(now() * MillisPerSecond)});
+    std::this_thread::sleep_for(Step);
+  }
 }
 
 std::string CoopScreen::error() const {

@@ -31,7 +31,10 @@ struct TaskMapChange {
   MapChangeWait change;
 };
 
-using TaskStep = std::variant<TaskRunning, TaskDone, TaskJump, TaskMapChange>;
+// The task ends the script where it stands, as end_section does.
+struct TaskEnded {};
+
+using TaskStep = std::variant<TaskRunning, TaskDone, TaskJump, TaskMapChange, TaskEnded>;
 
 class StoryTask {
 public:

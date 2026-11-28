@@ -802,7 +802,7 @@ others fail with a clear error until someone fills in their addresses from the d
 | `packages/engine/ruleset/include/dwe/ruleset/game_clock.hpp: ClockRules` | 20 fps, 20 frames per minute, 30 days, 100 years, 8:00 | a | Repeats `clock.yaml` as default values. |
 | `packages/game/field/include/dwe/game/field/rules.hpp:27-29` | default radius and walk and run speeds | **b** | D11. "Decided by the coordinator (2026-10-21)": values of a species; the header enters the D11 step of the migration. |
 | `packages/game/field/include/dwe/game/field/rules.hpp` (the rest) | distances in radii, fades, hours of the day, default lights | a | Repeats the (a) part of `field/rules.yaml`. |
-| `packages/game/battle` (`combatant.hpp`, `state.hpp`, `moves.hpp`, `rules.hpp`, `battle.hpp`, `movement.cpp`, `targeting.cpp`, `original_partner_ai.cpp`, `fighter_actions.cpp`, `ai_ticks.cpp`) | 3 + 1 slots, 16 techniques per species, animation 0x2E, numbering of commands, technique bits, 7 specialties, sentinels | a | Structure and mechanic. |
+| `packages/game/battle` (`combatant.hpp`, `state.hpp`, `moves.hpp`, `rules.hpp`, `battle.hpp`, `movement.cpp`, `targeting.cpp`, `original_partner_ai.cpp`, `fighter_actions.cpp`, `enemy_decisions.cpp`, `move_plans.cpp`) | 3 + 1 slots, 16 techniques per species, animation 0x2E, numbering of commands, technique bits, 7 specialties, sentinels | a | Structure and mechanic. |
 | `packages/game/partner/src/poop_piles.cpp`, `packages/game/field/src/field.cpp` | orientation bands | a | Mechanic. |
 | `packages/game/evolution/include/dwe/game/evolution/tables.hpp` | requirement sentinel and bits 0x01/0x10 | a | Format. |
 | `packages/screens/src/partner_status_view.cpp`, `bag_view.cpp`; `apps/game/src/field_scene.cpp` | bar caps 999 and 9999, color 255, ambient light 0.5 | a | Presentation mechanic. |
@@ -827,9 +827,9 @@ others fail with a clear error until someone fills in their addresses from the d
 | `packages/game/evolution/tests/rules_tests.cpp:41, 54-55, 60, 65` | sizes of the lists | a | Sizes only. |
 | `packages/game/evolution/tests/specials_tests.cpp:53-142` | targets and sources of the special evolutions | **b** | Repeats (b) values (D1). |
 | `packages/game/evolution/tests/effects_tests.cpp:141` | the four rebirth species | **b** | Repeats (b) values. |
-| `packages/game/battle/tests/rules_tests.cpp:17` | a cell of `TYPE_FACTORS` | **b** | Repeats (b) values (D3). |
-| `packages/game/battle/tests/rules_tests.cpp:99-100` | that one technique has a boost and another a pair | a | Existence and size only. |
-| `packages/game/battle/tests/battle_tests.cpp:413` | a pair of techniques that are learned together | **b** | Repeats (b) values. |
+| `packages/game/battle/tests/rules/rules_tests.cpp:17` | a cell of `TYPE_FACTORS` | **b** | Repeats (b) values (D3). |
+| `packages/game/battle/tests/rules/rules_tests.cpp:99-100` | that one technique has a boost and another a pair | a | Existence and size only. |
+| `packages/game/battle/tests/core/battle_tests.cpp:419` | a pair of techniques that are learned together | **b** | Repeats (b) values. |
 | `packages/game/inventory/tests/rules_tests.cpp:55` | size of `sortOrders` | a | Size only. |
 | `packages/game/inventory/tests/effects_tests.cpp:32-33, 42, 44, 48, 54, 84` | double floppy, cures, revive, disk and script section | **b** | Repeats (b) values (D6 and per-item effects). |
 | `packages/game/partner/tests/sleep_tests.cpp:20-21, 31` | `SleepyHour` and `WakeHour` (a schedule of `SLEEP_PATTERN`) and its awake hours; they are checked at :29-30, :59, :85, :88 and :91, and the rest of the file plays until `SleepyHour` | **b** | Repeats (b) values (D3). |
@@ -850,10 +850,10 @@ others fail with a clear error until someone fills in their addresses from the d
 | `packages/game/inventory/tests/bag_tests.cpp:114-129` | two orders of `ITEM_SORT_ORDER`, in comments and in the expected order | **b** | Repeats (b) values (D3). |
 | `packages/session/tests/inventory_adapter_tests.cpp:162-171` | an item of `refusal.never_taken` | **b** | Repeats (b) values (D5). |
 | `packages/session/tests/inventory_adapter_tests.cpp:173-190` | the acceptance level of a fixed-evolution item (`refusal.fixed_level_evolutions`) | **b** | Repeats (b) values. |
-| `packages/game/battle/tests/battle_tests.cpp:239-245, 349-354` | a technique of `moves.buffs` and its boost percentage | **b** | Repeats (b) values. |
-| `packages/game/battle/tests/battle_tests.cpp:433-436` | the map of `rewards.no_drop_maps` | **b** | Repeats (b) values. |
-| `packages/game/battle/tests/battle_tests.cpp:250-260` | the expected damage range, which comes from a diagonal cell of `TYPE_FACTORS` | **b** | Repeats (b) values (D3). |
-| `packages/game/battle/tests/battle_tests.cpp:448-457` | how many enemies join, which comes from two cells of `FLEE_CHANCES` | **b** | Repeats (b) values (D3). |
+| `packages/game/battle/tests/core/battle_tests.cpp:245-251, 355-360` | a technique of `moves.buffs` and its boost percentage | **b** | Repeats (b) values. |
+| `packages/game/battle/tests/core/battle_tests.cpp:439-442` | the map of `rewards.no_drop_maps` | **b** | Repeats (b) values. |
+| `packages/game/battle/tests/core/battle_tests.cpp:256-266` | the expected damage range, which comes from a diagonal cell of `TYPE_FACTORS` | **b** | Repeats (b) values (D3). |
+| `packages/game/battle/tests/core/battle_tests.cpp:454-463` | how many enemies join, which comes from two cells of `FLEE_CHANCES` | **b** | Repeats (b) values (D3). |
 | `packages/game/field/tests/rules_tests.cpp:150-152` | the script warp: how many there are, its trigger and its exit | **b** | Repeats (b) values (D10). |
 
 ---

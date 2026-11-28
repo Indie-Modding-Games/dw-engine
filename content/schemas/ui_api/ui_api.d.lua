@@ -1,5 +1,5 @@
 ---@meta
--- The UI API 0.32.0 (docs/modding/ui-api.md) for the Lua language server. The game
+-- The UI API 0.37.0 (docs/modding/ui-api.md) for the Lua language server. The game
 -- tests write it with DWE_WRITE_API_DOC=1: do not edit it by hand.
 
 ui = {}
@@ -471,11 +471,11 @@ function options.locked(name) end
 
 battle = {}
 
---- The battle: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds and match_seconds (or nil) and cup (a cup battle).
+--- The battle: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds and match_seconds (or nil), cup (a cup battle) and helper (a co-op guest whose partner is not in the fight: no orders, its finisher key cheers).
 ---@return table
 function battle.state() end
 
---- The fighters, the partner first: name_key, status_key, hp, max_hp, mp, max_mp, fainted and hp_bar.
+--- The fighters, the partner first: name_key, status_key, hp, max_hp, mp, max_mp, fainted, hp_bar, id, tag, targeted and queued.
 ---@return table
 function battle.fighters() end
 
@@ -483,13 +483,17 @@ function battle.fighters() end
 ---@return table
 function battle.allies() end
 
---- The command strip, the finisher first: command, label_key, icon, available, current and mp_cost.
+--- The command strip, the finisher first: command, label_key, icon, available, current, mp_cost, problem_key (folder battle: why the move cannot be ordered now, or ""), area and friendly_fire (folder battle: the technique's area, "" for one target, and whether it hits allies).
 ---@return table
 function battle.commands() end
 
 --- The finisher: progress, goal, ready, charging (the aura), charge (as a percentage) and gauge (the charge gauge's top-left corner over the partner: x, y as percentages, or nil).
 ---@return table
 function battle.finisher() end
+
+--- The folder battle's order panel: active, move_key, phase, phase_percent, committed, active_target_key, active_tag, queue (move keys), queue_targets (their foes' name keys), queue_tags, target_key, target_tag, stance, bar, bar_max, broken, broken_seconds and notice (an order that just ended other than done: key, move_key, reason_key, by_key; or nil).
+---@return table
+function battle.folder() end
 
 --- Where the strip and the partner's bars are when entering and leaving: top, bottom, blink, hp_x and mp_x (or nil).
 ---@return table
@@ -510,6 +514,10 @@ function battle.hp_bars() end
 --- The 1P and COM markers: fighter (0 the partner, 1 the rival), x and y (percentage).
 ---@return table
 function battle.markers() end
+
+--- The stun signs over the fighters: left, top, width and height (percentage).
+---@return table
+function battle.stun_signs() end
 
 --- The countdown over the fainted partner (x, y, digit, digit_scale, badge_scale, turn, palette), or nil.
 ---@return table?

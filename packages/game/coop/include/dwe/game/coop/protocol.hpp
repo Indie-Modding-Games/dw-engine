@@ -32,8 +32,10 @@ inline constexpr std::size_t MaxPlayers = 4;
 // and whether it takes new players, and the refusal of a room closed to them (#352, #356). 11: the
 // world's clock, the host's, told to every guest, and who of the players trains (#365). 12: the
 // items thrown in a battle in its frames (the guest's screen draws them) and the host's co-op
-// difficulty in the lobby (#351, #361, #352).
-inline constexpr std::uint32_t ProtocolVersion = 12;
+// difficulty in the lobby (#351, #361, #352). 13: the folder battle mode. 14: world ask
+// revisions, scripted clips, held partners, partner forms and map NPCs in the snapshots, NPC
+// events per player. 15: the host's poop piles and the guests' battle HUD.
+inline constexpr std::uint32_t ProtocolVersion = 15;
 
 [[nodiscard]] constexpr bool validPlayer(PlayerId id) {
   return id < MaxPlayers;
@@ -45,6 +47,8 @@ inline constexpr std::uint32_t ProtocolVersion = 12;
 // A worst-case 255-byte map id plus 48 entities fits in one 1200-byte unreliable datagram,
 // including ChannelPeerLink's one-byte lane tag. JoinState travels reliably and can carry more.
 inline constexpr std::size_t MaxSnapshotEntities = 48;
+// A map NPC's id in the snapshots is this plus its slot; the players' and partners' stay under it.
+inline constexpr std::uint16_t NpcNetworkBase = 0x100;
 inline constexpr std::size_t MaxJoinEntities = 128;
 inline constexpr std::int32_t MaxWorldCoordinate = 1'000'000;
 inline constexpr std::int32_t MaxViewCoordinate = 1'000'000;
@@ -127,6 +131,15 @@ struct Commands {
 enum class Motion : std::uint8_t { Idle, Walk, Run };
 enum class EntityRole : std::uint8_t { Player, Partner, Npc };
 
+// A script's clip instead of the motion's: the original's animation id and a start count, so the
+// same clip started again plays again on the other machines.
+struct ActionClip {
+  std::uint16_t clip = 0;
+  std::uint8_t starts = 0;
+
+  friend bool operator==(const ActionClip&, const ActionClip&) = default;
+};
+
 // Positions are signed integral world units and yaw covers one turn in 16 bits. Quantization is
 // part of the protocol so the host and guests do not exchange native floats.
 struct EntityState {
@@ -138,15 +151,19 @@ struct EntityState {
   std::int32_t z = 0;
   std::uint16_t yaw = 0;
   Motion motion = Motion::Idle;
+  std::optional<ActionClip> action = std::nullopt;
 
   friend bool operator==(const EntityState&, const EntityState&) = default;
 };
 
+// `npcsWhole`: every NPC of the map is listed (none, when it has none); false when some were left
+// out to fit the datagram, so a guest takes no missing one for gone.
 struct Snapshot {
   std::string mapId;
   std::uint32_t worldTick = 0;
   std::uint32_t acknowledgedCommand = 0;
   std::vector<EntityState> entities;
+  bool npcsWhole = false;
 
   friend bool operator==(const Snapshot&, const Snapshot&) = default;
 };
@@ -246,17 +263,21 @@ struct BattleAsk {
 
 // Whether the guest's partner is free to join a battle the host starts on its map, and as what
 // fighter (sent when either changes): not while the guest is in a menu, a scene or a battle of its
-// own (docs/architecture/coop-combat.md §3).
+// own (docs/architecture/coop-combat.md §3). `partnerDying` blocks co-op battles on its map.
 struct BattleOffer {
   bool available = false;
   BattleFighterProfile fighter;
+  bool partnerDying = false;
 
   friend bool operator==(const BattleOffer&, const BattleOffer&) = default;
 };
 
 // A battle began on the host: who started it (that player's partner fights), the guest's ask it
 // answers (0 when the host started it), the map, the NPC slot of each enemy, each fighter's
-// species (the partner's first, then the enemies', then the allies') and the player of each ally.
+// species (the partner's first, then the enemies', then the allies'), the player of each ally and
+// whether it plays the Folder battle system. `moves` holds each fighter's equipped move ids in the
+// same order ("" for an empty place, all empty for an enemy); none from an older host.
+using BattleMoveIds = std::array<std::string, 4>;
 struct BattleBegin {
   std::uint32_t battle = 0;
   PlayerId starter = HostPlayerId;
@@ -266,6 +287,8 @@ struct BattleBegin {
   std::vector<std::string> species;
   bool fixedFight = false;
   std::vector<PlayerId> allies;
+  bool folder = false;
+  std::vector<BattleMoveIds> moves{};
 
   friend bool operator==(const BattleBegin&, const BattleBegin&) = default;
 };
@@ -280,6 +303,8 @@ enum class BattleRefusal : std::uint8_t {
   // The host's game could not start it (a screen, a scene or a script holds it, or the start
   // failed): the guest's game runs it solo.
   Failed,
+  // A partner on the host's map dies or waits to be reborn: no battle starts until it is back.
+  PartnerDying,
 };
 
 struct BattleRefused {
@@ -293,7 +318,10 @@ struct BattleRefused {
 enum class BattlePhase : std::uint8_t { Intro, Fight, Victory, End, Closing };
 
 // A fighter's bars: HP and MP, their maxima, whether it is down and, for a partner down, the
-// whole seconds its revive countdown shows (0: none shown).
+// whole seconds its revive countdown shows (0: none shown). `order`: in the Classic battle its
+// command's number, in a Folder battle its active order's move place + 1 (0: none, the row names
+// `stance`). `status` is the game::battle::StatusEffect its row shows; `hpBarShown` follows
+// Battle::hpBarShown.
 struct BattleFighterState {
   std::int32_t hp = 0;
   std::int32_t mp = 0;
@@ -301,6 +329,10 @@ struct BattleFighterState {
   std::int32_t maxMp = 0;
   bool down = false;
   std::uint8_t reviveSeconds = 0;
+  std::uint8_t order = 0;
+  std::uint8_t stance = 0;
+  std::uint8_t status = 0;
+  bool hpBarShown = true;
 
   friend bool operator==(const BattleFighterState&, const BattleFighterState&) = default;
 };
@@ -337,21 +369,71 @@ struct BattleThrow {
 };
 inline constexpr std::size_t MaxBattleThrows = MaxPlayers;
 
+// The Folder battle's orders and plate (docs/architecture/folder-battle.md); an order's target
+// is none when its move needs none.
+inline constexpr std::size_t MaxBattleQueue = 2;
+inline constexpr std::uint8_t LastOrderPhase = 5;
+inline constexpr std::uint8_t LastOrderEnd = 4;
+inline constexpr std::uint8_t LastOrderProblem = 7;
+struct BattleOrderShown {
+  std::uint8_t slot = 0;
+  std::optional<std::uint8_t> target{};
+
+  friend bool operator==(const BattleOrderShown&, const BattleOrderShown&) = default;
+};
+
+// An order that ended other than done (game::battle::OrderNotice): its move place, how and why it
+// ended (OrderEnd, OrderProblem) and the move place of the order that replaced it.
+struct BattleOrderNotice {
+  std::uint8_t slot = 0;
+  std::uint8_t end = 0;
+  std::uint8_t problem = 0;
+  std::optional<std::uint8_t> by{};
+
+  friend bool operator==(const BattleOrderNotice&, const BattleOrderNotice&) = default;
+};
+
+// The Folder plate of a frame's partner (game::battle::FolderFighter as the HUD reads it);
+// `brokenSeconds` is 0 when not broken.
+struct BattleFolderPlate {
+  std::optional<BattleOrderShown> active{};
+  std::uint8_t phase = 0;
+  std::uint8_t phasePercent = 0;
+  bool committed = false;
+  std::vector<BattleOrderShown> queue{};
+  std::optional<std::uint8_t> target{};
+  std::uint8_t stance = 0;
+  std::uint16_t bar = 0;
+  std::uint16_t barMax = 0;
+  std::uint8_t brokenSeconds = 0;
+  std::optional<BattleOrderNotice> notice{};
+
+  friend bool operator==(const BattleFolderPlate&, const BattleFolderPlate&) = default;
+};
+
+enum class BattleOutcome : std::uint8_t { Victory, Fled, Defeat };
+
 // One battle frame as the host shows it (20 a second, unreliable: a lost one is followed by the
 // next). `command` is the current command of the partner the guest commands (the fighting one when
-// it has none in the battle) and `menu` a bit per command the strip offers it now (bit n: battle
-// command n); `bagAvailable` and `finisherCharging` are that partner's too.
+// it has none in the battle) and `menu` the battle command numbers the strip offers it now, in the
+// strip's order; `bagAvailable`, the finisher gauge's progress and goal (0 without a finisher) and
+// the Folder plate (in a Folder battle) are that partner's too; `finisherCharging` is the battle's.
+// `outcome`: how the battle ended, once it has.
 struct BattleFrame {
   std::uint32_t battle = 0;
   std::uint32_t frame = 0;
   BattlePhase phase = BattlePhase::Intro;
   std::uint8_t command = 0;
-  std::uint16_t menu = 0;
+  std::vector<std::uint8_t> menu;
   bool bagAvailable = false;
   bool finisherCharging = false;
   std::vector<BattleFighterState> fighters;
   std::vector<BattleFigure> figures;
   std::vector<BattleThrow> throws;
+  std::uint16_t finisherProgress = 0;
+  std::uint16_t finisherGoal = 0;
+  std::optional<BattleFolderPlate> folder{};
+  std::optional<BattleOutcome> outcome{};
 
   friend bool operator==(const BattleFrame&, const BattleFrame&) = default;
 };
@@ -359,8 +441,19 @@ struct BattleFrame {
 // What the guest does in a battle: with a partner in it, a command of the strip for that partner
 // (`value`, the battle's command number); as its starter the end box's close; in any role an item
 // of its own bag thrown (`item`, an item id; `value` the fighter it flies to plus one, 0 for the
-// thrower's own partner or the fighting one) and a cheer (a press of the finisher's charge).
-enum class BattleActionKind : std::uint8_t { Command, ThrowItem, Cheer, CloseEnd };
+// thrower's own partner or the fighting one) and a cheer (a press of the finisher's charge). In a
+// Folder battle (docs/architecture/folder-battle.md) its partner takes orders instead of commands:
+// an order (`value`, battleOrderValue's slot and target) and a stance (`value`, the Stance).
+enum class BattleActionKind : std::uint8_t { Command, ThrowItem, Cheer, CloseEnd, Order, Stance };
+
+// An order's slot and target in one value: (target + 1) x OrderSlots + slot, target 0 for none.
+inline constexpr std::int32_t OrderSlots = 4;
+inline constexpr std::int32_t LastStance = 3;
+inline constexpr std::uint8_t LastBattleStatus = 4;
+[[nodiscard]] constexpr std::int32_t battleOrderValue(std::int32_t slot,
+                                                      std::optional<std::int32_t> target) {
+  return ((target ? *target + 1 : 0) * OrderSlots) + slot;
+}
 
 struct BattleAction {
   std::uint32_t battle = 0;
@@ -370,8 +463,6 @@ struct BattleAction {
 
   friend bool operator==(const BattleAction&, const BattleAction&) = default;
 };
-
-enum class BattleOutcome : std::uint8_t { Victory, Fled, Defeat };
 
 // What the battle left the visiting partner (game::battle::BattleResult's partner side), for the
 // guest's game to apply to it: HP and MP at the end, the stat raises, the moves learned, the care
@@ -415,6 +506,19 @@ struct BattleEnd {
 };
 
 // A player's own transform, sent by the guest that owns it (unreliable, about 20 per second). The
+// The guest's partner while its own game holds it (a gym course, a care scene, a script): where it
+// stands and what it plays. The host draws it there instead of letting it follow the player.
+struct HeldPartner {
+  std::int32_t x = 0;
+  std::int32_t y = 0;
+  std::int32_t z = 0;
+  std::uint16_t yaw = 0;
+  Motion motion = Motion::Idle;
+  std::optional<ActionClip> action = std::nullopt;
+
+  friend bool operator==(const HeldPartner&, const HeldPartner&) = default;
+};
+
 // host keeps the newest valid one per player (authority.hpp) and drops stale ones: `sequence` is
 // the sender's tick count (60 per second), so it also times the movement, and `epoch` is the newest
 // host correction the guest applied, so states sent before it are told apart.
@@ -428,6 +532,11 @@ struct PlayerState {
   std::int32_t z = 0;
   std::uint16_t yaw = 0;
   Motion motion = Motion::Idle;
+  std::optional<ActionClip> action = std::nullopt;
+  std::optional<HeldPartner> partner = std::nullopt;
+  // The player is in a scene of its own (its partner's death or rebirth, an evolution): the others
+  // do not draw it, and the host takes no pose from it.
+  bool away = false;
 
   friend bool operator==(const PlayerState&, const PlayerState&) = default;
 };
@@ -467,6 +576,15 @@ struct Roster {
   friend bool operator==(const Roster&, const Roster&) = default;
 };
 
+// A guest's partner as its own game has it now (it evolved, or a load gave it another form).
+// The host takes it as the link's player's, never the one named here, and lists it in the roster.
+struct PartnerForm {
+  PlayerId player = GuestPlayerId;
+  std::string species;
+
+  friend bool operator==(const PartnerForm&, const PartnerForm&) = default;
+};
+
 // The shared world (#357, multiplayer.md "Shared world interactions"). Every game of the session
 // runs its own copy of the host's world; what one player's interactions change in it that the
 // others must see goes through the host: a guest's game asks (WorldAsk), the host takes what is
@@ -503,10 +621,11 @@ struct WorldEdit {
 inline constexpr std::size_t MaxWorldEdits = 64;
 
 // A guest's game changed the shared world (its script set a trigger, a door moved): the host takes
-// what is shared. `ask` is the guest's own count;
-// `mapId` the map the guest was on.
+// what is shared. `ask` is the guest's own count, `seen` the newest host revision its game had
+// taken when it made the edits, `mapId` the map the guest was on.
 struct WorldAsk {
   std::uint32_t ask = 0;
+  std::uint32_t seen = 0;
   std::string mapId;
   std::vector<WorldEdit> edits;
 
@@ -594,6 +713,52 @@ struct ClaimAnswer {
   bool granted = false;
 
   friend bool operator==(const ClaimAnswer&, const ClaimAnswer&) = default;
+};
+
+// A poop pile on a map of the host's world: its tile and its size (partner_impl.c: WORLD_POOP).
+struct PileEntry {
+  std::int16_t x = 0;
+  std::int16_t y = 0;
+  std::int32_t size = 0;
+
+  friend bool operator==(const PileEntry&, const PileEntry&) = default;
+};
+
+inline constexpr std::size_t MaxMapPiles = 64;
+inline constexpr std::size_t MaxPileMapText = 64;
+
+// One map's piles of the host's world, sent to every guest when they change. A `restart` list
+// (on join and map change) clears the guest's piles on every map first; its map may be empty.
+struct PoopPiles {
+  std::string mapId;
+  bool restart = false;
+  std::vector<PileEntry> piles;
+
+  friend bool operator==(const PoopPiles&, const PoopPiles&) = default;
+};
+
+enum class PileAction : std::uint8_t { Leave, Eat };
+
+// `ask` is the guest's own count; an eat waits for the host's PileAnswer so two partners never
+// eat one pile.
+struct PileAsk {
+  std::uint32_t ask = 0;
+  PileAction action = PileAction::Leave;
+  std::string mapId;
+  std::int16_t x = 0;
+  std::int16_t y = 0;
+  std::int32_t size = 0;
+
+  friend bool operator==(const PileAsk&, const PileAsk&) = default;
+};
+
+// The host's answer to an eat: granted with the pile's size, or refused (it was gone).
+struct PileAnswer {
+  std::uint32_t ask = 0;
+  bool granted = false;
+  std::int32_t size = 0;
+
+  friend bool operator==(const PileAnswer&, const PileAnswer&) = default;
 };
 
 // Item trades between two players of the session (#360; docs/architecture/multiplayer.md, "Item
@@ -827,6 +992,18 @@ struct TrainingStatus {
   friend bool operator==(const TrainingStatus&, const TrainingStatus&) = default;
 };
 
+// A map id longer than this is damaged.
+inline constexpr std::size_t MaxEventMapText = 64;
+
+// The NPC whose event a player's game plays (empty map once it ends), so the event starts once.
+struct EventStatus {
+  PlayerId player = HostPlayerId;
+  std::string mapId;
+  std::uint16_t npc = 0;
+
+  friend bool operator==(const EventStatus&, const EventStatus&) = default;
+};
+
 using Message =
     std::variant<Hello, Welcome, Ready, JoinState, Commands, Snapshot, ViewState, Leave,
                  ProfileChunk, BattleAsk, BattleBegin, BattleRefused, BattleFrame, BattleAction,
@@ -834,7 +1011,7 @@ using Message =
                  GroundItems, ItemClaim, ClaimAnswer, BattleOffer, Lobby, SyncWatch, SyncReport,
                  TradeAsk, TradeAnswer, TradeOffer, TradeConfirm, TradeCancel, TradeState,
                  TradePrepare, TradeCommit, TradeRevert, TradeReply, TradeClosed, WorldClock,
-                 TrainingStatus>;
+                 TrainingStatus, PartnerForm, EventStatus, PoopPiles, PileAsk, PileAnswer>;
 
 inline constexpr std::uint8_t HelloKind = 0x60;
 inline constexpr std::uint8_t WelcomeKind = 0x61;
@@ -855,6 +1032,7 @@ inline constexpr std::uint8_t ReadyKind = 0x6E;
 inline constexpr std::uint8_t PlayerStateKind = 0x70;
 inline constexpr std::uint8_t PlayerCorrectionKind = 0x71;
 inline constexpr std::uint8_t RosterKind = 0x72;
+inline constexpr std::uint8_t PartnerFormKind = 0x73;
 // Co-op combat owns 0x80-0x8F.
 inline constexpr std::uint8_t BattleOfferKind = 0x80;
 // The shared world's interactions (#357) take 0x90-0x9F.
@@ -864,6 +1042,9 @@ inline constexpr std::uint8_t WorldSyncKind = 0x92;
 inline constexpr std::uint8_t GroundItemsKind = 0x93;
 inline constexpr std::uint8_t ItemClaimKind = 0x94;
 inline constexpr std::uint8_t ClaimAnswerKind = 0x95;
+inline constexpr std::uint8_t PoopPilesKind = 0x96;
+inline constexpr std::uint8_t PileAskKind = 0x97;
+inline constexpr std::uint8_t PileAnswerKind = 0x98;
 // Players and diagnostics (#352, #359): 0xA0-0xAF.
 inline constexpr std::uint8_t LobbyKind = 0xA0;
 inline constexpr std::uint8_t SyncWatchKind = 0xA1;
@@ -883,6 +1064,7 @@ inline constexpr std::uint8_t TradeClosedKind = 0xBA;
 // Training in a shared world (#365): 0xC0-0xCF.
 inline constexpr std::uint8_t WorldClockKind = 0xC0;
 inline constexpr std::uint8_t TrainingStatusKind = 0xC1;
+inline constexpr std::uint8_t EventStatusKind = 0xC2;
 
 [[nodiscard]] net::Bytes encode(const Message& message);
 // Returns empty for a message owned by another protocol. Messages in this range are validated and

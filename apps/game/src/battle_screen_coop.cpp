@@ -12,6 +12,7 @@
 #include <string_view>
 
 #include "battle_screen.hpp"
+#include "coop_battle_view.hpp"
 #include "field_scene.hpp"
 
 namespace dwe::app {
@@ -82,16 +83,23 @@ std::optional<game::battle::FighterId> BattleScreen::fighterOf(game::coop::Playe
   return std::nullopt;
 }
 
-void BattleScreen::releaseAlly(game::coop::PlayerId owner) {
+void BattleScreen::withdrawAlly(game::coop::PlayerId owner) {
   if (!battle_) {
     return;
   }
   for (const game::battle::AllyState& ally : battle_->state().allies) {
-    if (ally.owner == owner) {
-      battle_->releaseAlly(ally.id);
-      core::logInfo("coop: player {}'s partner fights on its own call", owner);
+    if (ally.owner == owner && !ally.released) {
+      withdrawCoopAlly(*battle_, ally.id);
+      core::logInfo("coop: player {} left the battle, its partner runs off", owner);
     }
   }
+}
+
+std::optional<std::int32_t> BattleScreen::npcOfFighter(game::battle::FighterId id) const {
+  if (id == game::battle::PartnerId || id > fighterNpcs_.size()) {
+    return std::nullopt;
+  }
+  return fighterNpcs_[id - 1];
 }
 
 game::battle::FighterId BattleScreen::throwTargetOf(game::battle::FighterId thrower) const {
@@ -126,6 +134,40 @@ bool BattleScreen::commandFromPlayer(game::coop::PlayerId owner, game::battle::C
   }
   if (*fighter == game::battle::PartnerId) {
     shout(command);
+  }
+  publish();
+  return true;
+}
+
+bool BattleScreen::orderFromPlayer(game::coop::PlayerId owner, std::int32_t order) {
+  const std::optional<game::battle::FighterId> fighter = fighterOf(owner);
+  if (!battle_ || intro_ || !fighter || (*fighter == game::battle::PartnerId && !visiting_)) {
+    return false;
+  }
+  const auto slot = static_cast<std::size_t>(order % game::coop::OrderSlots);
+  const std::int32_t target = (order / game::coop::OrderSlots) - 1;
+  if (auto taken = battle_->order(
+          slot,
+          target < 0 ? std::nullopt
+                     : std::optional<game::battle::FighterId>{static_cast<game::battle::FighterId>(
+                           target)},
+          *fighter);
+      !taken) {
+    core::logInfo("coop: player {}'s order {} was refused: {}", owner, order,
+                  taken.error().message);
+    return false;
+  }
+  publish();
+  return true;
+}
+
+bool BattleScreen::stanceFromPlayer(game::coop::PlayerId owner, game::battle::Stance stance) {
+  const std::optional<game::battle::FighterId> fighter = fighterOf(owner);
+  if (!battle_ || intro_ || !fighter || (*fighter == game::battle::PartnerId && !visiting_)) {
+    return false;
+  }
+  if (auto taken = battle_->setStance(stance, *fighter); !taken) {
+    return false;
   }
   publish();
   return true;

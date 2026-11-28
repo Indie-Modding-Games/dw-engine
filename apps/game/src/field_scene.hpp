@@ -225,7 +225,24 @@ struct FieldStage {
   [[nodiscard]] bool showsPartner() const { return !partnerHidden; }
   // The map's characters: all while the scenery shows, else only shownNpc.
   [[nodiscard]] bool showsNpcs() const { return !sceneryHidden; }
+  // The other co-op players and their partners: this player's scene is its own, so they go with
+  // the scenery.
+  [[nodiscard]] bool showsOtherPlayers() const { return !sceneryHidden; }
 };
+
+// The time of day the field turns to on reaching `hour`, if it turns. map.c: renderMap starts the
+// fade only at the hours a time of day starts. A co-op game turns at any hour: its clock may pass
+// such an hour unseen (its player held, a jump to the world's time), and every player is to see
+// the world's time of day.
+[[nodiscard]] inline std::optional<render::TimeOfDay>
+timeOfDayTurn(std::int32_t hour, render::TimeOfDay shown, const render::TimeOfDaySchedule& schedule,
+              bool sharedClock) {
+  const render::TimeOfDay now = render::timeOfDayAt(hour, schedule);
+  if (now == shown || (!sharedClock && !render::timeOfDayChangesAt(hour, schedule))) {
+    return std::nullopt;
+  }
+  return now;
+}
 
 // The first state of the field effects' rolls (libc rand's increment).
 inline constexpr std::uint64_t FieldEffectsSeed = 0x3039;
@@ -286,6 +303,11 @@ public:
   // from the frame the clock enters the hour that starts it (before finishTick follows the clock,
   // as the player's clock tick starts it before the partner's tickConditions) until it ends.
   [[nodiscard]] bool daytimeFadeRunning() const;
+  // A co-op game's clock is the world's (timeOfDayTurn).
+  void shareClock(bool on) { sharedClock_ = on; }
+  // The clock's time of day at once, its fade and lights done: a co-op guest's clock that took the
+  // world's time, or a battle beginning while the field still fades.
+  void matchClock();
   // The player turns to the partner (Field::playerFacePartner).
   void playerFacePartner();
   // Starts a logic tick of every character on the field without moving it (Field::settle): each
@@ -526,6 +548,9 @@ public:
   // models/partner's animations, which are the same ids for every partner; nothing changes if it is
   // drawn so already. On a failure the partner keeps its model.
   core::Result<void> showPartnerSpecies(std::string_view species);
+  [[nodiscard]] std::string drawnSpeciesOf(std::string_view species) const {
+    return drawnSpecies_ ? drawnSpecies_(species) : std::string{species};
+  }
   // The radius of a species in the species table, 0 when unknown: it sizes the partner on the field
   // (showPartnerSpecies). Without it the field keeps the radius of field/rules.
   void attachSpeciesRadius(std::function<float(std::string_view)> radius) {
@@ -536,6 +561,10 @@ public:
   using ClipStandIns = std::map<std::uint32_t, std::uint32_t>;
   void attachSpeciesClips(std::function<ClipStandIns(std::string_view)> clips) {
     speciesClips_ = std::move(clips);
+  }
+  // Unset, each species draws as itself; a form with no model (WereGarurumon) as its origin.
+  void attachDrawnSpecies(std::function<std::string(std::string_view)> drawn) {
+    drawnSpecies_ = std::move(drawn);
   }
   // The size a species' partner is drawn at in the field, 1 for the original's (a ruleset's species
   // patches: field_scale); its radius scales with it.
@@ -633,6 +662,9 @@ public:
   // getEntityScreenPos(ENTITY_TABLE[0], node), as for a fighter's); nothing when the node is no
   // joint of its skin or it is behind the camera.
   [[nodiscard]] std::optional<glm::vec2> playerNodeOnWindow(std::uint32_t node) const;
+  // Where each stun sign over a fighter stands (the foot of its post), as fractions of
+  // the window; the sign itself is the original's size on screen (screens: stun_signs.hpp).
+  [[nodiscard]] std::vector<glm::vec2> stunSignsOnWindow() const;
   // The battle's time for the held fighters' clips, which run while the field waits.
   void runFighters(double seconds) { fighterSecondsDue_ += seconds; }
   // Whether the held fighter's clip, the figure's, has played through once (anim.c: animFlag 1
@@ -754,18 +786,27 @@ public:
   // Takes another player of a co-op game and its partner out of this scene, its field body too
   // (the player left the session): nothing of it stays drawn.
   void removeCoopPlayer(game::field::PlayerId id);
+  // Hides or shows guest `id`'s field body and its partner (CoopHostWorld::away); a partner the
+  // battle holds stays the battle's.
+  void showCoopGuest(game::field::PlayerId id, bool shown);
   // Presents another player `id` of a co-op game and its partner (of `partnerSpecies`) as the host
   // reported them, already smoothed for this frame. Render-only: no collision, triggers or world
   // simulation of this instance takes them in; a missing state hides that body.
+  // `playerClip` and `partnerClip` are what their owner's scripts play on them (a gym course).
   core::Result<void> presentCoopPlayer(game::field::PlayerId id,
                                        std::optional<game::field::CharacterState> player,
                                        std::optional<game::field::CharacterState> partner = {},
-                                       std::string_view partnerSpecies = {});
+                                       std::string_view partnerSpecies = {},
+                                       std::optional<game::field::PlayedClip> playerClip = {},
+                                       std::optional<game::field::PlayedClip> partnerClip = {});
+  // Empty while that player has no partner.
+  [[nodiscard]] std::string_view coopPartnerSpecies(game::field::PlayerId id) const;
   // A co-op guest's own player, put where the host says (a PlayerCorrection, #354): on this map at
   // once; on another through a map change that arrives at `at` (the exit, if any, is the one the
-  // host came in by, for the change's look; the place is `at` either way).
+  // host came in by, for the change's look; the place is `at` either way). `reload` loads this map
+  // again too (a script's warp reset the room on the host).
   void moveCoopSelf(const std::string& mapId, std::optional<std::int32_t> exit,
-                    assets::SpawnPoint at);
+                    assets::SpawnPoint at, bool reload = false);
   // Whether the field still goes to the map moveCoopSelf asked for.
   [[nodiscard]] bool movingCoopSelf() const { return coopArrival_.has_value(); }
   // The other players this scene draws, by id (field bodies on the host, presented ones on a
@@ -1174,6 +1215,7 @@ private:
   const ruleset::GameClock* clock_ = nullptr;
   std::int32_t clockHour_ = 0;
   bool fixedTime_ = false;
+  bool sharedClock_ = false;
   // The map's own lights, and how long until the time of day's change reaches them: the original
   // switches them when the palette fade ends.
   render::ModelLighting mapLighting_;
@@ -1278,7 +1320,8 @@ private:
     bool sceneClip = false;
   };
   core::Result<void> addCoopGuestPlayer(game::field::PlayerId id, CoopBody& body);
-  void placeCoopProxy(scene::Entity entity, const game::field::CharacterState& state);
+  void placeCoopProxy(scene::Entity entity, const game::field::CharacterState& state,
+                      std::optional<game::field::PlayedClip> clip);
   core::Result<void> loadCoopPartner(CoopPartner& partner, scene::Entity entity,
                                      std::string_view species);
   // The partner drawn for co-op player `id`, if this scene has that player.
@@ -1299,6 +1342,7 @@ private:
   // the pack has none or they do not read.
   std::optional<std::optional<assets::PartnerClipBook>> partnerClipBook_;
   std::function<float(std::string_view)> speciesScale_;
+  std::function<std::string(std::string_view)> drawnSpecies_;
   MapNpcsHook mapNpcs_;
   // The partner species' size (attachSpeciesScale), times the scenes' partnerScale.
   float partnerSpeciesScale_ = 1.0F;

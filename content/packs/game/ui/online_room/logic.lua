@@ -202,7 +202,16 @@ local function refresh(document)
   local difficulty_key = room.mode == "campaign" and room.coop_difficulty_key or nil
   show(document, "info-difficulty-row", difficulty_key ~= nil)
   if difficulty_key ~= nil then
-    document:get("info-difficulty-text"):set_text(t(difficulty_key))
+    -- Only the host's counts: a guest whose own option differs sees both.
+    local own = options.get("coop_difficulty")
+    local difficulty = t(difficulty_key)
+    if not room.host and own ~= nil and own ~= room.coop_difficulty then
+      difficulty = say("online.info.difficulty_own", {
+        host = difficulty,
+        own = t("pause_menu.coop_difficulty." .. own),
+      })
+    end
+    document:get("info-difficulty-text"):set_text(difficulty)
     fit_text.fit(
       document:get("info-difficulty-text"),
       nil,

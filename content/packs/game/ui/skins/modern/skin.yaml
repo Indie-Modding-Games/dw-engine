@@ -119,7 +119,7 @@ screens:
 layout:
   pause_menu: {menu: modern, box: modern}
   partner_menu: {menu: modern, box: modern, pages: modern}
-  battle: {menu: modern}
+  battle: {menu: modern, strip: text}
   main_menu: {menu: modern, picture: modern}
   save_slots: {menu: modern, picture: modern}
   new_game_rules: {menu: modern, picture: modern}

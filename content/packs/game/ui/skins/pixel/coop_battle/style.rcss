@@ -1,5 +1,4 @@
 #panel {
-	width: 34%;
 	border: 3dp transparent;
 	border-radius: 0;
 	background-color: transparent;
@@ -18,41 +17,8 @@
 	color: #efc63c;
 }
 
-#phase,
-#items-title,
-#no-items {
+#phase {
 	color: #b6e4f7;
-}
-
-.fighter.partner .name {
-	color: #efc63c;
-}
-
-.fighter .bar {
-	width: 54%;
-	height: 12dp;
-	border-radius: 0;
-	background-color: #3a4d68;
-}
-
-.fighter .fill {
-	border-radius: 0;
-	background-color: #5fd36a;
-}
-
-.fighter .hp,
-.fighter .mp,
-.fighter .revive,
-.fighter .target {
-	font-size: 26dp;
-}
-
-.fighter .mp {
-	color: #4aa6ff;
-}
-
-.fighter.mine {
-	border-left-color: #efc63c;
 }
 
 #panel button {
@@ -72,20 +38,4 @@
 #panel button:focus {
 	color: #efc63c;
 	decorator: ninepatch(nb-row-outer, nb-row-inner, 1) border-box;
-}
-
-#panel button.current {
-	color: #050c1a;
-	background-color: #efc63c;
-	decorator: none;
-}
-
-.fighter .revive {
-	padding: 0 6dp;
-	color: #050c1a;
-	background-color: #efc63c;
-}
-
-.fighter.down .name {
-	color: #8a93a6;
 }

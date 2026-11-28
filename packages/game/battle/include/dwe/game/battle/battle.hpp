@@ -2,10 +2,13 @@
 
 #include <dwe/core/error.hpp>
 #include <dwe/core/fixed_step.hpp>
+#include <dwe/game/battle/battle_system_id.hpp>
 #include <dwe/game/battle/combatant.hpp>
 #include <dwe/game/battle/coop_scaling.hpp>
 #include <dwe/game/battle/events.hpp>
 #include <dwe/game/battle/flights.hpp>
+#include <dwe/game/battle/folder/formulas.hpp>
+#include <dwe/game/battle/folder/state.hpp>
 #include <dwe/game/battle/ground.hpp>
 #include <dwe/game/battle/hit_particles.hpp>
 #include <dwe/game/battle/items.hpp>
@@ -19,6 +22,7 @@
 #include <array>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -26,6 +30,7 @@
 namespace dwe::game::battle {
 
 struct BattleContext;
+class BattleSystem;
 
 // The battle runs at the original's 20 frames a second on its own fixed tick: the game clock stands
 // still during a battle (tamer.c: startBattle), which then moves it on by a fixed amount
@@ -88,6 +93,8 @@ struct BattleSetup {
   // is commanded as the partner is (Battle::command with its id), throws its own player's items
   // and gets its own result (Battle::allyResults).
   std::vector<AllySetup> allies;
+  // Classic or Folder (docs/architecture/folder-battle.md); a versus match is always Classic.
+  BattleSystemId system = BattleSystemId::Classic;
   // A co-op battle's difficulty (docs/architecture/coop-difficulty.md): the enemies' HP, MP,
   // offense and finisher grow with the partners that fight (the starter's and the allies) and the
   // helpers. Off, or one partner and no helper: the original numbers.
@@ -183,11 +190,43 @@ public:
                                     const MoveCatalog& moves, BattleStrategies strategies,
                                     std::uint64_t seed);
 
-  // The player picks a command of the menu (battle_tick.c: handleCommands).
+  Battle(const Battle&) = delete;
+  Battle& operator=(const Battle&) = delete;
+  Battle(Battle&&) noexcept;
+  Battle& operator=(Battle&&) noexcept;
+  ~Battle();
+
+  [[nodiscard]] BattleSystemId system() const;
+
+  // The player picks a menu command (battle_tick.c: handleCommands); in a Folder battle only flee
+  // is one.
   core::Result<void> command(Command command);
   // The same for a commanded side: PartnerId, or RivalId in a versus match (vs_combat.c:
   // VS___tickVSInput: the command takes no delay; the finisher only once its gauge is full).
   core::Result<void> command(Command command, FighterId side);
+  // Folder (combat-design.md §2): orders the technique in `slot` (FinisherSlot once the gauge is
+  // full); a full queue replaces its last waiting order. No target: the side's current one, if the
+  // move needs one.
+  core::Result<void> order(std::size_t slot, std::optional<FighterId> target,
+                           FighterId side = PartnerId);
+  // Drops every waiting order of `side`; the one being executed goes on.
+  core::Result<void> cancelOrders(FighterId side = PartnerId);
+  // The stance `side` moves by from the next moment it positions itself (§2.9).
+  core::Result<void> setStance(Stance stance, FighterId side = PartnerId);
+  // Points `side` at `target` without ordering: its stance follows it and untargeted orders aim at
+  // it (§2.2).
+  core::Result<void> setTarget(FighterId target, FighterId side = PartnerId);
+  // Why an order of `slot` would not go on now (None: it would), for the menu (§10.3).
+  [[nodiscard]] OrderProblem orderProblem(std::size_t slot, FighterId side = PartnerId) const;
+  // The Folder state of a fighter; nothing in the Classic battle.
+  [[nodiscard]] const FolderFighter* folderOf(FighterId fighter) const;
+  // The defense bar's capacity of a fighter now (6 x its current DEF); 0 in the Classic battle.
+  [[nodiscard]] std::int32_t defenseBarCapacity(FighterId fighter) const;
+  // The technique in `slot` of `side` as the Folder battle plays it: its functions, area, friendly
+  // fire, reach and MP cost (§3.10, costo-mp.md); none in the Classic battle or for an empty slot.
+  [[nodiscard]] std::optional<folder::Technique> folderTechnique(std::size_t slot,
+                                                                 FighterId side = PartnerId) const;
+
   // A press of the finisher charge buttons during the partner's finisher aura (command_menu.c:
   // BTL_tickFinisherChargeup); at most one counts per frame. In a co-op battle it charges any
   // partner's finisher: its own player's press.
@@ -250,8 +289,8 @@ public:
   // damage (battle_main.c: BTL_renderEnemyHPBars).
   [[nodiscard]] bool hpBarShown(FighterId fighter) const;
   // The MP the partner pays now for the move in its technique `slot` (battle_main.c:
-  // BTL_setupMoveExecution: the brain's discount and the sick or injured surcharge), or none for an
-  // empty slot.
+  // BTL_setupMoveExecution: the brain's discount and the sick or injured surcharge; in the Folder
+  // battle costo-mp.md's cost with the surcharge), or none for an empty slot.
   [[nodiscard]] std::optional<std::int32_t> partnerMoveCost(std::size_t slot) const;
   // The same for a co-op ally (or the partner).
   [[nodiscard]] std::optional<std::int32_t> partnerMoveCost(std::size_t slot, FighterId id) const;
@@ -340,12 +379,14 @@ private:
   void scaleEnemies();
   // The frame's context, with its events going to `events`.
   BattleContext contextOf(BattleEvents& events);
+  [[nodiscard]] core::Result<void> commandable(FighterId side) const;
   // The events not yet returned by step(): those of the last frame are dropped once returned.
   BattleEvents& pending();
 
   const BattleRules* rules_;
   const MoveCatalog* moves_;
   BattleStrategies strategies_;
+  std::unique_ptr<BattleSystem> system_;
   ruleset::Random random_;
   // Whether random_ is the original's generator (useOriginalRolls).
   bool originalRolls_ = false;

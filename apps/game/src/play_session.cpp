@@ -54,6 +54,7 @@
 #include "bulk_amount.hpp"
 #include "common.hpp"
 #include "condition_point.hpp"
+#include "coop_battle_view.hpp"
 #include "evolving_bubble.hpp"
 #include "gym_box_close.hpp"
 #include "hd_scenery_setting.hpp"
@@ -422,16 +423,19 @@ core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext
   if (savedPlace) {
     (*scene)->field().yieldPlayerToNpcsOnLoad();
   }
+  (*scene)->shareClock(start.coop());
   const bool cleared = start.load.has_value() && session.gameCleared();
   auto play = std::make_unique<PlaySession>(Key{}, context, std::move(*game), std::move(*scene));
   play->coopGame_ = start.coop();
   play->coopGuest_ = start.coopGuest();
+  play->publishBattleSystem();
   // Co-op (docs/architecture/coop-training.md): one clock for the world, the host's.
   session.shareClock(start.coopGuest() ? session::ClockShare::Guest
                      : start.coop()    ? session::ClockShare::Host
                                        : session::ClockShare::Own);
   // Co-op (#357): a guest's chest or ground take waits for the host's word.
   play->fieldItemsScreen_.setCoop(start.coop(), start.coopGuest());
+  play->fieldPoop_.setCoopGuest(start.coopGuest());
   if (cleared) {
     // main.c: main, MAIN_STATE 2: a game saved after the ending plays ED2 before its field.
     core::logDebug("[port:save] main (main.c:3474): a finished game, its movie first");
@@ -645,6 +649,10 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
     const auto* row = species_ ? species_->find(species) : nullptr;
     return row != nullptr ? static_cast<float>(row->radius) : 0.0F;
   });
+  scene_->attachDrawnSpecies([this](std::string_view species) {
+    return game_.systems.evolution != nullptr ? game_.systems.evolution->drawnSpecies(species)
+                                              : std::string{species};
+  });
   const ruleset::SpeciesExtra extra = speciesExtraOf(session);
   scene_->attachSpeciesClips([extra](std::string_view species) {
     const ruleset::SpeciesPatch* patch = extra.find(species);
@@ -786,6 +794,9 @@ PlaySession::PlaySession(Key /*key*/, const PlayContext& context, GameStart game
 }
 
 PlaySession::~PlaySession() {
+  context_.ui->setSetting(BattleSystemSetting, std::string{game::modes::DefaultBattle});
+  context_.ui->setSetting(std::string{OptionsLockedPrefix} + std::string{BattleSystemSetting},
+                          true);
   // The frames in flight may still draw the field's textures.
   context_.device->waitIdle();
   context_.debugUi->detachTuning();
@@ -971,7 +982,14 @@ void PlaySession::tick(const PlayerCommands& commands, std::span<const GuestFiel
   // Only this tick's: co-op takes them right after it (takeCoopWorld).
   coopMapEdits_.clear();
   tickSystems(commands.field, commands.fishing, guests);
+  if (worldShared_ && (battleScreen_.active() || coopBattleHold_)) {
+    putAwayFieldMenus();
+  }
+  if (game_.session->takeWorldJump()) {
+    scene_->matchClock();
+  }
   tickWater();
+  deathScript_ = deathHoldsWakeMap(deathScript_, deathScene_.active(), storyBusy());
   // A tick that did not leave the player walking freely (a talk, a battle, a gym course, a screen)
   // drops the click's target, so the player does not walk on to it once he is let go.
   if (!walksByPointer()) {
@@ -1004,7 +1022,6 @@ void PlaySession::tickWater() {
 
 void PlaySession::tickSystems(const game::field::FieldInput& intent, const FishingButtons& fishing,
                               std::span<const GuestFieldIntent> guests) {
-  const ui::Ui& ui = *context_.ui;
   // Every tick starts with the characters where they stand: the screens below that run instead of
   // the field (a battle, the evolution, a sleep, the fishing, a menu) move them themselves or not
   // at all, and none is drawn sliding from where an older tick left it.
@@ -1033,34 +1050,44 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent, const Fishi
   if (closesGymBoxBesideScene(gymScreen_.active(), holds)) {
     gymScreen_.tick(TickSeconds, {});
   }
-  if (sleepScreen_.active() || shopScreen_.active() || devMenu_.isOpen() ||
-      itemKeeperScreen_.active() || discardScreen_.active() || jukeboxScreen_.active() ||
-      tradeScreen_.active() || birdScreen_.active() || cardShopScreen_.active() ||
-      meritShopScreen_.active() || scheduleScreen_.active() || bracketScreen_.playing() ||
-      storyScenes_.tournamentIntro() || worldMapScreen_.isOpen()) {
+  if (sleepScreen_.active() || bracketScreen_.playing() || storyScenes_.tournamentIntro()) {
+    return;
+  }
+  // On the co-op host the world's clock runs on meanwhile (GameSession::tickHeldPlayer).
+  session::GameSession& session = *game_.session;
+  if (shopScreen_.active() || devMenu_.isOpen() || itemKeeperScreen_.active() ||
+      discardScreen_.active() || jukeboxScreen_.active() || tradeScreen_.active() ||
+      birdScreen_.active() || cardShopScreen_.active() || meritShopScreen_.active() ||
+      scheduleScreen_.active() || worldMapScreen_.isOpen()) {
+    session.tickHeldPlayer(TickSeconds);
     return;
   }
   if (fieldPoop_.active()) {
     guardFactsChanged_ = fieldPoop_.tick(static_cast<float>(TickSeconds)) || guardFactsChanged_;
+    session.tickHeldPlayer(TickSeconds);
     return;
   }
   if (fieldToilet_.active()) {
     guardFactsChanged_ = fieldToilet_.tick(static_cast<float>(TickSeconds)) || guardFactsChanged_;
+    session.tickHeldPlayer(TickSeconds);
     return;
   }
   if (feedScene_.active()) {
     guardFactsChanged_ = feedScene_.tick(static_cast<float>(TickSeconds)) || guardFactsChanged_;
+    session.tickHeldPlayer(TickSeconds);
     return;
   }
   if (praiseScold_.active()) {
     guardFactsChanged_ =
         praiseScold_.tick(*scene_, static_cast<float>(TickSeconds), *game_.systems.fieldItems) ||
         guardFactsChanged_;
+    session.tickHeldPlayer(TickSeconds);
     return;
   }
   // partner.c: partnerTickEvolving stops the game time and holds the player for the scene.
   evolutionScene_.tick(TickSeconds);
   if (evolutionScene_.active()) {
+    session.tickHeldPlayer(TickSeconds);
     return;
   }
   // murd.c and dooa.c: a lost life's or a death's scene holds the field once a battle is over; one
@@ -1080,17 +1107,21 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent, const Fishi
     return;
   }
   scene_->holdCamera(battleScreen_.active());
+  const LocalScreens open = localScreens();
   if (battleScreen_.active()) {
     // fade.c: a fade in the battle started under runs on with the drawing.
     scene_->field().tickFadeIn(static_cast<float>(TickSeconds));
-    if (!ui.isVisible(MenuDocument)) {
+    if (!localScreensHoldWorld({.gameMenu = open.gameMenu}, worldShared_)) {
       battleScreen_.tick(TickSeconds);
     }
-  } else if (!ui.isVisible(MenuDocument) && !ui.isVisible(MainMenuDocument) &&
-             !ui.isVisible(PartnerMenuDocument)) {
+  } else if (!localScreensHoldWorld({.gameMenu = open.gameMenu,
+                                     .mainMenu = open.mainMenu,
+                                     .partnerMenu = open.partnerMenu},
+                                    worldShared_)) {
     // The fishing runs instead of the field and the game time (clock.c: tickGameClock).
     if (fishingScreen_.active()) {
       fishingScreen_.tick(*scene_, fishing, TickSeconds);
+      session.tickHeldPlayer(TickSeconds);
       return;
     }
     // kar.c: the stones game runs instead of the field while the story waits on it. It starts on
@@ -1098,6 +1129,7 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent, const Fishi
     if (curlingScreen_.active()) {
       scene_->field().tickFadeIn(static_cast<float>(TickSeconds));
       curlingScreen_.tick(*scene_, TickSeconds);
+      session.tickHeldPlayer(TickSeconds);
       return;
     }
     // tamer.c: checkMapInteraction talks and confirms on a cell only while no script runs
@@ -1123,7 +1155,8 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent, const Fishi
         !fieldItemsScreen_.active()) {
       awardScreen_.tick();
     }
-    if (awardScreen_.active()) {
+    if (awardScreen_.holdsField(scene_->movingCoopSelf())) {
+      session.tickHeldPlayer(TickSeconds);
       return;
     }
     // A gym course takes the player's control; its buttons are the course's.
@@ -1134,9 +1167,9 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent, const Fishi
     // Without a course it only closes the last one's stats box.
     gymScreen_.tick(TickSeconds, intent);
     scene_->tick(fieldIntent, guests, static_cast<float>(TickSeconds));
-    game_.systems.story->runNpcContacts(scene_->field().npcContacts());
+    game_.systems.story->runNpcContacts(scene_->field().npcContacts(), npcsLeftBe_);
     storyLink_->afterFieldTick();
-    game_.session->tick(TickSeconds);
+    session.tick(TickSeconds);
     std::vector<game::coop::WorldEdit> mapEdits =
         applyStoryMapEdits(*scene_, game_.systems.storyOrders);
     if (coopGame_) {
@@ -1307,6 +1340,29 @@ UserSettings PlaySession::playSettings() const {
 
 bool PlaySession::refusesFixedOption(const ui::UiCommand& command) {
   return modeOptions_.refuse(command.name);
+}
+
+bool PlaySession::battleSystemSwitchable() const {
+  const game::modes::GameMode* mode = modeOf(context_, *game_.session);
+  return !coopGuest_ && mode != nullptr && mode->battles.size() > 1;
+}
+
+void PlaySession::publishBattleSystem() {
+  context_.ui->setSetting(BattleSystemSetting, game_.session->battleSystem());
+  context_.ui->setSetting(std::string{OptionsLockedPrefix} + std::string{BattleSystemSetting},
+                          !battleSystemSwitchable());
+}
+
+void PlaySession::changeBattleSystem(std::string_view name) {
+  const game::modes::GameMode* mode = modeOf(context_, *game_.session);
+  if (battleSystemSwitchable() && std::ranges::contains(mode->battles, name)) {
+    if (const auto changed = game_.session->setBattleSystem(name); !changed) {
+      core::logWarning("options: battle system: {}", changed.error().message);
+    } else {
+      core::logInfo(messages::BattleSystemChanged, name);
+    }
+  }
+  publishBattleSystem();
 }
 
 void PlaySession::applyPlayOptions() {
@@ -1866,8 +1922,9 @@ void PlaySession::update(SessionCommands& commands, Autotest* autotest, FrameSta
   ui.setMinimapMarkers(markerOf(field.player()), markerOf(field.partner()), minimapEnemyMarkers(),
                        minimapItemMarkers());
 
-  partnerMenu_.setBagContext(battleScreen_.active() ? game::inventory::UseContext::Battle
-                                                    : game::inventory::UseContext::Field);
+  partnerMenu_.setBagContext(battleScreen_.active() || coopBattleHold_
+                                 ? game::inventory::UseContext::Battle
+                                 : game::inventory::UseContext::Field);
   partnerMenu_.update();
   chartRequirements_.update(*game_.session);
   shopScreen_.update();
@@ -2211,6 +2268,19 @@ screens::ScreenSettings PlaySession::partnerStatus() const {
   return partnerMenu_.statusSettings();
 }
 
+void PlaySession::mirrorCoopNpcs(const PresentedCoopWorld* world, net::Millis now) {
+  const game::field::Field& field = scene_->field();
+  const bool sameMap = world != nullptr && !coopBattleHold_ && world->mapId == field.mapId() &&
+                       !field.mapChangePending() && !scene_->movingCoopSelf();
+  const session::StoryAdapter* story = game_.systems.story;
+  (void)coopNpcMirror_.show(scene_->npcs(),
+                            {.world = sameMap ? world : nullptr,
+                             .mapSerial = scene_->mapSerial(),
+                             .ready = story == nullptr || !story->scriptRunning(),
+                             .battling = battleScreen_.active()},
+                            now);
+}
+
 void PlaySession::followCoopFacts(std::span<const CoopFactChange> facts,
                                   std::span<const CoopFactChange> ownFacts) {
   session::StoryAdapter* story = game_.systems.story;
@@ -2259,7 +2329,10 @@ CoopWorldView PlaySession::takeCoopWorld() {
       .settled = !field.mapId().empty() && !field.mapChangePending(),
       .mapEdits = std::exchange(coopMapEdits_, {}),
       .shared = {},
-      .claim = coopGuest_ ? &fieldItemsScreen_.claim() : nullptr};
+      .claim = coopGuest_ ? &fieldItemsScreen_.claim() : nullptr,
+      .piles = game_.systems.poop != nullptr ? game_.systems.poop->piles() : nullptr,
+      .random = &game_.session->random(),
+      .pileShare = coopGuest_ ? &fieldPoop_.pileShare() : nullptr};
   if (const session::StoryAdapter* story = game_.systems.story; story != nullptr) {
     view.shared = [story](const game::coop::WorldEdit& edit) {
       switch (edit.kind) {
@@ -2279,18 +2352,56 @@ const game::story::StoryState* PlaySession::storyState() const {
   return game_.systems.story != nullptr ? &game_.systems.story->state() : nullptr;
 }
 
-bool PlaySession::paused() const {
+LocalScreens PlaySession::localScreens() const {
   const ui::Ui& ui = *context_.ui;
-  return ui.isVisible(MenuDocument) || ui.isVisible(MainMenuDocument) ||
-         ui.isVisible(PartnerMenuDocument) || screenStops();
+  return {.gameMenu = ui.isVisible(MenuDocument),
+          .mainMenu = ui.isVisible(MainMenuDocument),
+          .partnerMenu = ui.isVisible(PartnerMenuDocument),
+          .pauseBox = ui.isVisible(PauseBoxDocument),
+          .dialog = ui.isVisible(DialogDocument) || ui.isVisible(StoryTextboxDocument)};
+}
+
+bool PlaySession::localScreensBusy() const {
+  return app::localScreensBusy(localScreens());
+}
+
+bool PlaySession::localMenusOpen() const {
+  return app::localMenusOpen(localScreens());
+}
+
+// A battle in a shared world takes the player's screen: the game menu and the field's partner
+// pages close, and do not come back after it.
+void PlaySession::putAwayFieldMenus() {
+  if (context_.ui->isVisible(MenuDocument)) {
+    context_.ui->hide(MenuDocument);
+  }
+  closeFieldBag(*context_.ui);
+}
+
+bool PlaySession::paused() const {
+  LocalScreens open = localScreens();
+  open.pauseBox = false;
+  return localScreensHoldWorld(open, worldShared_) || screenStops();
 }
 
 FieldClock PlaySession::fieldClock() const {
-  const ui::Ui& ui = *context_.ui;
-  return fieldClockOf({.gameMenu = ui.isVisible(MenuDocument) || ui.isVisible(PartnerMenuDocument),
-                       .battle = battleScreen_.active() || coopBattleHold_,
-                       .otherScreen = ui.isVisible(MainMenuDocument) ||
-                                      ui.isVisible(PauseBoxDocument) || otherScreenStops()});
+  const LocalScreens open = localScreens();
+  return fieldClockOf(
+      {.gameMenu = localScreensHoldWorld(
+           {.gameMenu = open.gameMenu, .partnerMenu = open.partnerMenu}, worldShared_),
+       .battle = battleScreen_.active() || coopBattleHold_,
+       .otherScreen = localScreensHoldWorld({.mainMenu = open.mainMenu, .pauseBox = open.pauseBox},
+                                            worldShared_) ||
+                      otherScreenStops()});
+}
+
+void PlaySession::holdForCoopBattle(bool on) {
+  if (on && !coopBattleHold_) {
+    closeFieldBag(*context_.ui);
+    awardScreen_.putAway();
+    scene_->matchClock();
+  }
+  coopBattleHold_ = on;
 }
 
 bool PlaySession::screenStops() const {
@@ -2544,7 +2655,20 @@ TraceFrame PlaySession::traceFrame(std::uint64_t tick, const input::InputState& 
         traced.phase = *text;
       }
     }
-    for (const game::battle::Fighter& fighter : battle->state().fighters) {
+    for (game::battle::FighterId id = 0; id < battle->state().fighters.size(); ++id) {
+      const game::battle::Fighter& fighter = battle->state().fighters[id];
+      std::optional<TraceFighter::Orders> orders;
+      if (const game::battle::FolderFighter* own = battle->folderOf(id)) {
+        orders = TraceFighter::Orders{
+            .phase = static_cast<std::int32_t>(own->phase),
+            .frames = own->phaseFrames,
+            .queued = static_cast<std::int32_t>(own->queue.size()),
+            .stance = static_cast<std::int32_t>(own->stance),
+            .lastEnd = static_cast<std::int32_t>(own->lastEnd),
+            .lastProblem = static_cast<std::int32_t>(own->lastProblem),
+            .bar = own->defenseBar,
+        };
+      }
       traced.fighters.push_back({
           .x = fighter.position.x,
           .z = fighter.position.z,
@@ -2561,6 +2685,7 @@ TraceFrame PlaySession::traceFrame(std::uint64_t tick, const input::InputState& 
           .pose = std::string{poseName(fighter.pose)},
           .pending = fighter.pendingDamage,
           .move = fighter.attack ? battle->moves().at(fighter.attack->move).index : -1,
+          .orders = orders,
       });
     }
     frame.battle = std::move(traced);

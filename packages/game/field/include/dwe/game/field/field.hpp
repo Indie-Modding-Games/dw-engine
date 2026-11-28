@@ -116,6 +116,14 @@ struct DestinationChoice {
   std::optional<std::size_t> vanilla;
 };
 
+// A clip a script plays on a character (ScriptedActor) and how many times one was started.
+struct PlayedClip {
+  std::uint32_t clip = 0;
+  std::uint32_t starts = 0;
+
+  friend bool operator==(const PlayedClip&, const PlayedClip&) = default;
+};
+
 // A character as the minimap and the debug views see it.
 struct CharacterState {
   glm::vec3 position{};
@@ -226,6 +234,13 @@ public:
   // as usual. Nothing undoes it until the player is placed again (placeOtherPlayersNearHost) or
   // driven with nothing. False when there is no such guest.
   bool drivePlayer(PlayerId id, std::optional<CharacterState> state);
+  // The same for a guest's partner held by its owner's game (a gym course, a scene); nothing lets
+  // it follow again from where it stands. False when that guest has no partner.
+  bool drivePartner(PlayerId id, std::optional<CharacterState> state);
+  // The clip a script plays on a character now (ScriptedActor), nothing while its motion picks it.
+  [[nodiscard]] std::optional<PlayedClip> scriptedClipOf(scene::Entity entity) const;
+  // A co-op body plays the clip its owner's script plays on it, or its motion's again with none.
+  void showOwnerClip(scene::Entity entity, std::optional<PlayedClip> clip);
   [[nodiscard]] std::optional<CharacterState> player(PlayerId id) const;
   [[nodiscard]] std::optional<scene::Entity> playerEntity(PlayerId id) const;
   [[nodiscard]] bool waitingAtWarp(PlayerId id) const;
@@ -598,6 +613,8 @@ public:
   // starts). It lets go as above, but nothing moves them off it: no release check and no making
   // room, as the original's characters stand where its trace starts.
   void placeAt(scene::Entity entity, glm::vec3 position, float yaw);
+  // Moves the player and its partner next to it as a map entry does; a scripted partner stays.
+  void placePlayerWithPartner(assets::SpawnPoint spot);
   // The release rule now, the engine's (the original has none): the partner in a wall cell or deep
   // in another's collision square (overlaps), or the player in a wall cell, goes to the nearest
   // spot where it fits on the grid, touches nobody, reaches from where it stood and warps nothing.
@@ -657,6 +674,7 @@ private:
     std::optional<OtherPartner> partner;
     // Where the owner says the body is (drivePlayer): placed there instead of walking.
     std::optional<CharacterState> driven;
+    std::optional<CharacterState> drivenPartner;
   };
   [[nodiscard]] static PlayerId playerIdOf(const PlayerRuntime& player) {
     return player.fieldPlayer.id;

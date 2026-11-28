@@ -96,6 +96,7 @@ route_job() {
     route-skins) flags+=(--mods tests/mods/ui_skin) ;;
     route-mod-map) flags+=(--mods tests/mods/example_mod) ;;
     route-game-modes) flags+=(--mods tests/mods/game_mode) ;;
+    route-folder-battle-hud) flags+=(--battle folder) ;;
     *) ;;
   esac
   local follow="${follow_up_routes[$route]:-}" saves="$logs/$lang$suffix/$route/saves" line

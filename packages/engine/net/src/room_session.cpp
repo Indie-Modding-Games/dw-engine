@@ -60,9 +60,13 @@ bool RoomSession::enter(RoomPhase next) {
   }
   core::logInfo("rooms: room {} {} -> {}", code_.empty() ? std::string{"-"} : code_,
                 roomPhaseName(phase_), roomPhaseName(next));
-  phase_ = next;
+  const RoomPhase from = std::exchange(phase_, next);
+  toldAt_.reset();
   if (next == RoomPhase::Connected) {
     connectedOnce_ = true;
+    if (from == RoomPhase::Ready && !connectedRefused_) {
+      notify("connected");
+    }
   } else if (next == RoomPhase::Ready) {
     notify("ready");
   } else if (next == RoomPhase::Playing) {
@@ -75,7 +79,7 @@ bool RoomSession::enter(RoomPhase next) {
 }
 
 void RoomSession::notify(std::string state) {
-  if (!desc_.hosting || token_.empty() || desc_.server.empty() || !desc_.open) {
+  if (!desc_.hosting || !listed() || desc_.server.empty() || !desc_.open) {
     return;
   }
   notices_.push_back(std::move(state));
@@ -119,6 +123,20 @@ void RoomSession::close(std::string reason) {
   enter(RoomPhase::Closed);
 }
 
+void RoomSession::poll(Millis now) {
+  const bool repeats = phase_ == RoomPhase::Ready || phase_ == RoomPhase::Playing ||
+                       (phase_ == RoomPhase::Connected && !connectedRefused_);
+  if (!repeats) {
+    toldAt_.reset();
+  } else if (!toldAt_) {
+    toldAt_ = now;
+  } else if (now - *toldAt_ >= RoomRefreshEvery && notice_ == nullptr && notices_.empty()) {
+    toldAt_ = now;
+    notify(std::string{roomPhaseName(phase_)});
+  }
+  poll();
+}
+
 void RoomSession::poll() {
   if (notice_ == nullptr) {
     if (notices_.empty()) {
@@ -137,6 +155,9 @@ void RoomSession::poll() {
   // A room that already left the list (it expired, or its room removed it) is closed anyway.
   if (noticeState_ == "closed" && error == "no-room") {
     error.clear();
+  }
+  if (noticeState_ == "connected" && error == "bad-state") {
+    connectedRefused_ = true;
   }
   if (error.empty()) {
     sent_.push_back(noticeState_);

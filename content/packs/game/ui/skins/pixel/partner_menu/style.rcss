@@ -414,3 +414,20 @@
 	font-size: 26dp;
 	color: #93a6bc;
 }
+
+/* A co-op guest's battle bag: the keys that pick the partner its item flies to. */
+#throw-hint {
+	display: block;
+	position: relative;
+	margin: 6dp 0 0 0;
+	font-size: 22dp;
+	color: #f2f0e1;
+}
+
+#throw-hint.hidden {
+	display: none;
+}
+
+#throw-hint .key {
+	margin-right: 6dp;
+}

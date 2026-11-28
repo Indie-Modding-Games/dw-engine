@@ -80,13 +80,19 @@ std::optional<DeathCountdownLook> deathCountdownLookOf(std::int32_t timer) {
 }
 
 std::optional<std::int32_t> deathCountdownTimerOf(const game::battle::Battle& battle) {
+  return deathCountdownTimerOf(battle, game::battle::PartnerId);
+}
+
+std::optional<std::int32_t> deathCountdownTimerOf(const game::battle::Battle& battle,
+                                                  game::battle::FighterId own) {
   const game::battle::BattleState& state = battle.state();
   const std::int32_t shownAt = battle.rules().ending.reviveCountdownShownAt;
-  if (state.matchClock || !state.partner().fainted || state.deathFrames < shownAt) {
+  if (state.matchClock || own >= state.fighters.size() || !state.isPlayerSide(own) ||
+      !state.fighters[own].fainted || battle.deathFramesOf(own) < shownAt) {
     return std::nullopt;
   }
   // Assumption: the countdown ticks on the frame it is added, so that frame is its first.
-  const std::int32_t timer = state.deathFrames - shownAt + 1;
+  const std::int32_t timer = battle.deathFramesOf(own) - shownAt + 1;
   if (timer > DeathCountdownLastFrame) {
     return std::nullopt;
   }

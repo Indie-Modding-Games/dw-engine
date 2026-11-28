@@ -45,6 +45,8 @@ public:
   // Returns where it went.
   Tile place(std::string_view map, Tile tile, std::int32_t rotation, std::int32_t size,
              ruleset::Random& random);
+  // Places a pile on `tile` itself, or a random step away when a pile is there already.
+  Tile placeAt(std::string_view map, Tile tile, std::int32_t size, ruleset::Random& random);
 
   // The pile on a tile, if any.
   [[nodiscard]] std::optional<PoopPile> at(std::string_view map, Tile tile) const;
@@ -54,6 +56,8 @@ public:
 
   // The piles of a map.
   [[nodiscard]] std::vector<PoopPile> onMap(std::string_view map) const;
+  // The piles of a map become `piles` (co-op: the host's); the other maps' stay.
+  void replaceMap(std::string_view map, std::span<const PoopPile> piles);
 
   // Every slot, empty ones with size 0, and the slot reused next, for the save.
   [[nodiscard]] std::span<const PoopPile> slots() const { return slots_; }

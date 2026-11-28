@@ -69,6 +69,8 @@ inline constexpr std::string_view RandomizerStateText = "the randomizer section"
 inline constexpr std::string_view NotARunSeed = "'{}' is not a randomizer seed";
 inline constexpr std::string_view NotALearnChance =
     "'{}' is not a learning chance: original, 25, 50, 75 or 100";
+inline constexpr std::string_view UnknownBattleSystem =
+    "'{}' is no battle system (classic or folder)";
 inline constexpr std::string_view NotAFraction = "'{}' is not a fraction of a frame";
 inline constexpr std::string_view NotARandomState = "'{}' is not a random state";
 inline constexpr std::string_view MissingRandomKey = "the random state has no '{}'";

@@ -226,6 +226,7 @@ document_classes:
 layout:
   pause_menu: {menu: original, tabs: minimal, medals: profile}
   partner_menu: {pages: compact, pool: current}
+  battle: {strip: icons}
   main_menu: {menu: original}
   save_slots: {menu: original}
   new_game_rules: {menu: original}

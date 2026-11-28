@@ -5,6 +5,8 @@
 #include <dwe/assets/virtual_file_system.hpp>
 #include <dwe/core/error.hpp>
 #include <dwe/debug/debug_ui.hpp>
+#include <dwe/game/battle/moves.hpp>
+#include <dwe/game/battle/state.hpp>
 #include <dwe/game/coop/protocol.hpp>
 #include <dwe/game/modes/mode_catalog.hpp>
 #include <dwe/game/save/save_file.hpp>
@@ -41,6 +43,7 @@ class InventoryAdapter;
 #include "care_commands.hpp"
 #include "chart_requirements.hpp"
 #include "coop_guest_return.hpp"
+#include "coop_npc_mirror.hpp"
 #include "coop_npc_presence.hpp"
 #include "coop_world_state.hpp"
 #include "curling_screen.hpp"
@@ -80,6 +83,7 @@ class InventoryAdapter;
 #include "save_indicator.hpp"
 #include "save_machine.hpp"
 #include "session_start.hpp"
+#include "shared_pause.hpp"
 #include "shop_haggle_screen.hpp"
 #include "shop_job_bar.hpp"
 #include "shop_job_rules_panel.hpp"
@@ -160,6 +164,8 @@ inline constexpr std::string_view BoostedTechniquesSetting = "boosted_techniques
 // The canyon shop's job (game::shop_job; session::ShopJobAdapter): improved, the default, plays the
 // line of customers and the haggle screen; original plays the original's price menus.
 inline constexpr std::string_view ShopJobModeSetting = "shop_job_mode";
+// The battle system row: fixed unless the game's mode lists more than one, and for a co-op guest.
+inline constexpr std::string_view BattleSystemSetting = "battle_system";
 inline constexpr std::string_view ShopJobImproved = "improved";
 inline constexpr std::string_view ShopJobOriginal = "original";
 // Co-op difficulty (an engine improvement; docs/architecture/coop-difficulty.md): how a co-op
@@ -308,6 +314,7 @@ public:
   // Applies the play options of the user's settings (quick battle start, skip the evolution, a
   // cancel closes a choice and the rules' options: rule_options.hpp) after one of them changed.
   void applyPlayOptions();
+  void changeBattleSystem(std::string_view name);
   // What the fight on screen asks of a quick battle's speed (battle_speed.hpp).
   [[nodiscard]] BattleSpeedMoment battleSpeedMoment() const {
     return {.fighting = battleScreen_.fighting(), .reacting = battleScreen_.reacting()};
@@ -427,8 +434,13 @@ public:
   // to it, shown once it stands still (coop_npc_presence.hpp).
   void followCoopFacts(std::span<const CoopFactChange> facts,
                        std::span<const CoopFactChange> ownFacts = {});
+  // NPCs where the host's snapshots put them; with none or in a co-op battle they walk alone.
+  void mirrorCoopNpcs(const PresentedCoopWorld* world, net::Millis now);
   [[nodiscard]] std::string_view partnerSpecies() const {
     return game_.session->partner().state().species;
+  }
+  [[nodiscard]] std::string drawnPartnerSpecies() const {
+    return scene_->drawnSpeciesOf(partnerSpecies());
   }
   [[nodiscard]] const game::partner::Conditions& partnerConditions() const {
     return game_.session->partner().state().conditions;
@@ -479,6 +491,11 @@ public:
                                         bool predefined);
   // The guest: the battles its story asks for go to the host (StorySceneGlue::handBattlesOver).
   void handBattlesToHost(bool on) { storyScenes_.handBattlesOver(on); }
+  [[nodiscard]] bool partnerDying() const { return deathScene_.active(); }
+  // deathHoldsWakeMap: a co-op guest stays on its own wake map meanwhile.
+  [[nodiscard]] bool ownDeathHoldsMap() const { return deathScene_.active() || deathScript_; }
+  void holdCoopBattles(bool on) { storyScenes_.holdBattles(on); }
+  [[nodiscard]] bool takeHeldCoopBattle() { return storyScenes_.takeHeldBattle(); }
   [[nodiscard]] std::optional<StorySceneGlue::HandedBattle> takeHandedBattle() {
     return storyScenes_.takeHandedBattle();
   }
@@ -489,12 +506,26 @@ public:
   void runHandedBattleHere() { storyScenes_.runHandedBattleHere(); }
   // The guest: its partner as the host's battle builds its fighter.
   [[nodiscard]] session::VisitingPartner coopFighter() const;
+  [[nodiscard]] std::optional<game::battle::Fighter> coopBattleFighter() const;
+  [[nodiscard]] const game::battle::MoveCatalog* coopMoves() const;
+  // The NPCs the other players' events hold here (coop_events.hpp): their contacts are dropped.
+  void leaveNpcsBe(std::vector<std::int32_t> npcs) { npcsLeftBe_ = std::move(npcs); }
+  [[nodiscard]] bool sleepWaitsForWorld() const { return sleepScreen_.waitsForWorld(); }
+  [[nodiscard]] std::optional<std::int32_t> eventNpc() const;
   [[nodiscard]] const std::string& modeId() const;
   // The co-op difficulty the battles this game runs scale their enemies by (coop_difficulty).
   [[nodiscard]] game::battle::CoopLevel coopLevel() const { return coopLevel_; }
   // The guest: the field holds while the host's battle runs (its figures are the host's).
-  void holdForCoopBattle(bool on) { coopBattleHold_ = on; }
+  // A field bag or notice open then goes; the notice opens again once the battle is over.
+  void holdForCoopBattle(bool on);
+  // Co-op: this player's menus and pause no longer stop the world (shared_pause.hpp).
+  void shareWorld(bool shared) { worldShared_ = shared; }
+  [[nodiscard]] bool worldShared() const { return worldShared_; }
   [[nodiscard]] bool heldForCoopBattle() const { return coopBattleHold_; }
+  // A menu, partner page or dialog of this player's is open (localScreensBusy).
+  [[nodiscard]] bool localScreensBusy() const;
+  // A menu or partner page of this player's covers the field (localMenusOpen).
+  [[nodiscard]] bool localMenusOpen() const;
   // The guest: what the host's battle left its partner, given as its own battle's result.
   core::Result<void> applyCoopSpoils(const game::battle::BattleResult& result);
   void useCoopBattleSounds(std::span<const std::string> enemies,
@@ -520,6 +551,8 @@ private:
                    std::span<const GuestFieldIntent> guests);
   void tickWater();
   [[nodiscard]] bool paused() const;
+  [[nodiscard]] LocalScreens localScreens() const;
+  void putAwayFieldMenus();
   // How the field animates: running, resting behind the game menu, in a battle or frozen
   // (field_clock.hpp).
   [[nodiscard]] FieldClock fieldClock() const;
@@ -539,6 +572,8 @@ private:
   void publishShopJob();
   // The danger alert's marks (danger_alert.hpp), published when they changed.
   void publishDangerMarks(bool fieldRunning, const assets::DigimonTable* species);
+  void publishBattleSystem();
+  [[nodiscard]] bool battleSystemSwitchable() const;
   // Publishes hud.minimap_allowed when it changes.
   // Draws the minimap of the map's collision and of the step cells that change the map now again
   // (on entering a map, after a preview swapped it in place or a trigger changed those cells).
@@ -599,6 +634,7 @@ private:
   std::unique_ptr<StoryFieldLink> storyLink_;
   EvolutionScene evolutionScene_;
   DeathScene deathScene_;
+  bool deathScript_ = false;
   EndingScene endingScene_;
   EggBoxScreen eggBoxScreen_;
   // The improved shop job's rules panel and counter (game::shop_job).
@@ -641,6 +677,7 @@ private:
   bool battleRanLastFrame_ = false;
   // The guest's field holds for the host's battle (holdForCoopBattle).
   bool coopBattleHold_ = false;
+  bool worldShared_ = false;
   bool evolutionRanLastFrame_ = false;
   // The play options (applyPlayOptions): skip the evolution's scene on confirm or cancel, and the
   // options that change the running game's rules.
@@ -667,9 +704,11 @@ private:
   bool coopGuest_ = false;
   // The map edits this tick's scripts made, for co-op to share (takeCoopWorld).
   std::vector<game::coop::WorldEdit> coopMapEdits_;
+  std::vector<std::int32_t> npcsLeftBe_;
   // What other players' story changes do to this map's NPCs, and the map heads' spawns it reads
   // (field/npc_spawns, read on the first change).
   CoopNpcPresence coopNpcs_;
+  CoopNpcMirror coopNpcMirror_;
   std::optional<std::vector<game::field::NpcSpawnRule>> npcSpawns_;
   // Whether the dialog on screen is the story lock's message.
   bool lockNoticeShown_ = false;

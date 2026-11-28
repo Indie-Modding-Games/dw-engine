@@ -225,7 +225,7 @@ Portado 41, parcial 4, falta 60.
 | `VS_tickCameraIntro` | `vs/vs_camera.c:658` | falta | Avanza la secuencia de cámara de la presentación del versus. | — |
 | `VS_startCameraIntro` | `vs/vs_camera.c:683` | falta | Inicia el recorrido de cámara entre los luchadores del versus. | — |
 | `VS_applyEntityViewpoint` | `vs/vs_camera.c:755` | falta | Cámara del versus anclada a la vista del luchador. | — |
-| `VS__combatInit` | `vs/vs_combat.c:280` | parcial | Prepara el combate versus: daño, reloj, marcas y fichas de ambos luchadores. | `packages/game/battle/src/rules.cpp:1` · sin las marcas de jugador ni las fichas del HUD 3D; el versus en línea se enseña como panel |
+| `VS__combatInit` | `vs/vs_combat.c:280` | parcial | Prepara el combate versus: daño, reloj, marcas y fichas de ambos luchadores. | `packages/game/battle/src/core/battle.cpp:152` · sin las marcas de jugador ni las fichas del HUD 3D; el versus en línea se enseña como panel |
 | `VS_setupDemoCombat` | `vs/vs_combat.c:449` | falta | Prepara el combate automático de la demostración. | demostración del título: solo la llama el main de la versión de prueba; el de esta versión pone la película |
 | `VS_checkDemoEndCondition` | `vs/vs_combat.c:552` | falta | Comprueba si la demostración termina por KO, tiempo o botón. | demostración del título: solo la llama el main de la versión de prueba; el de esta versión pone la película |
 | `VS_cleanupDemoCombat` | `vs/vs_combat.c:750` | falta | Cierra el combate de demostración y libera sus objetos. | demostración del título: solo la llama el main de la versión de prueba; el de esta versión pone la película |
@@ -268,11 +268,11 @@ Portado 41, parcial 4, falta 60.
 | `VS_queueRandomMove` | `vs/vs_main.c:1735` | falta | Elige al azar técnica y objetivo para la IA del luchador. | — |
 | `VS_loadVSAssets` | `vs/vs_scene.c:1147` | parcial | Prepara la arena del versus: música por escenario, cámara, luces y efectos. | `apps/game/src/versus_arena.cpp:1` · la arena 0 con su cámara, sus luces y los efectos; sin la música por escenario |
 | `VS_playVersusIntroSequence` | `vs/vs_scene.c:1558` | falta | Reproduce la presentación inicial del versus. | `apps/game/src/versus_arena.cpp:45` |
-| `VS_tickVersusIntro` | `vs/vs_scene.c:1618` | falta | Avanza la presentación del versus por estados. | `apps/game/src/versus_flow.cpp:463` |
+| `VS_tickVersusIntro` | `vs/vs_scene.c:1618` | falta | Avanza la presentación del versus por estados. | `apps/game/src/versus_flow.cpp:466` |
 | `VS_initializeCamera` | `vs/vs_scene.c:1851` | parcial | Coloca la cámara inicial de la arena del versus. | `apps/game/src/versus_arena.cpp:1` · la cámara de la copa (game::tournament::MatchCamera); sin medir contra la del versus |
 | `VS__createPressStartToBeginBox` | `vs/vs_select.c:409` | falta | Muestra el aviso de pulsar Start para empezar. | — |
 | `VS__initialize` | `vs/vs_select.c:442` | parcial | Flujo de preparación del versus: modo, mapa y selección de criaturas. | `apps/game/src/versus_flow.cpp:1` · sin elección de arena (VS__tickSelectMap) |
-| `VS__tickSelectMap` | `vs/vs_select.c:1166` | falta | Pantalla de elección del escenario del versus. | `apps/game/src/versus_flow.cpp:405` |
+| `VS__tickSelectMap` | `vs/vs_select.c:1166` | falta | Pantalla de elección del escenario del versus. | `apps/game/src/versus_flow.cpp:408` |
 
 ## Minijuego de piedras
 

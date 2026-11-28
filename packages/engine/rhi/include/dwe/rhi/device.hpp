@@ -8,6 +8,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -33,6 +34,9 @@ struct DeviceDesc {
   bool compatibleMode = false;
   // Stays on the Vulkan 1.3 path even when the driver offers 1.4 (--vulkan13).
   bool forceVulkan13 = false;
+  // Where the compiled pipelines are kept between runs (empty: not kept). A file another GPU or
+  // driver wrote is ignored.
+  std::filesystem::path pipelineCacheFile{};
 };
 
 struct HostImageCopy {
@@ -77,6 +81,8 @@ struct NativeHandles {
 // and the swapchain is rebuilt on its own when the window changes size.
 class Device {
 public:
+  // When a GPU cannot make the device on its path, the next one is tried in the same call: 1.4,
+  // then 1.3, then the 1.2 compatible mode (nextVulkanAttempt).
   static core::Result<std::unique_ptr<Device>> create(const platform::Window& window,
                                                       const DeviceDesc& desc);
 
@@ -118,6 +124,10 @@ public:
   [[nodiscard]] NativeHandles nativeHandles() const;
 
   [[nodiscard]] VulkanPath vulkanPath() const;
+  [[nodiscard]] VkPipelineCache pipelineCache() const;
+  // Writes the cache to DeviceDesc::pipelineCacheFile when it grew; the device also does it when
+  // it is destroyed.
+  void savePipelineCache();
   // The Vulkan 1.4 host copy entry points, when images of this format and usage can be written
   // from the CPU without a staging buffer.
   [[nodiscard]] std::optional<HostImageCopy> hostImageCopy(VkFormat format,
@@ -145,6 +155,12 @@ public:
 
 private:
   struct Impl;
+
+  // One attempt of create with the floor and path `desc` asks for; `reached` is the path it had
+  // chosen when it failed after selecting a GPU.
+  static core::Result<std::unique_ptr<Device>> createOnce(const platform::Window& window,
+                                                          const DeviceDesc& desc,
+                                                          std::optional<VulkanPath>& reached);
 
   explicit Device(std::unique_ptr<Impl> impl);
 

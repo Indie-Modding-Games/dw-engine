@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <span>
 #include <utility>
 #include <variant>
@@ -84,7 +85,72 @@ void append(std::vector<CoopOutgoing>& to, std::vector<CoopOutgoing> more) {
   to.insert(to.end(), std::make_move_iterator(more.begin()), std::make_move_iterator(more.end()));
 }
 
+std::int16_t wireTile(std::int32_t value) {
+  return static_cast<std::int16_t>(std::clamp<std::int32_t>(
+      value, std::numeric_limits<std::int16_t>::min(), std::numeric_limits<std::int16_t>::max()));
+}
+
 } // namespace
+
+coop::PoopPiles pileList(const game::partner::PoopPiles& piles, std::string_view map) {
+  coop::PoopPiles list{.mapId = std::string{map}, .restart = false, .piles = {}};
+  for (const game::partner::PoopPile& pile : piles.onMap(map)) {
+    if (list.piles.size() == coop::MaxMapPiles) {
+      break;
+    }
+    list.piles.push_back(
+        {.x = wireTile(pile.tile.x), .y = wireTile(pile.tile.y), .size = pile.size});
+  }
+  return list;
+}
+
+void applyPileList(game::partner::PoopPiles& piles, const coop::PoopPiles& list) {
+  if (list.restart) {
+    piles.restore({}, piles.cursor());
+  }
+  if (list.mapId.empty()) {
+    return;
+  }
+  std::vector<game::partner::PoopPile> host;
+  for (const coop::PileEntry& entry : list.piles) {
+    host.push_back({.map = list.mapId, .tile = {.x = entry.x, .y = entry.y}, .size = entry.size});
+  }
+  piles.replaceMap(list.mapId, host);
+}
+
+std::optional<coop::PoopPiles> CoopPileTracker::update(const game::partner::PoopPiles& piles,
+                                                       std::string_view map) {
+  if (map.empty()) {
+    return std::nullopt;
+  }
+  coop::PoopPiles list = pileList(piles, map);
+  const auto sent = sent_.find(map);
+  const bool same = sent != sent_.end() ? sent->second == list.piles : list.piles.empty();
+  if (same) {
+    return std::nullopt;
+  }
+  sent_[std::string{map}] = list.piles;
+  return list;
+}
+
+std::vector<coop::PoopPiles> CoopPileTracker::sync(const game::partner::PoopPiles& piles,
+                                                   std::string_view hostMap) {
+  std::vector<coop::PoopPiles> lists;
+  coop::PoopPiles first = pileList(piles, hostMap);
+  first.restart = true;
+  lists.push_back(std::move(first));
+  std::vector<std::string_view> maps;
+  for (const game::partner::PoopPile& pile : piles.slots()) {
+    if (pile.size != 0 && pile.map != hostMap && !pile.map.empty() &&
+        pile.map.size() <= coop::MaxPileMapText && !std::ranges::contains(maps, pile.map)) {
+      maps.emplace_back(pile.map);
+    }
+  }
+  for (const std::string_view map : maps) {
+    lists.push_back(pileList(piles, map));
+  }
+  return lists;
+}
 
 void CoopStoryBaseline::reset(const game::story::StoryState& state) {
   triggers_.assign(static_cast<std::size_t>(state.triggerCount()), false);
@@ -310,6 +376,9 @@ void CoopGroundMirror::show(CoopWorldView& view) {
     shown[entry.slot] = entry.id;
   }
   const auto now = view.items->ground();
+  if (ground.size() < now.size()) {
+    ground.resize(now.size());
+  }
   const bool same = std::ranges::equal(
       now, ground,
       [](const std::optional<game::field::GroundItem>& a,
@@ -363,6 +432,13 @@ CoopWorldShare CoopHostWorld::share(CoopWorldView& view) {
   if (!facts_.ready()) {
     facts_.reset(story);
   }
+  // A new load, a script's warp reset included, overtakes what the guest did on the last load.
+  const bool newMap = view.settled && syncSerial_ != view.mapSerial;
+  if (newMap) {
+    syncSerial_ = view.mapSerial;
+    synced_.clear();
+    ledger_.newMapLoad();
+  }
   // The host's own interactions: its game is the world, so they only need telling.
   std::vector<coop::WorldEdit> own = facts_.changes(story, view.shared, &share.ownFacts);
   if (view.settled) {
@@ -372,9 +448,14 @@ CoopWorldShare CoopHostWorld::share(CoopWorldView& view) {
     append(share.out, toEveryGuest(authority_, change));
   }
 
-  // The host's own pick-ups of this tick are off the ground before any claim is judged.
+  // The host's own pick-ups and partner piles land before any claim is judged.
   if (auto ground = ground_.update(view)) {
     append(share.out, toEveryGuest(authority_, *ground));
+  }
+  if (view.piles != nullptr) {
+    if (auto piles = piles_.update(*view.piles, view.mapId)) {
+      append(share.out, toEveryGuest(authority_, *piles));
+    }
   }
 
   // The guests' asks, in the order they came.
@@ -401,6 +482,20 @@ CoopWorldShare CoopHostWorld::share(CoopWorldView& view) {
       core::logInfo("coop: player {} changed the shared world ({} edits, revision {})", from,
                     taken.change->edits.size(), taken.change->revision);
       append(share.out, toEveryGuest(authority_, *taken.change));
+    }
+    if (!taken.overtaken.empty()) {
+      // The guest's game holds values the world replaced since: it gets the world's again.
+      std::vector<coop::WorldEdit> world;
+      for (const coop::WorldEdit& edit : taken.overtaken) {
+        if (auto now = CoopStoryBaseline::current(story, edit)) {
+          world.push_back(*now);
+        }
+      }
+      core::logInfo("coop: player {}'s world ask {}: {} edits overtaken by newer changes", from,
+                    ask.ask, taken.overtaken.size());
+      for (const coop::WorldChange& change : ledger_.record(view.mapId, world)) {
+        append(share.out, toEveryGuest(authority_, change));
+      }
     }
     if (!taken.refused.empty()) {
       // A player's own facts never reach the world (the guest's game keeps them to itself).
@@ -429,13 +524,9 @@ CoopWorldShare CoopHostWorld::share(CoopWorldView& view) {
   if (chestsMayChange && view.items != nullptr) {
     (void)followChestTriggers(*view.items, story);
   }
+  takePileAsks(view, share);
 
   // The whole story to a guest that just joined, and to everyone on a new map.
-  const bool newMap = view.settled && syncSerial_ != view.mapSerial;
-  if (newMap) {
-    syncSerial_ = view.mapSerial;
-    synced_.clear();
-  }
   for (const coop::PlayerRecord& record : authority_.players()) {
     if (record.id == coop::HostPlayerId || synced_.contains(record.id)) {
       continue;
@@ -448,11 +539,94 @@ CoopWorldShare CoopHostWorld::share(CoopWorldView& view) {
       // Joined on this map: what lies here now (a new map sends it below anyway).
       share.out.push_back({.to = record.id, .message = *ground_.last()});
     }
+    if (view.piles != nullptr) {
+      for (coop::PoopPiles& list : CoopPileTracker::sync(*view.piles, view.mapId)) {
+        share.out.push_back({.to = record.id, .message = std::move(list)});
+      }
+    }
   }
   if (auto ground = ground_.update(view)) {
     append(share.out, toEveryGuest(authority_, *ground));
   }
   return share;
+}
+
+void CoopHostWorld::takePileAsks(CoopWorldView& view, CoopWorldShare& share) {
+  for (auto& [from, ask] : std::exchange(pileAsks_, {})) {
+    if (authority_.find(from) == nullptr) {
+      continue;
+    }
+    auto& last = lastPileAsk_[from];
+    if (ask.ask <= last) {
+      continue;
+    }
+    last = ask.ask;
+    const game::partner::Tile tile{.x = ask.x, .y = ask.y};
+    if (ask.action == coop::PileAction::Leave) {
+      if (view.piles != nullptr && view.random != nullptr) {
+        const game::partner::Tile placed =
+            view.piles->placeAt(ask.mapId, tile, ask.size, *view.random);
+        core::logInfo("coop: player {}'s partner left a pile on {} at ({}, {})", from, ask.mapId,
+                      placed.x, placed.y);
+      }
+    } else {
+      const std::optional<std::int32_t> size =
+          view.piles != nullptr ? view.piles->remove(ask.mapId, tile) : std::nullopt;
+      core::logInfo("coop: player {}'s partner eats the pile on {} at ({}, {}): {}", from,
+                    ask.mapId, tile.x, tile.y, size ? "granted" : "refused: gone");
+      share.out.push_back({.to = from,
+                           .message = coop::PileAnswer{.ask = ask.ask,
+                                                       .granted = size.has_value(),
+                                                       .size = size.value_or(0)}});
+    }
+    if (view.piles != nullptr) {
+      if (auto piles = piles_.update(*view.piles, ask.mapId)) {
+        append(share.out, toEveryGuest(authority_, *piles));
+      }
+    }
+  }
+}
+
+void CoopGuestWorld::sharePiles(CoopWorldView& view, CoopWorldShare& share) {
+  if (view.pileShare != nullptr) {
+    FieldPileShare& mine = *view.pileShare;
+    for (const game::partner::PoopPile& pile : std::exchange(mine.left, {})) {
+      share.out.push_back({.to = coop::HostPlayerId,
+                           .message = coop::PileAsk{.ask = ++pileAsks_,
+                                                    .action = coop::PileAction::Leave,
+                                                    .mapId = pile.map,
+                                                    .x = wireTile(pile.tile.x),
+                                                    .y = wireTile(pile.tile.y),
+                                                    .size = pile.size}});
+    }
+    if (mine.eat.state == FieldPileShare::Eat::State::Asked) {
+      mine.eat.number = ++pileAsks_;
+      mine.eat.state = FieldPileShare::Eat::State::Sent;
+      share.out.push_back({.to = coop::HostPlayerId,
+                           .message = coop::PileAsk{.ask = mine.eat.number,
+                                                    .action = coop::PileAction::Eat,
+                                                    .mapId = mine.eat.mapId,
+                                                    .x = wireTile(mine.eat.tile.x),
+                                                    .y = wireTile(mine.eat.tile.y),
+                                                    .size = 0}});
+    }
+  }
+  for (const coop::PoopPiles& list : std::exchange(pilesIn_, {})) {
+    if (view.piles != nullptr) {
+      applyPileList(*view.piles, list);
+    }
+  }
+  for (const coop::PileAnswer& answer : std::exchange(pileAnswers_, {})) {
+    if (view.pileShare == nullptr) {
+      continue;
+    }
+    FieldPileShare::Eat& eat = view.pileShare->eat;
+    if (eat.state == FieldPileShare::Eat::State::Sent && eat.number == answer.ask) {
+      eat.state = answer.granted ? FieldPileShare::Eat::State::Granted
+                                 : FieldPileShare::Eat::State::Refused;
+      eat.size = answer.size;
+    }
+  }
 }
 
 CoopWorldShare CoopGuestWorld::share(CoopWorldView& view) {
@@ -490,9 +664,14 @@ CoopWorldShare CoopGuestWorld::share(CoopWorldView& view) {
           if (sharedBy(view.shared, edit)) {
             chestsMayChange |= facts_.apply(story, edit, share.facts);
           }
-        } else if (isMapEdit(edit) && change->origin != self_ && change->mapId == view.mapId &&
-                   view.settled) {
-          share.mapEdits.push_back(edit);
+        } else if (isMapEdit(edit) && change->origin != self_ && change->mapId == view.mapId) {
+          if (view.settled) {
+            share.mapEdits.push_back(edit);
+          } else {
+            // This game is loading that map again: the edits wait for its load to end.
+            heldMap_ = view.mapId;
+            heldEdits_.push_back(edit);
+          }
         }
       }
     } else if (const auto* sync = std::get_if<coop::WorldSync>(&message)) {
@@ -505,10 +684,17 @@ CoopWorldShare CoopGuestWorld::share(CoopWorldView& view) {
       }
     }
   }
+  if (view.settled && !heldEdits_.empty()) {
+    if (heldMap_ == view.mapId) {
+      share.mapEdits.insert(share.mapEdits.begin(), heldEdits_.begin(), heldEdits_.end());
+    }
+    heldEdits_.clear();
+  }
   if (chestsMayChange && view.items != nullptr) {
     (void)followChestTriggers(*view.items, story);
   }
   ground_.show(view);
+  sharePiles(view, share);
   // The host's word on this game's claim, once the changes it made are in.
   for (const coop::ClaimAnswer& answer : std::exchange(answers_, {})) {
     if (view.claim != nullptr && view.claim->state == FieldItemClaim::State::Sent &&

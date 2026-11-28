@@ -169,7 +169,7 @@ screens:
 layout:
   pause_menu: {menu: original, box: original}
   partner_menu: {menu: original, box: original, pages: original}
-  battle: {menu: original}
+  battle: {menu: original, strip: icons}
   main_menu: {menu: original, picture: original}
   save_slots: {menu: original, picture: original}
   new_game_rules: {menu: original, picture: original}

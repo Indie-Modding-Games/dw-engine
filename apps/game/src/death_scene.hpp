@@ -47,6 +47,13 @@ struct DeathSceneDesc {
   session::FishingAdapter* fishing = nullptr;
 };
 
+// Whether the player stays on the wake map this tick: from a lost life's or a death's scene until
+// the story's script after it ends (the elder's words, the egg box and the rebirth), with `held`
+// what the last tick gave.
+[[nodiscard]] constexpr bool deathHoldsWakeMap(bool held, bool sceneActive, bool scriptRunning) {
+  return sceneActive || (held && scriptRunning);
+}
+
 // The lost life's lives box on its document (ui/lives_box/document).
 inline constexpr std::string_view LivesBoxDocument = "lives_box";
 

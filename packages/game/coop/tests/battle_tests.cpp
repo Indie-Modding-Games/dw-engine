@@ -5,6 +5,7 @@
 
 #include <doctest/doctest.h>
 
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -74,7 +75,7 @@ BattleFrame frame(std::uint32_t battle, std::uint32_t number) {
           .frame = number,
           .phase = BattlePhase::Fight,
           .command = 3,
-          .menu = 0x0FFE,
+          .menu = {11, 1, 7, 6, 5, 4, 2, 10, 9, 8, 3},
           .bagAvailable = true,
           .finisherCharging = false,
           .fighters = {{.hp = 1000, .mp = 500, .maxHp = 1200, .maxMp = 800},
@@ -89,6 +90,21 @@ BattleFrame frame(std::uint32_t battle, std::uint32_t number) {
                        .pace = 16},
                       {.slot = 5, .x = 200, .z = -40, .yaw = 3, .clip = 1, .starts = 2}},
           .throws = {}};
+}
+
+BattleFolderPlate fullPlate() {
+  return {.active = BattleOrderShown{.slot = 3, .target = 2},
+          .phase = LastOrderPhase,
+          .phasePercent = 100,
+          .committed = true,
+          .queue = {{.slot = 0, .target = 1}, {.slot = 2, .target = std::nullopt}},
+          .target = 6,
+          .stance = static_cast<std::uint8_t>(LastStance),
+          .bar = 0xFFFF,
+          .barMax = 0xFFFF,
+          .brokenSeconds = 255,
+          .notice = BattleOrderNotice{
+              .slot = 1, .end = LastOrderEnd, .problem = LastOrderProblem, .by = 3}};
 }
 
 BattleAction act(std::uint32_t battle, BattleActionKind kind, std::int32_t value = 0,
@@ -146,14 +162,18 @@ TEST_CASE("cooperative battle messages round trip") {
                         .enemyNpcs = {1},
                         .species = {"gabumon", "kunemon"},
                         .fixedFight = true,
-                        .allies = {}});
+                        .allies = {},
+                        .folder = true});
   roundTrip(BattleRefused{.ask = 3, .reason = BattleRefusal::Busy});
   roundTrip(BattleRefused{.ask = 4, .reason = BattleRefusal::NotHere});
+  roundTrip(BattleRefused{.ask = 5, .reason = BattleRefusal::PartnerDying});
   roundTrip(frame(9, 42));
   roundTrip(act(9, BattleActionKind::Command, 8));
   roundTrip(act(9, BattleActionKind::ThrowItem, 0, "medicine"));
   roundTrip(act(9, BattleActionKind::Cheer));
   roundTrip(act(9, BattleActionKind::CloseEnd));
+  roundTrip(act(9, BattleActionKind::Order, battleOrderValue(2, 1)));
+  roundTrip(act(9, BattleActionKind::Stance, 3));
   roundTrip(ending(9, BattleOutcome::Victory, std::vector<std::int16_t>{4, 6, 7}, 120, spoils()));
   roundTrip(ending(10, BattleOutcome::Fled, std::vector<std::int16_t>{}, 0));
 }
@@ -214,10 +234,31 @@ TEST_CASE("cooperative battle messages reject what the battle cannot be") {
   // A command that is none, an item with no id.
   rejects(act(1, BattleActionKind::Command, 0));
   rejects(act(1, BattleActionKind::ThrowItem));
+  // A stance that is none, an order at a fighter past the battle's.
+  rejects(act(1, BattleActionKind::Stance, LastStance + 1));
+  rejects(act(1, BattleActionKind::Order,
+              battleOrderValue(0, static_cast<std::int32_t>(MaxBattleFighters) + 1)));
   rejects(BattleRefused{.ask = 0});
+  // A refusal past the reasons this protocol knows.
+  auto refusal = encode(Message{BattleRefused{.ask = 1, .reason = BattleRefusal::PartnerDying}});
+  ++refusal.back();
+  CHECK_FALSE(decode(refusal));
   // An unknown action kind on the wire.
   auto bytes = encode(Message{act(1, BattleActionKind::Cheer)});
   bytes[5] = 9;
+  CHECK_FALSE(decode(bytes));
+}
+
+TEST_CASE("an end frame says how the battle ended") {
+  BattleFrame end = frame(2, 9);
+  end.phase = BattlePhase::End;
+  for (const BattleOutcome outcome :
+       {BattleOutcome::Victory, BattleOutcome::Fled, BattleOutcome::Defeat}) {
+    end.outcome = outcome;
+    roundTrip(end);
+  }
+  auto bytes = encode(Message{end});
+  bytes.back() = static_cast<std::uint8_t>(BattleOutcome::Defeat) + 1;
   CHECK_FALSE(decode(bytes));
 }
 
@@ -225,6 +266,8 @@ TEST_CASE("a full battle frame fits one unreliable datagram") {
   BattleFrame full = frame(1, 1);
   full.fighters.assign(MaxBattleFighters, {.hp = 1, .mp = 1, .maxHp = 1, .maxMp = 1});
   full.figures.assign(MaxBattleFigures, {.slot = 300, .x = -999'999, .z = 999'999});
+  full.folder = fullPlate();
+  full.outcome = BattleOutcome::Defeat;
   const auto bytes = encode(Message{full});
   CHECK(bytes.size() + 1 <= net::MaxDatagram);
   roundTrip(full);
@@ -254,22 +297,24 @@ TEST_CASE("the referee runs one battle at a time and pulls the second player in 
   BattleReferee referee;
   referee.guestJoined(GuestPlayerId);
   const BattleAsk ask{.ask = 4, .mapId = "forest", .enemyNpcs = {2}, .fighter = fighter()};
-  CHECK(referee.judge(ask, "forest", false) == std::nullopt);
-  CHECK(referee.judge(ask, "beach", false) == BattleRefusal::NotHere);
-  // The host's own battle started first: the guest's ask waits for nothing, it is refused, and the
-  // guest helps in the host's battle.
-  CHECK(referee.judge(ask, "forest", true) == BattleRefusal::Busy);
+  const HostMoment free{.map = "forest", .guestHere = true};
+  CHECK(referee.judge(ask, free).starts());
+  CHECK(referee.judge(ask, HostMoment{.map = "beach", .guestHere = true}).refusal ==
+        BattleRefusal::NotHere);
+  // The host's own battle started first: the guest's ask is refused and the guest helps in it.
   const BattleBegin hosts =
       referee.begin(HostPlayerId, 0, "forest", {3}, {"gabumon", "kunemon"}, false);
   CHECK(hosts.battle == 1);
   CHECK(hosts.ask == 0);
-  CHECK(referee.judge(ask, "forest", false) == BattleRefusal::Busy);
+  CHECK(referee.judge(ask, free).refusal == BattleRefusal::Busy);
   CHECK(referee.roleOf(HostPlayerId) == BattleRole::Starter);
   CHECK(referee.roleOf(GuestPlayerId) == BattleRole::Helper);
   // A helper throws its own items and cheers; it neither commands nor closes the end box.
   CHECK(referee.allows(GuestPlayerId, act(1, BattleActionKind::ThrowItem, 0, "meat")));
   CHECK(referee.allows(GuestPlayerId, act(1, BattleActionKind::Cheer)));
   CHECK_FALSE(referee.allows(GuestPlayerId, act(1, BattleActionKind::Command, 2)));
+  CHECK_FALSE(referee.allows(GuestPlayerId, act(1, BattleActionKind::Order, 1)));
+  CHECK_FALSE(referee.allows(GuestPlayerId, act(1, BattleActionKind::Stance, 1)));
   CHECK_FALSE(referee.allows(GuestPlayerId, act(1, BattleActionKind::CloseEnd)));
   CHECK_FALSE(referee.allows(GuestPlayerId, act(2, BattleActionKind::Cheer)));
   // A guest the referee does not know (not joined) is not heard.
@@ -284,6 +329,82 @@ TEST_CASE("the referee runs one battle at a time and pulls the second player in 
   CHECK_FALSE(end.spoils);
   CHECK_FALSE(referee.running());
   CHECK(referee.end(BattleOutcome::Victory, {}, 0, {}).empty());
+}
+
+TEST_CASE("an ask the host cannot take yet waits for it instead of being refused (#413)") {
+  BattleReferee referee;
+  referee.guestJoined(GuestPlayerId);
+  const BattleAsk ask{.ask = 4, .mapId = "forest", .enemyNpcs = {2}, .fighter = fighter()};
+  for (const HostMoment& held :
+       {HostMoment{.map = "", .guestHere = true}, HostMoment{.map = "forest", .guestHere = false},
+        HostMoment{.map = "forest", .guestHere = true, .battling = true},
+        HostMoment{.map = "forest", .guestHere = true, .held = true}}) {
+    const BattleAskVerdict verdict = referee.judge(ask, held);
+    CHECK(verdict.waits);
+    CHECK_FALSE(verdict.refusal);
+  }
+  CHECK(referee.wait(GuestPlayerId, ask, 100));
+  CHECK(referee.wait(GuestPlayerId, ask, 100 + BattleAskWaitTicks - 1));
+  REQUIRE(referee.waiting().size() == 1);
+  CHECK(referee.waiting().front().ask.ask == ask.ask);
+
+  // Taken once the host is free: the begin forgets the waiting ask, so it never starts twice.
+  CHECK(referee.judge(ask, HostMoment{.map = "forest", .guestHere = true}).starts());
+  static_cast<void>(
+      referee.begin(GuestPlayerId, ask.ask, "forest", {2}, {"agumon", "kunemon"}, false));
+  CHECK(referee.waiting().empty());
+}
+
+TEST_CASE("an ask that waits too long is refused as busy, and a guest leaving drops it (#413)") {
+  BattleReferee referee;
+  referee.guestJoined(GuestPlayerId);
+  const BattleAsk ask{.ask = 4, .mapId = "forest", .enemyNpcs = {2}, .fighter = fighter()};
+  CHECK(referee.wait(GuestPlayerId, ask, 0));
+  CHECK_FALSE(referee.wait(GuestPlayerId, ask, BattleAskWaitTicks));
+  CHECK(referee.waiting().empty());
+
+  // A newer ask replaces the older one and starts its own wait.
+  CHECK(referee.wait(GuestPlayerId, ask, 0));
+  const BattleAsk newer{.ask = 5, .mapId = "forest", .enemyNpcs = {3}, .fighter = fighter()};
+  CHECK(referee.wait(GuestPlayerId, newer, BattleAskWaitTicks));
+  REQUIRE(referee.waiting().size() == 1);
+  CHECK(referee.waiting().front().ask.ask == newer.ask);
+
+  referee.guestLeft(GuestPlayerId);
+  CHECK(referee.waiting().empty());
+}
+
+TEST_CASE("an ask held by a dying partner waits and is refused for that reason") {
+  BattleReferee referee;
+  referee.guestJoined(GuestPlayerId);
+  const BattleAsk ask{.ask = 4, .mapId = "forest", .enemyNpcs = {2}, .fighter = fighter()};
+  const BattleAskVerdict dying =
+      referee.judge(ask, HostMoment{.map = "forest", .guestHere = true, .partnerDying = true});
+  CHECK(dying.waits);
+  CHECK_FALSE(dying.refusal);
+  CHECK(dying.waitRefusal == BattleRefusal::PartnerDying);
+  const BattleAskVerdict held =
+      referee.judge(ask, HostMoment{.map = "forest", .guestHere = true, .held = true});
+  CHECK(held.waitRefusal == BattleRefusal::Busy);
+}
+
+TEST_CASE("a guest keeps its partner offered while its own ask waits on the host (#411)") {
+  BattleMirror mirror;
+  CHECK(mirror.partnerFree(true));
+  CHECK_FALSE(mirror.partnerFree(false));
+  const BattleAsk ask = mirror.ask("forest", {2}, false, false, fighter());
+  CHECK(mirror.partnerFree(false));
+  mirror.receive(BattleBegin{.battle = 2,
+                             .starter = HostPlayerId,
+                             .ask = 0,
+                             .mapId = "forest",
+                             .enemyNpcs = {2},
+                             .species = {"gabumon", "kunemon", "agumon"},
+                             .fixedFight = false,
+                             .allies = {GuestPlayerId}});
+  CHECK(mirror.role() == BattleRole::Ally);
+  CHECK_FALSE(mirror.partnerFree(true));
+  static_cast<void>(ask);
 }
 
 TEST_CASE("the guest's battle takes its commands and gives its partner the spoils") {
@@ -438,7 +559,7 @@ TEST_CASE("a co-op battle runs over the link from the guest's ask to its end") {
   REQUIRE(asked);
   const auto& ask = std::get<BattleAsk>(*asked);
   CHECK(ask.fighter == fighter());
-  REQUIRE_FALSE(referee.judge(ask, "forest", false));
+  REQUIRE(referee.judge(ask, HostMoment{.map = "forest", .guestHere = true}).starts());
   const BattleBegin begin = referee.begin(GuestPlayerId, ask.ask, ask.mapId, ask.enemyNpcs,
                                           {ask.fighter.species, "kunemon"}, ask.fixedFight);
   REQUIRE(linked.host.send(Message{begin}));
@@ -583,6 +704,35 @@ TEST_CASE("the mirror sends its offer only when it changes, and knows it is an a
   CHECK(mirror.offer(false, hurt));
 }
 
+TEST_CASE("a guest's offer says while its partner dies, and the host holds the battles meanwhile") {
+  BattleMirror mirror;
+  REQUIRE(mirror.offer(false, fighter()));
+  const auto dying = mirror.offer(false, fighter(), true);
+  REQUIRE(dying);
+  CHECK(dying->partnerDying);
+  CHECK_FALSE(mirror.offer(false, fighter(), true));
+  roundTrip(*dying);
+  auto bytes = encode(Message{*dying});
+  bytes.back() = 2;
+  CHECK_FALSE(decode(bytes));
+
+  BattleReferee referee;
+  referee.guestJoined(GuestPlayerId);
+  referee.guestJoined(GuestPlayerId + 1);
+  const std::array<PlayerId, 2> both{GuestPlayerId, GuestPlayerId + 1};
+  referee.receive(GuestPlayerId + 1, BattleOffer{.available = true, .fighter = fighter()});
+  CHECK_FALSE(referee.partnerDying(both));
+  referee.receive(GuestPlayerId, *dying);
+  CHECK(referee.partnerDying(both));
+  CHECK_FALSE(referee.partnerDying(std::array<PlayerId, 1>{GuestPlayerId + 1}));
+  // Reborn, or gone: it holds nothing any more.
+  referee.receive(GuestPlayerId, *mirror.offer(true, fighter()));
+  CHECK_FALSE(referee.partnerDying(both));
+  referee.receive(GuestPlayerId, *dying);
+  referee.guestLeft(GuestPlayerId);
+  CHECK_FALSE(referee.partnerDying(both));
+}
+
 // docs/architecture/coop-combat.md §4.1: every guest there and free fights as an ally.
 TEST_CASE("every guest there joins as an ally and gets only its own spoils") {
   BattleReferee referee;
@@ -662,10 +812,12 @@ TEST_CASE("a guest that is not in the battle helps; its mirror knows its own id"
   CHECK_FALSE(mirror.pendingAsk());
 }
 
-TEST_CASE("a battle frame carries each partner's revive countdown and an item's target") {
+TEST_CASE("a battle frame carries each partner's revive countdown, a foe's hidden HP bar and an "
+          "item's target") {
   BattleFrame withCountdown = frame(3, 4);
   withCountdown.fighters.front().down = true;
   withCountdown.fighters.front().reviveSeconds = 7;
+  withCountdown.fighters.back().hpBarShown = false;
   roundTrip(withCountdown);
   const auto rejects = [](const Message& message) {
     const auto decoded = decode(encode(message));
@@ -675,6 +827,76 @@ TEST_CASE("a battle frame carries each partner's revive countdown and an item's 
   rejects(act(3, BattleActionKind::ThrowItem, -1, "meat"));
   rejects(act(3, BattleActionKind::ThrowItem, static_cast<std::int32_t>(MaxBattleFighters) + 1,
               "meat"));
+}
+
+TEST_CASE("a battle's begin and frames carry the guests' HUD: moves, orders, gauge and plate") {
+  BattleBegin begin{.battle = 4,
+                    .starter = GuestPlayerId,
+                    .ask = 2,
+                    .mapId = "native_forest",
+                    .enemyNpcs = {4},
+                    .species = {"agumon", "kunemon", "gabumon"},
+                    .fixedFight = false,
+                    .allies = {HostPlayerId},
+                    .folder = true,
+                    .moves = {{"spit_fire", "", "sticky_net", "pepper_breath"},
+                              {},
+                              {"blue_blaster", "", "", ""}}};
+  roundTrip(begin);
+  BattleFrame hud = frame(4, 8);
+  hud.fighters.front().order = 4;
+  hud.fighters.front().stance = 2;
+  hud.fighters.front().status = LastBattleStatus;
+  hud.finisherProgress = 150;
+  hud.finisherGoal = 200;
+  hud.folder = fullPlate();
+  roundTrip(hud);
+  hud.folder = BattleFolderPlate{};
+  roundTrip(hud);
+
+  const auto rejects = [](const Message& message) {
+    const auto decoded = decode(encode(message));
+    CHECK_FALSE(decoded);
+  };
+  BattleBegin badBegin = begin;
+  badBegin.moves.pop_back();
+  rejects(badBegin);
+  badBegin = begin;
+  badBegin.moves.front().front() = std::string(65, 'm');
+  rejects(badBegin);
+  const auto withFighter = [&](auto change) {
+    BattleFrame bad = frame(4, 8);
+    change(bad.fighters.front());
+    return Message{bad};
+  };
+  rejects(withFighter([](BattleFighterState& fighter) { fighter.order = 12; }));
+  rejects(withFighter([](BattleFighterState& fighter) { fighter.stance = LastStance + 1; }));
+  rejects(withFighter([](BattleFighterState& fighter) { fighter.status = LastBattleStatus + 1; }));
+  const auto withPlate = [](auto change) {
+    BattleFrame bad = frame(4, 8);
+    bad.folder = fullPlate();
+    change(*bad.folder);
+    return Message{bad};
+  };
+  rejects(withPlate([](BattleFolderPlate& plate) { plate.phase = LastOrderPhase + 1; }));
+  rejects(withPlate([](BattleFolderPlate& plate) { plate.phasePercent = 101; }));
+  rejects(withPlate([](BattleFolderPlate& plate) { plate.stance = LastStance + 1; }));
+  rejects(withPlate([](BattleFolderPlate& plate) { plate.active->slot = OrderSlots; }));
+  rejects(withPlate([](BattleFolderPlate& plate) { plate.target = MaxBattleFighters; }));
+  rejects(withPlate([](BattleFolderPlate& plate) { plate.queue.push_back({.slot = 1}); }));
+  rejects(withPlate([](BattleFolderPlate& plate) { plate.queue.back().target = 9; }));
+  rejects(withPlate([](BattleFolderPlate& plate) { plate.notice->end = LastOrderEnd + 1; }));
+  rejects(
+      withPlate([](BattleFolderPlate& plate) { plate.notice->problem = LastOrderProblem + 1; }));
+  rejects(withPlate([](BattleFolderPlate& plate) { plate.notice->by = OrderSlots; }));
+  // A frame cut inside its plate, and a plate flag that is no flag.
+  hud.folder = fullPlate();
+  auto bytes = encode(Message{hud});
+  bytes.pop_back();
+  CHECK_FALSE(decode(bytes));
+  bytes = encode(Message{frame(4, 8)});
+  bytes.back() = 2;
+  CHECK_FALSE(decode(bytes));
 }
 
 TEST_CASE("a guest takes a battle's spoils only when a battle could leave them") {
@@ -748,6 +970,9 @@ TEST_CASE("a battle frame carries the items thrown, and the guest gets them over
   BattleFrame full = frame(1, 1);
   full.fighters.assign(MaxBattleFighters, {.hp = 1, .mp = 1, .maxHp = 1, .maxMp = 1});
   full.figures.assign(MaxBattleFigures, {.slot = 300, .x = -999'999, .z = 999'999});
+  full.folder = fullPlate();
+  full.finisherProgress = 0xFFFF;
+  full.finisherGoal = 0xFFFF;
   full.throws.assign(MaxBattleThrows, {.serial = 0xFFFF,
                                        .thrower = 3,
                                        .item = std::string(64, 'i'),

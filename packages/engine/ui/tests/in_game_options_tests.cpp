@@ -37,7 +37,7 @@ struct Tab {
   std::string_view id;
   std::span<const std::string_view> rows;
 };
-constexpr std::array<std::string_view, 33> GameRows{"walk-control",
+constexpr std::array<std::string_view, 34> GameRows{"walk-control",
                                                     "autosave",
                                                     "world-map",
                                                     "minimap-items",
@@ -52,6 +52,7 @@ constexpr std::array<std::string_view, 33> GameRows{"walk-control",
                                                     "gym-sessions",
                                                     "quick-battle-start",
                                                     "difficulty",
+                                                    "battle-system",
                                                     "shop-job-mode",
                                                     "skip-evolution",
                                                     "choice-cancel-closes",
@@ -70,12 +71,25 @@ constexpr std::array<std::string_view, 33> GameRows{"walk-control",
                                                     "coop-open-to-join",
                                                     "name-spacing",
                                                     "free-exploration"};
-constexpr std::array<std::string_view, 18> GraphicsRows{
-    "display-mode",      "vsync",          "auto-quality",     "render-scale",
-    "frame-limit",       "smooth-motion",  "hd-scenery",       "scenery-quality",
-    "antialiasing",      "texture-filter", "model-characters", "widescreen-pictures",
-    "enhanced-lighting", "vivid-colors",   "shadows",          "chibi-style",
-    "weather",           "seasons"};
+constexpr std::array<std::string_view, 19> GraphicsRows{"display-mode",
+                                                        "vsync",
+                                                        "graphics-preset",
+                                                        "auto-quality",
+                                                        "render-scale",
+                                                        "frame-limit",
+                                                        "smooth-motion",
+                                                        "hd-scenery",
+                                                        "scenery-quality",
+                                                        "antialiasing",
+                                                        "texture-filter",
+                                                        "model-characters",
+                                                        "widescreen-pictures",
+                                                        "enhanced-lighting",
+                                                        "vivid-colors",
+                                                        "shadows",
+                                                        "chibi-style",
+                                                        "weather",
+                                                        "seasons"};
 constexpr std::array<std::string_view, 4> SoundRows{"music-volume", "effects-volume",
                                                     "continuous-music", "reverb"};
 constexpr std::array<std::string_view, 17> InterfaceRows{
@@ -132,7 +146,7 @@ bool sentAny(const std::vector<UiCommand>& commands, std::string_view name) {
 
 // Down from the tab's first row until the row is focused.
 void focusRow(Screen& screen, std::string_view id) {
-  for (int step = 0; step < 32 && screen.ui->focusedElementId(Menu) != id; ++step) {
+  for (int step = 0; step < 40 && screen.ui->focusedElementId(Menu) != id; ++step) {
     screen.press(input::keys::Down);
   }
   REQUIRE(screen.ui->focusedElementId(Menu) == id);

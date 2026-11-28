@@ -1,6 +1,7 @@
 #include <dwe/assets/digimon_table.hpp>
 #include <dwe/assets/item_table.hpp>
 #include <dwe/screens/battle_view.hpp>
+#include <dwe/screens/death_countdown.hpp>
 
 #include <doctest/doctest.h>
 
@@ -9,6 +10,7 @@
 #include <cstdint>
 #include <format>
 #include <iterator>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <utility>
@@ -112,6 +114,52 @@ TEST_CASE("a co-op ally's countdown shows while it can get up, and not once it i
   REQUIRE(battle.state().fighters[ally].gone());
   CHECK_FALSE(dwe::screens::reviveSecondsOf(battle, ally).has_value());
   CHECK_FALSE(dwe::screens::battleViewOf(battle, names).allies.front().reviveSeconds.has_value());
+}
+
+TEST_CASE("a co-op ally's card names the order it follows now") {
+  BattleSetup setup = duel(evenStats(400, 100), evenStats(400, 100));
+  setup.allies.push_back(
+      {.partner = fighterWith("buddy", evenStats(400, 300), {"punch"}, {.x = 300, .z = 0}),
+       .condition =
+           {.discipline = 50, .tiredness = 0, .sick = false, .injured = false, .knownMoves = {}},
+       .tamer = {.x = 300, .z = -800},
+       .owner = 1});
+  Battle battle = startBattle(std::move(setup), 9);
+  const auto species = fixtureSpecies();
+  const NameKeys names{&species, nullptr, &testCatalog()};
+  const dwe::game::battle::FighterId ally = battle.state().allies.front().id;
+  const auto view = dwe::screens::battleViewOf(battle, names);
+  REQUIRE(view.allies.size() == 1);
+  CHECK(view.allies.front().orderKey ==
+        dwe::screens::commandLabelOf(battle.state().commandsOf(ally).current,
+                                     battle.state().fighters[ally], names));
+  CHECK_FALSE(view.allies.front().orderKey.empty());
+  CHECK(view.fighters.front().orderKey.empty());
+}
+
+TEST_CASE("a player commanding an ally sees its own bag and its own countdown (#418)") {
+  BattleSetup setup = duel(evenStats(400, 100), evenStats(400, 100));
+  setup.allies.push_back(
+      {.partner = fighterWith("buddy", evenStats(400, 300), {"punch"}, {.x = 300, .z = 0}),
+       .condition =
+           {.discipline = 50, .tiredness = 0, .sick = false, .injured = false, .knownMoves = {}},
+       .tamer = {.x = 300, .z = -800},
+       .owner = 0});
+  Battle battle = startBattle(std::move(setup), 9);
+  const dwe::game::battle::FighterId ally = battle.state().allies.front().id;
+  const auto species = fixtureSpecies();
+  const NameKeys names{&species, nullptr, &testCatalog()};
+  REQUIRE(battle.openBag(ally));
+  CHECK(dwe::screens::battleViewOf(battle, names, ally).bagOpen);
+  CHECK_FALSE(dwe::screens::battleViewOf(battle, names, PartnerId).bagOpen);
+  battle.closeBag(ally);
+  battle.defeatPartner(ally);
+  while (!battle.finished() && !dwe::screens::deathCountdownTimerOf(battle, ally) &&
+         battle.state().frame < 20000) {
+    battle.step();
+  }
+  CHECK(dwe::screens::deathCountdownTimerOf(battle, ally) == std::optional<std::int32_t>{1});
+  CHECK_FALSE(dwe::screens::deathCountdownTimerOf(battle).has_value());
 }
 
 TEST_CASE("the battle view's menu is the battle's, with the original's command names") {
@@ -343,4 +391,117 @@ TEST_CASE("std_main.c STD_renderFighterCounter: a tournament match shows its clo
   const auto* shown = settingNamed(clock, dwe::screens::MatchSecondsSetting);
   REQUIRE(shown != nullptr);
   CHECK(std::get<double>(shown->value) == 98.0);
+}
+
+TEST_CASE("a folder battle's view shows the target, the orders and the defense bar") {
+  const auto species = fixtureSpecies();
+  const NameKeys names{&species, nullptr, &testCatalog()};
+  Battle classic = startBattle(duel(evenStats(900, 100), evenStats(700, 80)), 3);
+  CHECK_FALSE(dwe::screens::battleViewOf(classic, names).folder.has_value());
+
+  BattleSetup setup = duel(evenStats(900, 100), evenStats(700, 80), {"punch", "shot"});
+  setup.system = BattleSystemId::Folder;
+  Battle battle = startBattle(std::move(setup), 3);
+  REQUIRE(battle.order(1, 1));
+  REQUIRE(battle.order(0, 1));
+  const auto view = dwe::screens::battleViewOf(battle, names);
+  REQUIRE(view.folder.has_value());
+  CHECK(view.folder->targetKey == "main.digimon_names.0012");
+  CHECK(view.folder->queue.size() == 2);
+  CHECK(view.folder->queueTargets ==
+        std::vector<std::string>{"main.digimon_names.0012", "main.digimon_names.0012"});
+  CHECK(view.folder->barMax > 0);
+  const auto settings = dwe::screens::settingsOf(view);
+  const auto* target = settingNamed(settings, dwe::screens::FolderTargetSetting);
+  REQUIRE(target != nullptr);
+  CHECK(std::get<std::string>(target->value) == "main.digimon_names.0012");
+}
+
+TEST_CASE("a folder battle's view says why a move cannot be ordered and how an order ended") {
+  const auto species = fixtureSpecies();
+  const NameKeys names{&species, nullptr, &testCatalog()};
+  BattleSetup setup = duel(evenStats(900, 100), evenStats(700, 80), {"punch", "shot"});
+  setup.system = BattleSystemId::Folder;
+  setup.partner.mp = 0;
+  Battle battle = startBattle(std::move(setup), 3);
+  auto view = dwe::screens::battleViewOf(battle, names);
+  const auto technique = [&](Command command) {
+    return std::ranges::find(view.menu, command, &dwe::screens::CommandEntry::command);
+  };
+  REQUIRE(technique(Command::Technique2) != view.menu.end());
+  CHECK(technique(Command::Technique2)->problemKey == "battle.folder.problem.not_enough_mp");
+  CHECK(view.folder->noticeKey.empty());
+
+  REQUIRE(battle.order(1, 1));
+  REQUIRE(battle.cancelOrders());
+  view = dwe::screens::battleViewOf(battle, names);
+  CHECK(view.folder->noticeKey == "battle.folder.end.annulled");
+  CHECK_FALSE(view.folder->noticeMoveKey.empty());
+  CHECK(view.folder->noticeReasonKey.empty());
+  const auto settings = dwe::screens::settingsOf(view);
+  const auto* notice = settingNamed(settings, dwe::screens::FolderNoticeSetting);
+  REQUIRE(notice != nullptr);
+  CHECK(std::get<std::string>(notice->value) == "battle.folder.end.annulled");
+}
+
+TEST_CASE("a folder battle's technique entries carry their area and friendly fire") {
+  const auto species = fixtureSpecies();
+  const NameKeys names{&species, nullptr, &testCatalog()};
+  BattleSetup setup = duel(evenStats(900, 600), evenStats(700, 80), {"wide_blast", "shot"});
+  const auto entryOf = [](const dwe::screens::BattleView& view, Command command) {
+    return std::ranges::find(view.menu, command, &dwe::screens::CommandEntry::command);
+  };
+  const auto classic = dwe::screens::battleViewOf(startBattle(setup, 3), names);
+  REQUIRE(entryOf(classic, Command::Technique1) != classic.menu.end());
+  CHECK(entryOf(classic, Command::Technique1)->area.empty());
+
+  setup.system = BattleSystemId::Folder;
+  const auto view = dwe::screens::battleViewOf(startBattle(std::move(setup), 3), names);
+  const auto blast = entryOf(view, Command::Technique1);
+  const auto shot = entryOf(view, Command::Technique2);
+  REQUIRE(blast != view.menu.end());
+  REQUIRE(shot != view.menu.end());
+  CHECK(blast->area == "around_self");
+  CHECK(blast->friendlyFire);
+  CHECK(shot->area.empty());
+  CHECK_FALSE(shot->friendlyFire);
+  const auto settings = dwe::screens::settingsOf(view);
+  const auto index = static_cast<std::size_t>(std::distance(view.menu.begin(), blast));
+  const auto* area = settingNamed(settings, std::format("battle.menu.{}.area", index));
+  const auto* friendly = settingNamed(settings, std::format("battle.menu.{}.friendly_fire", index));
+  REQUIRE(area != nullptr);
+  REQUIRE(friendly != nullptr);
+  CHECK(std::get<std::string>(area->value) == "around_self");
+  CHECK(std::get<bool>(friendly->value));
+}
+
+TEST_CASE(
+    "a folder battle's view letters twin foes, marks the aimed ones and names a replacement") {
+  const auto species = fixtureSpecies();
+  const NameKeys names{&species, nullptr, &testCatalog()};
+  BattleSetup setup = duel(evenStats(900, 100), evenStats(700, 80), {"punch", "shot"});
+  setup.system = BattleSystemId::Folder;
+  setup.enemies.push_back(setup.enemies.front());
+  setup.enemies.back().position.x = 600;
+  Battle battle = startBattle(std::move(setup), 3);
+  REQUIRE(battle.order(0, 2));
+  REQUIRE(battle.order(0, 2));
+  REQUIRE(battle.setStance(Stance::Distance));
+  auto view = dwe::screens::battleViewOf(battle, names);
+  REQUIRE(view.fighters.size() == 3);
+  CHECK(view.fighters[0].tag.empty());
+  CHECK(view.fighters[1].tag == "A");
+  CHECK(view.fighters[2].tag == "B");
+  CHECK(view.fighters[2].id == 2);
+  CHECK(view.fighters[2].queued);
+  CHECK_FALSE(view.fighters[1].queued);
+  CHECK(view.folder->queueTargetTags == std::vector<std::string>{"B", "B"});
+  CHECK(view.folder->stance == "distance");
+
+  REQUIRE(battle.order(1, 1));
+  view = dwe::screens::battleViewOf(battle, names);
+  CHECK(view.folder->noticeKey == "battle.folder.end.replaced");
+  CHECK_FALSE(view.folder->noticeByKey.empty());
+  CHECK(view.folder->noticeByKey != view.folder->noticeMoveKey);
+  CHECK(view.fighters[1].queued);
 }

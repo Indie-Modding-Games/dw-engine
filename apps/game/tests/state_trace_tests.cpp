@@ -59,7 +59,8 @@ TEST_CASE("a trace line in a fight lists the fighters, the partner first") {
                              .brain = 90,
                              .pose = "attacking",
                              .pending = 35,
-                             .move = 2});
+                             .move = 2,
+                             .orders = std::nullopt});
   frame.battle = battle;
   CHECK(traceLine(frame) ==
         R"({"src":"dwe","f":3,"time":0.0500,"in":0,"map":"mayo00","mode":"battle","npcs":[],)"
@@ -67,6 +68,12 @@ TEST_CASE("a trace line in a fight lists the fighters, the partner first") {
         R"({"x":272,"z":3129,"yaw":0,"hp":727,"mp":570,"max_hp":800,"max_mp":600,)"
         R"("off":120,"def":110,"spd":100,"brain":90,"pose":"attacking",)"
         R"("pending":35,"move":2}]}})");
+
+  frame.battle->fighters[0].orders = TraceFighter::Orders{
+      .phase = 3, .frames = 8, .queued = 1, .stance = 2, .lastEnd = 1, .lastProblem = 0, .bar = 40};
+  CHECK(traceLine(frame).ends_with(
+      R"("pending":35,"move":2,"orders":{"phase":3,"frames":8,"queued":1,"stance":2,"last_end":1,)"
+      R"("last_problem":0,"bar":40}}]}})"));
 }
 
 TEST_CASE("place reads who, the original's ground point and its rotation") {

@@ -134,6 +134,8 @@ struct SessionDesc {
   // The randomizer a new game plays with (docs/modules/game/randomizer.md); a loaded game plays its
   // save's.
   game::randomizer::RunSettings randomizer{};
+  // The battle system a new game plays (its mode's `battle`); a loaded game plays its save's.
+  std::string battle{game::modes::DefaultBattle};
   // The partner species, when already read (dwe-sim shares one table between its runs, tests make
   // their own); otherwise read from the ruleset's digimon and raise tables.
   std::shared_ptr<const game::partner::SpeciesTable> species;
@@ -224,6 +226,9 @@ public:
 
   // One tick of the game loop, of real seconds (the menu, which pauses the game, does not tick).
   void tick(double realSeconds);
+  // A tick a screen of the player's own runs instead of the field (a shop, fishing, care).
+  // On the co-op host the world's clock runs on; its partner lives it later (coop-training.md T9).
+  void tickHeldPlayer(double realSeconds);
   // Counts play time, once per tick of the whole game while a game is played and not paused: the
   // field, the menus, the battles and the scenes alike (clock.c: tickPlaytime, the object addClock
   // adds next to the game clock). It stops at 999:59 (PLAYTIME_HOURS 999, minutes held at 59).
@@ -330,6 +335,13 @@ public:
   [[nodiscard]] ClockShare clockShare() const { return clockShare_; }
   // A guest: the host's clock as it heard it. Its own clock follows it from then on.
   void hearWorldClock(const WorldTime& time);
+  // A guest's own clock is far past the world's (its partner slept): its sleep waits for the world.
+  [[nodiscard]] bool aheadOfWorld() const;
+  // How many real seconds such a guest still waits for the world; none while the world stands.
+  [[nodiscard]] std::optional<double> secondsAheadOfWorld() const;
+  // A guest's clock took the world's time in one step (it joined, went back or skipped hours) since
+  // the last call: its time of day shows at once, with no fade.
+  [[nodiscard]] bool takeWorldJump() { return std::exchange(worldJumped_, false); }
   // The host: its clock as the world's, to tell the guests.
   [[nodiscard]] WorldTime worldTime() const;
   // A training course holds its player and partner (tamerSetState(8)). In co-op the world's clock
@@ -337,6 +349,8 @@ public:
   // original's clock stands still for it.
   void holdForCourse(bool held);
   [[nodiscard]] bool heldForCourse() const { return courseHeld_; }
+  // Co-op: the partner paid this held course's hour, which the world's clock has not run yet.
+  [[nodiscard]] bool courseHourRuns() const;
 
   // After a system's command changed the partner (an item, an evolution): routes the partner's
   // events and writes a requested autosave, as the session's own commands do.
@@ -382,6 +396,9 @@ public:
   [[nodiscard]] const game::randomizer::Randomizer& randomizer() const;
   // The species of the partner's raise rows, by id: what a randomized run picks wild enemies from.
   [[nodiscard]] std::vector<std::string> roster() const;
+  // ClassicBattle or FolderBattle; the next battle plays the one set.
+  [[nodiscard]] const std::string& battleSystem() const;
+  core::Result<void> setBattleSystem(std::string_view battle);
   // The game events mods handle (game_hooks.hpp); they fire once ModScripts bound them.
   [[nodiscard]] GameHooks& hooks() { return hooks_; }
   // The story's sound slots, or nullptr for a silent session.
@@ -425,6 +442,13 @@ private:
   void followRules();
   core::Result<void> registerSaveSections();
   void advanceGameTime(double realSeconds);
+  // Held by a script of its own (a talk, the gym's menu), not by a map change (which holds all).
+  [[nodiscard]] bool hostHeldByOwnScript() const;
+  // The co-op host's world clock runs while its own player is held; its partner stands.
+  void runWorldPastHeldPlayer(double realSeconds);
+  // The host's partner lives the time it stood: whole hours as a time skip, the rest frame by
+  // frame. Returns what the clock crossed in those frames.
+  ruleset::ClockAdvance liveStoodTime();
   // A guest's step after the world's clock; the partner's skipped hours, when the world skipped
   // some, are paid here.
   ruleset::ClockAdvance followWorld(double realSeconds);
@@ -492,11 +516,17 @@ private:
   ClockShare clockShare_ = ClockShare::Own;
   WorldClockFollower follower_;
   bool courseHeld_ = false;
+  std::int64_t courseStart_ = 0;
   // Whether the clock ran on the last tick (the world's, told to the guests on the host).
   bool clockRan_ = false;
   // A guest's partner lived up to this frame of the clock: a guest that went back to the world's
   // time does not live those frames again.
   std::int64_t livedUntil_ = 0;
+  bool followedWorld_ = false;
+  bool worldJumped_ = false;
+  // The co-op host: the frames the world's clock ran while a script or a screen of its own held its
+  // player, which its partner has not lived yet.
+  std::int64_t stoodFrames_ = 0;
 };
 
 } // namespace dwe::session

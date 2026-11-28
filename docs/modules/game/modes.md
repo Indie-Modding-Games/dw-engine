@@ -21,15 +21,19 @@ name: modes.classic_name              # localization key for the name
 description: modes.classic_description
 ruleset: original                     # the ruleset it starts with
 rulesets: [original]                  # the ones it admits; includes ruleset
+battle: classic                       # optional: classic (default) or folder, the battle a new game plays
+battles: [classic]                    # optional: the battle systems its player may switch to; includes battle
 order: 0                              # position in the list (then the id)
 options:                              # optional: option name -> the value its games fix
   difficulty: normal
   rare_items: false
 ```
 
-All the keys but `options` and `randomizer` are required and no others are accepted. `randomizer: true` lets the
-mode's new games be [randomized runs](randomizer.md) (`GameMode::randomizer`, off by default); the game sets it on
-Folder Mode only. `options` is read into `GameMode::options`
+All the keys but `options`, `randomizer`, `battle` and `battles` are required and no others are accepted.
+`randomizer: true` lets the mode's new games be [randomized runs](randomizer.md) (`GameMode::randomizer`, off by
+default); the game sets it on Folder Mode only. The battle system (`classic` or `folder`,
+[Battle systems](../../architecture/folder-battle.md)) is saved with the game in its `mode` section; a save without it
+plays `classic`. `options` is read into `GameMode::options`
 (`OptionPin`: option and value as text); the game applies it (`apps/game/src/mode_options.hpp`). A pack on top replaces a mode by giving the same folder,
 like any asset.
 

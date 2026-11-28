@@ -44,6 +44,12 @@ inline constexpr std::string_view TextureFilterSetting = "texture_filter";
 inline constexpr std::string_view RenderScaleSetting = "render_scale";
 inline constexpr std::string_view FrameLimitSetting = "frame_limit";
 inline constexpr std::string_view AutoQualitySetting = "auto_quality";
+// Options › Graphics (docs/architecture/software-mode.md#presets); the preset is "custom" when
+// none matches, and the reason is empty when the automatic quality is not choosing.
+inline constexpr std::string_view GraphicsPresetSetting = "graphics_preset";
+inline constexpr std::string_view GraphicsModeSetting = "graphics.mode";
+inline constexpr std::string_view GraphicsGpuSetting = "graphics.gpu";
+inline constexpr std::string_view GraphicsAutoReasonSetting = "graphics.auto_reason";
 
 enum class ShadowMode : std::uint8_t { Off, Round, Sun };
 enum class SceneryQuality : std::uint8_t { Smooth, Upscaled };
@@ -93,6 +99,12 @@ void applyTextureFilter(render::ModelRenderer& models, const GraphicsOptions& op
 void prepareModels(render::ModelRenderer& models, const GraphicsOptions& options,
                    std::shared_ptr<const render::UpscaleCache> cache);
 
+enum class GraphicsPreset : std::uint8_t { Performance, Balanced, Quality };
+
+[[nodiscard]] std::optional<GraphicsPreset> parseGraphicsPreset(std::string_view name);
+[[nodiscard]] std::string_view graphicsPresetName(GraphicsPreset preset);
+[[nodiscard]] std::optional<GraphicsPreset> lighterPreset(GraphicsPreset preset);
+
 struct GraphicsOptions {
   ShadowMode shadows = ShadowMode::Sun;
   bool enhancedLighting = true;
@@ -110,6 +122,12 @@ struct GraphicsOptions {
 // The options a run starts with: the saved ones, the defaults for those not saved. A saved shadow
 // mode that is not one is logged and starts with the default.
 [[nodiscard]] GraphicsOptions startGraphicsOptions(const UserSettings& settings);
+
+// The preset's look on the given knobs; the frame limit and the automatic quality stay as they are.
+// Quality is the default look.
+[[nodiscard]] GraphicsOptions withPreset(GraphicsOptions options, GraphicsPreset preset,
+                                         GraphicsKnobs knobs);
+[[nodiscard]] std::optional<GraphicsPreset> presetOf(const GraphicsOptions& options);
 
 // The low-performance preset (--low-performance, docs/architecture/render.md): every heavy option
 // off, for weak GPUs and old iGPUs that drop frames or crash on the enhanced look. The player can
@@ -144,6 +162,9 @@ public:
   [[nodiscard]] GraphicsKnobs automatic() const { return automatic_; }
   void release(GraphicsKnob knob) { automatic_.reset(knobIndex(knob)); }
   void applyAutomatic(const GraphicsOptions& tuned, ui::Ui& ui);
+  // The automatic quality's own preset, for a weak graphics card (graphics_options.cpp).
+  [[nodiscard]] std::optional<GraphicsPreset> automaticPreset() const { return automaticPreset_; }
+  void setAutomaticPreset(GraphicsPreset preset) { automaticPreset_ = preset; }
 
 private:
   void save();
@@ -152,6 +173,7 @@ private:
   std::optional<std::filesystem::path> settingsFile_;
   GraphicsOptions options_;
   GraphicsKnobs automatic_;
+  std::optional<GraphicsPreset> automaticPreset_;
 };
 
 } // namespace dwe::app

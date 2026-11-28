@@ -74,9 +74,11 @@ public:
   void states(PlayerId guest, const SequenceWatch& watch);
   // A guest left: its reports go.
   void forget(PlayerId guest);
+  // Traced, every report also logs each player the guest holds next to where the host has it.
+  void trace(bool on) { trace_ = on; }
+  [[nodiscard]] bool tracing() const { return trace_; }
 
-  // What happened since the last call, one line each: map changes, updates newly lost or late,
-  // divergences that turned persistent or ended.
+  // Events since the last call, one line each stamped with the host's time and world tick.
   [[nodiscard]] std::vector<std::string> takeEvents();
   [[nodiscard]] std::vector<SyncDivergence> divergences() const;
   // Every guest reported since `since` and holds every player where the host has it.
@@ -98,8 +100,11 @@ private:
   };
 
   void compare(PlayerId guest, net::Millis now);
+  void note(std::string text);
 
   SyncRules rules_;
+  bool trace_ = false;
+  net::Millis now_{0};
   std::vector<SyncHeld> authority_;
   std::uint32_t worldTick_ = 0;
   std::map<PlayerId, std::string> maps_;

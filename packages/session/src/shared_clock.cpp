@@ -53,14 +53,28 @@ ClockFollow WorldClockFollower::follow(std::int64_t elapsed, double framesPerSec
   }
   // A little ahead is the guest's own play on past the host's newest word: it waits. Its own time
   // skip puts it further ahead, and it goes back.
-  const std::int64_t waits =
-      std::max(BackAfterMinutes * framesPerMinute,
-               static_cast<std::int64_t>(
-                   std::ceil(framesIn(heard_.value(), MaxLeadSeconds, framesPerSecond))));
-  if (-gap > waits) {
+  if (-gap > waitsWithin(framesPerSecond, framesPerMinute)) {
     return {.frames = 0, .skippedHours = 0, .backTo = *world};
   }
   return {};
+}
+
+std::optional<double> WorldClockFollower::waitSeconds(std::int64_t elapsed, double framesPerSecond,
+                                                      std::int64_t framesPerMinute) const {
+  const auto world = worldFrames(framesPerSecond);
+  const double rate = heard_ ? framesIn(*heard_, 1.0, framesPerSecond) : 0.0;
+  if (!world || rate <= 0.0) {
+    return std::nullopt;
+  }
+  const std::int64_t ahead = elapsed - *world - waitsWithin(framesPerSecond, framesPerMinute);
+  return std::max(0.0, static_cast<double>(ahead) / rate);
+}
+
+std::int64_t WorldClockFollower::waitsWithin(double framesPerSecond,
+                                             std::int64_t framesPerMinute) const {
+  return std::max(BackAfterMinutes * framesPerMinute,
+                  static_cast<std::int64_t>(
+                      std::ceil(framesIn(heard_.value(), MaxLeadSeconds, framesPerSecond))));
 }
 
 void WorldClockFollower::reset() {

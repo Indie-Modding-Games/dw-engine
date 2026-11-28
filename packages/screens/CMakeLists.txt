@@ -19,6 +19,7 @@ dwe_add_module(screens
         src/partner_bars.cpp
         src/partner_status_view.cpp
         src/screen_settings.cpp
+        src/stun_signs.cpp
     DEPS core assets localization ruleset ui battle inventory partner session)
 
 if(TARGET dwe_screens_tests)

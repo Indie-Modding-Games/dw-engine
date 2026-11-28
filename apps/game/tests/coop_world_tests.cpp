@@ -2,15 +2,18 @@
 // #356 maps, #358 smoothing), against bare fields: the host's field with the guests' bodies, a
 // guest's field with its own player.
 
+#include <dwe/game/coop/battle.hpp>
 #include <dwe/game/field/field.hpp>
 #include <dwe/scene/world.hpp>
 
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 
 #include "coop_world.hpp"
+#include "death_scene.hpp"
 #include "packages/game/field/tests/fixture.hpp"
 
 using namespace dwe::app;
@@ -133,6 +136,52 @@ TEST_CASE("the host drives the guest's body from its valid states, smoothed and 
   (void)session.host.tick(session.field, session.serial, std::nullopt, Millis{20000});
   session.field.tick(1.0F / 60.0F);
   CHECK(session.field.player(coop::GuestPlayerId)->position.x >= 1050.0F);
+}
+
+TEST_CASE("a guest in a scene of its own or on another map is not drawn by the others") {
+  HostSession session;
+  session.host.receive(coop::GuestPlayerId, stateOf(coop::GuestPlayerId, 3, 1, 500, 0), Millis{50});
+  CHECK(session.host.away("room").empty());
+  coop::PlayerState away = stateOf(coop::GuestPlayerId, 6, 1, 0, 0);
+  away.away = true;
+  session.host.receive(coop::GuestPlayerId, away, Millis{100});
+  CHECK(session.host.away("room") == std::vector<coop::PlayerId>{coop::GuestPlayerId});
+  // Its pose is not taken while it is away.
+  CHECK(session.host.authority().find(coop::GuestPlayerId)->pose->x == 500);
+  // A late state does not bring it back.
+  session.host.receive(coop::GuestPlayerId, stateOf(coop::GuestPlayerId, 5, 1, 500, 0),
+                       Millis{110});
+  CHECK_FALSE(session.host.away("room").empty());
+  session.host.receive(coop::GuestPlayerId, stateOf(coop::GuestPlayerId, 9, 1, 520, 0),
+                       Millis{150});
+  CHECK(session.host.away("room").empty());
+  session.host.receive(coop::GuestPlayerId, stateOf(coop::GuestPlayerId, 12, 1, 0, 0, "wake"),
+                       Millis{200});
+  CHECK(session.host.away("room") == std::vector<coop::PlayerId>{coop::GuestPlayerId});
+  session.host.leave(coop::GuestPlayerId);
+  CHECK(session.host.away("room").empty());
+}
+
+TEST_CASE("a guest in a scene of its own reports only that, without a pose") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F));
+  CoopGuestWorld guest{coop::GuestPlayerId};
+  guest.receive(coop::PlayerCorrection{.player = coop::GuestPlayerId,
+                                       .epoch = 1,
+                                       .mapId = "room",
+                                       .exit = std::nullopt,
+                                       .x = 0,
+                                       .y = 0,
+                                       .z = 0,
+                                       .yaw = 0});
+  CHECK_FALSE(guest.apply(field, false));
+  const auto state = guest.report(field, true, 6, true);
+  REQUIRE(state);
+  CHECK(state->away);
+  CHECK(state->mapId == "room");
+  CHECK_FALSE(state->partner);
+  CHECK_FALSE(guest.report(field, true, 6, false));
 }
 
 TEST_CASE("a guest that keeps sending impossible states is put back on both sides") {
@@ -279,8 +328,20 @@ TEST_CASE("a guest follows the host's corrections and reports with their epoch")
                                        .y = 0,
                                        .z = 0,
                                        .yaw = 0});
+  // The zone notice comes first, and the move waits for its lead.
+  for (std::uint32_t tick = 0; tick < CoopGuestWorld::ZoneLeadTicks; ++tick) {
+    REQUIRE_FALSE(guest.apply(field, false));
+    CHECK(guest.leadingToZone());
+    CHECK_FALSE(guest.report(field, false, 9));
+  }
+  const auto zone = guest.takeZoneChange();
+  REQUIRE(zone);
+  CHECK(zone->map == "next");
+  CHECK(zone->epoch == 2);
+  CHECK_FALSE(guest.takeZoneChange());
   const auto change = guest.apply(field, false);
   REQUIRE(change);
+  CHECK_FALSE(guest.leadingToZone());
   CHECK(change->map == "next");
   CHECK(change->exit == 1);
   CHECK_FALSE(guest.report(field, false, 9));
@@ -292,6 +353,120 @@ TEST_CASE("a guest follows the host's corrections and reports with their epoch")
   REQUIRE(arrived);
   CHECK(arrived->mapId == "next");
   CHECK(arrived->epoch == 2);
+}
+
+TEST_CASE("a room the host's warp reset is loaded again by the guest, not kept as it was") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F));
+  CoopGuestWorld guest{coop::GuestPlayerId};
+  const auto correction = [](std::uint16_t epoch, std::optional<std::int32_t> exit,
+                             std::int32_t x) {
+    return coop::PlayerCorrection{.player = coop::GuestPlayerId,
+                                  .epoch = epoch,
+                                  .mapId = "room",
+                                  .exit = exit,
+                                  .x = x,
+                                  .y = 0,
+                                  .z = 0,
+                                  .yaw = 0};
+  };
+  // Joining on the map it already shows: a place, no load.
+  guest.receive(correction(1, 0, 300));
+  const auto joined = guest.apply(field, false);
+  REQUIRE(joined);
+  CHECK_FALSE(joined->reload);
+  field.placeAt(field.playerEntity(), joined->at.position, joined->at.yaw);
+  CHECK_FALSE(guest.apply(field, false));
+
+  // The host's script warps it back onto the same map (a room reset): this game loads it too.
+  guest.receive(correction(2, 0, 100));
+  const auto reset = guest.apply(field, false);
+  REQUIRE(reset);
+  CHECK(reset->reload);
+  CHECK(reset->map == "room");
+  CHECK_FALSE(guest.report(field, false, 3));
+  CHECK_FALSE(guest.apply(field, true));
+  field.enterMapAt(roomMap("room"), reset->at);
+  CHECK_FALSE(guest.apply(field, false));
+  const auto state = guest.report(field, false, 6);
+  REQUIRE(state);
+  CHECK(state->epoch == 2);
+
+  // A correction of refused states (no exit) only puts the player back.
+  guest.receive(correction(3, std::nullopt, 400));
+  const auto back = guest.apply(field, false);
+  REQUIRE(back);
+  CHECK_FALSE(back->reload);
+  // A room reset is no change of zone.
+  CHECK_FALSE(guest.takeZoneChange());
+}
+
+TEST_CASE("only the host's lead to another map tells the guest the zone changed (#356)") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F));
+  CoopGuestWorld guest{coop::GuestPlayerId};
+  const auto correction = [](std::uint16_t epoch, std::string map,
+                             std::optional<std::int32_t> exit) {
+    return coop::PlayerCorrection{.player = coop::GuestPlayerId,
+                                  .epoch = epoch,
+                                  .mapId = std::move(map),
+                                  .exit = exit,
+                                  .x = 0,
+                                  .y = 0,
+                                  .z = 0,
+                                  .yaw = 0};
+  };
+  // Joining on another map than the one it shows: no notice, no wait.
+  guest.receive(correction(1, "room2", 0));
+  REQUIRE(guest.apply(field, false));
+  CHECK_FALSE(guest.takeZoneChange());
+  field.enterMapAt(roomMap("room2"), at(0.0F, 0.0F));
+  CHECK_FALSE(guest.apply(field, false));
+
+  // The guest's own story warp took it elsewhere: the host brings it back to the group's map
+  // without a notice.
+  field.enterMapAt(roomMap("elsewhere"), at(0.0F, 0.0F));
+  guest.receive(correction(2, "room2", std::nullopt));
+  REQUIRE(guest.apply(field, false));
+  CHECK_FALSE(guest.takeZoneChange());
+  CHECK_FALSE(guest.leadingToZone());
+  field.enterMapAt(roomMap("room2"), at(0.0F, 0.0F));
+  CHECK_FALSE(guest.apply(field, false));
+
+  // The host leads on while the guest's own map change runs: the lead waits for it, then counts.
+  guest.receive(correction(3, "room3", 1));
+  CHECK_FALSE(guest.apply(field, true));
+  CHECK_FALSE(guest.takeZoneChange());
+  for (std::uint32_t tick = 0; tick < CoopGuestWorld::ZoneLeadTicks; ++tick) {
+    REQUIRE_FALSE(guest.apply(field, false));
+  }
+  REQUIRE(guest.takeZoneChange());
+  // A newer lead during the wait neither restarts it nor tells the change twice.
+  guest.receive(correction(4, "room4", 2));
+  const auto move = guest.apply(field, false);
+  REQUIRE(move);
+  CHECK(move->map == "room4");
+  CHECK_FALSE(guest.takeZoneChange());
+  field.enterMapAt(roomMap("room4"), at(0.0F, 0.0F));
+  CHECK_FALSE(guest.apply(field, false));
+
+  // The host comes back during the lead: this game loads the map again as the host did, and the
+  // next lead counts from the start.
+  guest.receive(correction(5, "room5", 0));
+  CHECK_FALSE(guest.apply(field, false));
+  REQUIRE(guest.takeZoneChange());
+  guest.receive(correction(6, "room4", 0));
+  const auto again = guest.apply(field, false);
+  REQUIRE(again);
+  CHECK(again->reload);
+  CHECK_FALSE(guest.leadingToZone());
+  field.enterMapAt(roomMap("room4"), at(0.0F, 0.0F));
+  CHECK_FALSE(guest.apply(field, false));
+  guest.receive(correction(7, "room6", 0));
+  CHECK_FALSE(guest.apply(field, false));
+  CHECK(guest.takeZoneChange());
 }
 
 TEST_CASE("a guest keeps the newest roster and knows who is in the session") {
@@ -314,6 +489,37 @@ TEST_CASE("a guest keeps the newest roster and knows who is in the session") {
   CHECK(guest.partnerOf(2).empty());
 }
 
+TEST_CASE("a guest keeps another guest's bodies that left while its partner still fights (#352)") {
+  CoopGuestWorld guest{3};
+  coop::BattleMirror mirror{3};
+  mirror.receive(coop::BattleBegin{.battle = 5,
+                                   .starter = 2,
+                                   .ask = 9,
+                                   .mapId = "forest",
+                                   .enemyNpcs = {1},
+                                   .species = {"patamon", "foe", "agumon", "gabumon"},
+                                   .fixedFight = false,
+                                   .allies = {coop::HostPlayerId, 3},
+                                   .folder = false});
+  CHECK(mirror.fighting() == std::vector<coop::PlayerId>{2, coop::HostPlayerId, 3});
+  // Player 2 started the battle and left: the host's roster drops it, its partner fights on.
+  guest.receive(coop::Roster{.revision = 1,
+                             .players = {{.id = 0, .name = "Host", .partnerSpecies = "agumon"},
+                                         {.id = 1, .name = "Other", .partnerSpecies = "elecmon"},
+                                         {.id = 3, .name = "Me", .partnerSpecies = "gabumon"}}});
+  CHECK_FALSE(guest.inSession(2));
+  CHECK(guest.keepsBodies(2, mirror.fighting()));
+  CHECK(guest.keepsBodies(1, mirror.fighting()));
+  // Once the battle ends nothing holds them.
+  mirror.receive(coop::BattleEnd{.battle = 5,
+                                 .outcome = coop::BattleOutcome::Victory,
+                                 .leftMap = {},
+                                 .bits = 0,
+                                 .spoils = std::nullopt});
+  CHECK(mirror.fighting().empty());
+  CHECK_FALSE(guest.keepsBodies(2, mirror.fighting()));
+}
+
 TEST_CASE("shared battles see a player here only on this map and not between maps (#351)") {
   HostSession session;
   // The host: its authority puts the guest on the host's map.
@@ -327,4 +533,70 @@ TEST_CASE("shared battles see a player here only on this map and not between map
   session.field.startScriptedMapChange(
       {.map = "next", .exit = 0, .trigger = 0, .arrivalSection = std::nullopt}, true);
   CHECK_FALSE(coopPlayerHere(session.field, here, coop::GuestPlayerId));
+}
+
+TEST_CASE(
+    "a guest's partner dies and is reborn on its wake map, then follows the host and fights") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F));
+  CoopGuestWorld guest{coop::GuestPlayerId};
+  guest.receive(coop::PlayerCorrection{.player = coop::GuestPlayerId,
+                                       .epoch = 1,
+                                       .mapId = "room",
+                                       .exit = std::nullopt,
+                                       .x = 0,
+                                       .y = 0,
+                                       .z = 0,
+                                       .yaw = 0});
+  CHECK_FALSE(guest.apply(field, false));
+  coop::BattleMirror mirror{coop::GuestPlayerId};
+  coop::BattleReferee referee;
+  referee.guestJoined(coop::GuestPlayerId);
+  const std::array<coop::PlayerId, 1> here{coop::GuestPlayerId};
+  const coop::BattleFighterProfile fighter{};
+  const coop::BattleAsk ask = mirror.ask("room", {0}, false, false, fighter);
+  const auto judged = [&] {
+    return referee.judge(
+        ask,
+        {.map = "room", .guestHere = true, .battling = false, .held = referee.partnerDying(here)});
+  };
+
+  // The death's scene takes the guest to its own wake map; the host sends it back to the group's.
+  bool held = dwe::app::deathHoldsWakeMap(false, true, true);
+  referee.receive(coop::GuestPlayerId, *mirror.offer(false, fighter, true));
+  field.enterMapAt(roomMap("wake"), at(0.0F, 0.0F));
+  guest.receive(coop::PlayerCorrection{.player = coop::GuestPlayerId,
+                                       .epoch = 2,
+                                       .mapId = "room",
+                                       .exit = 1,
+                                       .x = 100,
+                                       .y = 0,
+                                       .z = 0,
+                                       .yaw = 0});
+  CHECK(referee.partnerDying(here));
+  CHECK_FALSE(judged().starts());
+  // The scene, then the egg box and the rebirth the story's script plays: the guest stays.
+  for (const bool scene : {true, true, false, false}) {
+    held = dwe::app::deathHoldsWakeMap(held, scene, true);
+    REQUIRE(held);
+    CHECK_FALSE(guest.apply(field, held));
+    CHECK_FALSE(guest.report(field, held, 30));
+    CHECK(field.mapId() == "wake");
+  }
+
+  // Reborn and the script over: it follows the host, its offer no longer holds the battles.
+  held = dwe::app::deathHoldsWakeMap(held, false, false);
+  CHECK_FALSE(held);
+  referee.receive(coop::GuestPlayerId, *mirror.offer(true, fighter, false));
+  CHECK_FALSE(referee.partnerDying(here));
+  const auto back = guest.apply(field, held);
+  REQUIRE(back);
+  CHECK(back->map == "room");
+  field.enterMapAt(roomMap("room"), back->at);
+  CHECK_FALSE(guest.apply(field, false));
+  const auto state = guest.report(field, false, 33);
+  REQUIRE(state);
+  CHECK(state->epoch == 2);
+  CHECK(judged().starts());
 }

@@ -3,3 +3,11 @@
 
 #sleep { nav-up: #save-and-sleep; }
 #save-and-sleep { nav-down: #sleep; }
+
+/* A co-op guest's wait for the world's morning takes the entries' place in the same panel. */
+#panel .hidden { display: none; }
+
+#wait {
+	padding: 12dp 8dp;
+	text-align: center;
+}

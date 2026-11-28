@@ -17,6 +17,8 @@ bool newer(std::uint32_t candidate, std::uint32_t current) {
 bool roleAllows(BattleRole role, BattleActionKind kind) {
   switch (kind) {
   case BattleActionKind::Command:
+  case BattleActionKind::Order:
+  case BattleActionKind::Stance:
     return role != BattleRole::Helper;
   case BattleActionKind::CloseEnd:
     return role == BattleRole::Starter;
@@ -49,26 +51,49 @@ bool spoilsInRange(const BattleSpoils& spoils) {
          within(spoils.frames, std::int64_t{0}, FramesPerDay);
 }
 
-std::optional<BattleRefusal> BattleReferee::judge(const BattleAsk& ask, std::string_view hostMap,
-                                                  bool hostBusy) const {
-  if (running_ || hostBusy) {
-    return BattleRefusal::Busy;
+BattleAskVerdict BattleReferee::judge(const BattleAsk& ask, const HostMoment& host) const {
+  if (running_) {
+    return {.waits = false, .refusal = BattleRefusal::Busy};
   }
-  if (ask.mapId != hostMap) {
-    return BattleRefusal::NotHere;
+  if (!host.map.empty() && ask.mapId != host.map) {
+    return {.waits = false, .refusal = BattleRefusal::NotHere};
   }
-  return std::nullopt;
+  if (host.map.empty() || !host.guestHere || host.battling || host.held || host.partnerDying) {
+    return {.waits = true,
+            .refusal = std::nullopt,
+            .waitRefusal = host.partnerDying ? BattleRefusal::PartnerDying : BattleRefusal::Busy};
+  }
+  return {};
+}
+
+bool BattleReferee::wait(PlayerId guest, const BattleAsk& ask, std::uint64_t tick) {
+  auto kept = std::ranges::find(waiting_, guest, &WaitingAsk::guest);
+  if (kept == waiting_.end() || kept->ask.ask != ask.ask) {
+    forget(guest);
+    waiting_.push_back({.guest = guest, .ask = ask, .since = tick});
+    return true;
+  }
+  if (tick - kept->since < BattleAskWaitTicks) {
+    return true;
+  }
+  forget(guest);
+  return false;
+}
+
+void BattleReferee::forget(PlayerId guest) {
+  std::erase_if(waiting_, [guest](const WaitingAsk& waiting) { return waiting.guest == guest; });
 }
 
 BattleBegin BattleReferee::begin(PlayerId starter, std::uint32_t ask, std::string mapId,
                                  std::vector<std::int16_t> enemyNpcs,
                                  std::vector<std::string> species, bool fixedFight,
-                                 std::vector<PlayerId> allies) {
+                                 std::vector<PlayerId> allies, bool folder) {
   const std::uint32_t battle = next_++;
   if (next_ == 0) {
     next_ = 1;
   }
   running_ = Running{.battle = battle, .starter = starter, .ask = ask, .allies = allies};
+  forget(starter);
   return {.battle = battle,
           .starter = starter,
           .ask = starter != HostPlayerId ? ask : 0,
@@ -76,7 +101,8 @@ BattleBegin BattleReferee::begin(PlayerId starter, std::uint32_t ask, std::strin
           .enemyNpcs = std::move(enemyNpcs),
           .species = std::move(species),
           .fixedFight = fixedFight,
-          .allies = std::move(allies)};
+          .allies = std::move(allies),
+          .folder = folder};
 }
 
 void BattleReferee::receive(PlayerId guest, const BattleOffer& offer) {
@@ -94,6 +120,13 @@ std::optional<BattleFighterProfile> BattleReferee::offered(PlayerId guest) const
     return std::nullopt;
   }
   return offer->fighter;
+}
+
+bool BattleReferee::partnerDying(std::span<const PlayerId> guests) const {
+  return std::ranges::any_of(guests, [this](PlayerId guest) {
+    return validGuest(guest) && present_.at(guest) && offers_.at(guest) &&
+           offers_.at(guest)->partnerDying;
+  });
 }
 
 std::optional<BattleRole> BattleReferee::roleOf(PlayerId player) const {
@@ -148,6 +181,7 @@ void BattleReferee::guestLeft(PlayerId guest) {
   if (validGuest(guest)) {
     present_.at(guest) = false;
     offers_.at(guest).reset();
+    forget(guest);
   }
 }
 
@@ -241,6 +275,15 @@ std::optional<BattleEnd> BattleMirror::takeEnded() {
   return std::exchange(ended_, std::nullopt);
 }
 
+std::vector<PlayerId> BattleMirror::fighting() const {
+  if (!running_) {
+    return {};
+  }
+  std::vector<PlayerId> players{running_->starter};
+  players.append_range(running_->allies);
+  return players;
+}
+
 std::optional<BattleRole> BattleMirror::role() const {
   if (!running_) {
     return std::nullopt;
@@ -259,8 +302,10 @@ std::optional<PlayerId> BattleMirror::waitingFor() const {
   return running_->starter;
 }
 
-std::optional<BattleOffer> BattleMirror::offer(bool available, BattleFighterProfile fighter) {
-  BattleOffer next{.available = available, .fighter = std::move(fighter)};
+std::optional<BattleOffer> BattleMirror::offer(bool available, BattleFighterProfile fighter,
+                                               bool partnerDying) {
+  BattleOffer next{
+      .available = available, .fighter = std::move(fighter), .partnerDying = partnerDying};
   if (offered_ && *offered_ == next) {
     return std::nullopt;
   }

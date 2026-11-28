@@ -59,7 +59,7 @@ Los enemigos lanzan los suyos por su cuenta.
 
 ### 1.4 Elección de objetivo
 
-- **Los enemigos solo apuntan al compañero** (dwe: `selectTarget` en `ai_ticks.cpp`, por defecto `PartnerId`). Una
+- **Los enemigos solo apuntan al compañero** (dwe: `selectTarget` en `targets.cpp`, por defecto `PartnerId`). Una
   excepción: un enemigo alcanzado por la técnica de área de otro enemigo se vuelve contra él el 71 % de las veces.
 - **El compañero** (`BTL_selectFighterTarget`, en dwe `original_partner_ai.cpp` y `targeting.cpp`): con Inteligencia
   ≥ 300 prefiere un enemigo con un estado alterado; con ≥ 150, el más débil (HP y una puntuación de Defensa y tipo) y
@@ -148,7 +148,10 @@ sus técnicas de área ignoran a los aliados (los enemigos conservan el fuego am
 - Cada compañero tiene su propio `CommandState`; el combate busca las órdenes por luchador (`commandsOf(id)`), como
   hace el versus.
 - Cambiar de objetivo (orden 7) rota el objetivo de ese compañero entre los enemigos.
-- Nadie puede dar órdenes al compañero de otro jugador. Un compañero cuyo jugador se desconectó pasa a A tu modo.
+- Nadie puede dar órdenes al compañero de otro jugador. Un compañero cuyo jugador se fue (se desconectó o cambió de
+  mapa) huye y cuenta como huido; en un combate de la historia se queda y pasa a A tu modo.
+- La barra de órdenes de un invitado muestra las órdenes en el orden del anfitrión: el fotograma las envía como lista
+  ordenada.
 
 ### 4.5 Remate y ánimos
 
@@ -166,6 +169,11 @@ sus técnicas de área ignoran a los aliados (los enemigos conservan el fuego am
 - Cada jugador lanza desde **su propia bolsa**, desde su propio domador. Las bolsas nunca se juntan.
 - Objetivo: su propio compañero por defecto; izquierda y derecha en la bolsa eligen un compañero aliado (su tarjeta se
   ilumina). Los objetos de revivir pueden apuntar a un aliado en la cuenta atrás de la derrota.
+- Un invitado en la pantalla de combate de la skin elige con Q y E (`tab_previous`, `tab_next`; los gatillos en un
+  mando) con la bolsa abierta: su propio compañero y luego cada otro compañero por turno; la tarjeta del aliado elegido
+  lleva `battle.ally.<n>.throw_target` y se ilumina en todas las skins, y la bolsa enseña la pista de Q/E
+  (`bag.throw_pick`). La tarjeta queda iluminada mientras la bolsa está abierta: cerrarla o lanzar desde ella la
+  apaga, pero un objeto elegido justo cuando la bolsa se cierra sigue volando al aliado elegido.
 - La bolsa no pausa el combate en cooperativo (decisión 5 de [multijugador](multiplayer.md) §6).
 - Un objeto en vuelo por jugador (`ThrownItemState` por jugador); cualquier objeto en vuelo hacia un compañero pausa la
   cuenta atrás de ese compañero, como en el original.
@@ -245,18 +253,27 @@ jugador puede acaparar las decisiones porque cada uno solo da órdenes a su prop
   #363.
 - El anfitrión valida cada acción: un `Command` solo para el compañero propio del remitente, un objeto solo de la bolsa
   del remitente (la copia de la bolsa del invitado que llegó con su perfil; el invitado quita el objeto cuando el
-  anfitrión confirma el lanzamiento), un ánimo solo durante el aura de un aliado.
+  anfitrión confirma el lanzamiento), un ánimo solo durante el aura de un aliado. La confirmación es el lanzamiento que
+  aparece en el `BattleFrame` del anfitrión con el id del invitado: hasta entonces el objeto sigue en su bolsa, así que
+  un lanzamiento que el anfitrión rechaza (otro en vuelo) no cuesta nada; un lanzamiento espera la respuesta cada vez,
+  como mucho 40 cuadros (2 s).
 
 ### 7.2 Qué se replica
 
 | Mensaje | Cambio respecto al PR #363 |
 |---|---|
-| `BattleBegin` | Plantilla: ranura → lado, `PlayerId` del dueño, especie |
+| `BattleBegin` | Plantilla: ranura → lado, `PlayerId` del dueño, especie; los cuatro ids de técnica de cada luchador (protocolo 15) |
 | `BattleFrame` (cada 3 ticks) | Cada luchador (hasta 7): HP, HP máximo, MP, estado, orden actual, barra y aura del remate, cuenta atrás; las figuras como hoy (posición, orientación, clip y su inicio) |
 | `BattleAction` | `Command` (el compañero propio va implícito en el remitente), `ThrowItem` con la ranura objetivo, `Cheer` con la ranura del aliado, `Run`, `Join` (con `join_running`), `CloseEnd` |
 | `BattleEnd` | Un bloque de botín por jugador (el `PartnerResult` de su compañero y los objetos soltados que recibió) |
 
 Límites: `MaxBattleFighters` 4 → 7. `ProtocolVersion` sube.
+
+El protocolo 15 da además a cada luchador de un `BattleFrame` su orden actual (un comando, o en un combate Folder la
+ranura activa y la postura) y el estado que nombra su fila, y el fotograma de cada invitado lleva el progreso y la meta de su remate y, en un combate
+Folder, la placa de su compañero: orden activa y su fase, la cola con objetivos, el objetivo, la postura, la barra de
+defensa, la cuenta atrás de la ruptura, el compromiso y el aviso de la última orden. Una placa ocupa como mucho 23
+bytes.
 
 ```mermaid
 sequenceDiagram
@@ -288,8 +305,9 @@ sequenceDiagram
 
 ### 7.4 Desconexión
 
-- **Se desconecta un invitado:** su compañero sigue peleando en A tu modo hasta el final; su botín se descarta (el
-  guardado propio del invitado no se toca, como en el PR #363). Sigue contando para el escalado.
+- **Un invitado se desconecta o deja el mapa:** el anfitrión cierra su bolsa y su compañero huye, contado como huido; el
+  combate sigue sin él. En un combate de la historia el compañero se queda en A tu modo hasta el final. El invitado que
+  cambió de mapa quita su HUD de combate al momento y recibe el resultado cuando el combate termina.
 - **Se desconecta el anfitrión:** la sesión termina (ADR 0024); el combate de cada invitado termina sin resultado y el
   invitado vuelve a su propia partida.
 
@@ -299,7 +317,15 @@ sequenceDiagram
   enemigos salvajes esperan como hoy («ocupado», después ayudante). Varios combates a la vez en mapas distintos es la
   tarea 12.
 - Cuando empieza un combate, los actores de campo de sus compañeros y enemigos salen del campo en todos los clientes;
-  cuando termina, los enemigos retirados por el combate salen de todos los campos (el PR #363 ya los envía).
+  cuando termina, los enemigos retirados por el combate salen de todos los campos (el PR #363 ya los envía). Una
+  instantánea dice cuándo lleva todos los NPC del mapa (`npcsWhole`), así que un mapa vacío también retira los últimos
+  enemigos en los invitados.
+- Un combate que empieza en el mundo compartido cierra el menú del juego y las páginas del compañero de cada jugador que
+  está en él. Un jugador con un menú, una página del compañero o un diálogo abiertos no ofrece su compañero como aliado.
+- Un jugador en una escena propia en otro mapa (muerte, renacimiento) o en otro mapa se oculta en los mundos de los
+  demás, con su compañero, hasta que vuelve.
+- Un invitado toma la hora del día del mundo al momento, sin fundido, cuando su reloj salta al del mundo (al unirse, al
+  volver atrás, horas saltadas) y cuando queda retenido por un combate.
 
 ## 8. Mecánicas cooperativas (mejoras opcionales)
 
@@ -390,6 +416,8 @@ siguen jugando.
   del cuerpo de ese jugador en la pantalla del anfitrión, con la animación de lanzar. Cada aliado suena como su especie
   (los bancos de sonido de los aliados en las ranuras 16–18; el compañero visitante conserva su especie en las del
   compañero).
+- Tarea 10, filas: la tarjeta de cada aliado enseña su orden en curso junto al nombre (`battle.ally.<n>.order`: su
+  comando, su técnica de Folder o su postura); con tres aliados las tarjetas quitan la barra de MP para ser compactas.
 - Tarea 11: la dificultad cooperativa, ver [dificultad cooperativa](coop-difficulty.md) §9.
 - Tarea 10, la pantalla del invitado (versión 12 del protocolo): el `BattleFrame` del anfitrión lleva los objetos
   lanzados (`throws`: quién lo lanzó, el objeto, en la mano, en vuelo con su punto, o caído sobre un luchador), y la
@@ -408,6 +436,19 @@ siguen jugando.
   - Ranuras de sonido: el compañero de este juego conserva la ranura 4 y los enemigos toman de la 5 en adelante, como
     en el original; cada otro compañero toma la siguiente ranura de aliado. Pasadas las tres de aliados, un cuerpo suena
     desde la del compañero de este juego.
+- Tarea 10, el HUD del invitado (protocolo 15): la pantalla de combate de la skin de un invitado lee los mismos ajustes
+  que la del anfitrión. Las tarjetas de los aliados nombran la orden de cada compañero, el indicador del remate se
+  llena, la placa Folder enseña al compañero propio del invitado y los enemigos a los que apunta o que tiene en cola (con
+  las letras de los gemelos), las tarjetas nombran también el estado de cada compañero, y la bolsa elige el aliado al
+  que vuela un objeto. La barra de PV de cada enemigo solo se ve cuando se ve la del anfitrión (`Battle::hpBarShown`:
+  un rato tras un golpe en un combate salvaje Classic), así que el invitado tampoco ve ninguna antes del primer golpe.
+  Aún no se envía: la esquina del indicador de carga del remate, y el coste de PM y el problema de las entradas del
+  menú.
+- El HUD del invitado se ve desde la presentación del anfitrión, sin el cartel. Su bolsa se abre como la del anfitrión:
+  el HUD sabe que la bolsa está abierta antes de que se vea, así el documento de combate nunca le quita el foco (el
+  propio menú del compañero del invitado vuelve a publicar la bolsa en ese tick), y su Usar siempre lanza, aunque la
+  bolsa ya se haya cerrado. Cuando el combate del anfitrión ocupa la pantalla de un invitado, una bolsa de campo abierta
+  se cierra y un aviso de campo (una enfermedad, una medalla) espera a que acabe el combate.
 - Falta: la tarea 12 (un combate por mapa: mientras uno sigue, otro en otro mapa se rechaza), las mecánicas opcionales
   de §8 y un grito por domador.
 

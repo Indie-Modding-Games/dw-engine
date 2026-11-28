@@ -78,6 +78,7 @@ TEST_CASE("cooperative control and state messages round trip") {
                                .confirm = true,
                                .moveTarget = std::pair{-123456, 789012}}});
   roundTrip(Commands{.sequence = 12, .field = {}});
+  roundTrip(Snapshot{.mapId = "m", .worldTick = 1, .entities = {}, .npcsWhole = true});
   roundTrip(Snapshot{.mapId = "city/field",
                      .worldTick = 456,
                      .acknowledgedCommand = 78,
@@ -120,6 +121,7 @@ TEST_CASE("cooperative control and state messages round trip") {
                         .z = MaxWorldCoordinate,
                         .yaw = 65535,
                         .motion = Motion::Walk});
+  roundTrip(PlayerState{.player = 2, .sequence = 7, .epoch = 1, .mapId = "start", .away = true});
   roundTrip(PlayerCorrection{.player = 2,
                              .epoch = 4,
                              .mapId = "mayo02",
@@ -266,12 +268,20 @@ TEST_CASE(
       WorldChange{.revision = 1, .origin = 0, .ask = 0, .mapId = "m", .edits = {}}};
   const Message claim{
       ItemClaim{.claim = 1, .kind = ClaimKind::Chest, .key = 3, .id = 0, .mapId = "m"}};
-  CHECK(guest.send(Message{WorldAsk{.ask = 1, .mapId = "m", .edits = {}}}));
+  CHECK(guest.send(Message{WorldAsk{.ask = 1, .seen = 0, .mapId = "m", .edits = {}}}));
   CHECK(guest.send(claim));
   CHECK(host.send(change));
   CHECK(host.send(Message{ClaimAnswer{.claim = 1, .granted = true}}));
   CHECK_FALSE(guest.send(change));
   CHECK_FALSE(host.send(claim));
+  const Message pileAsk{
+      PileAsk{.ask = 1, .action = PileAction::Eat, .mapId = "m", .x = 1, .y = 2, .size = 0}};
+  const Message piles{PoopPiles{.mapId = "m", .restart = false, .piles = {}}};
+  CHECK(guest.send(pileAsk));
+  CHECK(host.send(piles));
+  CHECK(host.send(Message{PileAnswer{.ask = 1, .granted = false, .size = 0}}));
+  CHECK_FALSE(guest.send(piles));
+  CHECK_FALSE(host.send(pileAsk));
 }
 
 TEST_CASE("cooperative decoder ignores foreign message kinds and rejects damaged frames") {

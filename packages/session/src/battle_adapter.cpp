@@ -638,6 +638,8 @@ core::Result<game::battle::Battle> BattleAdapter::start(GameSession& session,
                                   .recruitOnVictory = std::move(request.recruitOnVictory),
                                   .versus = std::nullopt,
                                   .allies = {},
+                                  .system = game::battle::battleSystemOf(session.battleSystem())
+                                                .value_or(game::battle::BattleSystemId::Classic),
                                   .coopScaling = request.coopScaling,
                                   .learnChance = session.randomizer().learnChance()};
   randomizeDrops(session, setup.enemies);
@@ -768,6 +770,7 @@ core::Result<game::battle::Battle> BattleAdapter::startVersus(
       .recruitOnVictory = std::nullopt,
       .versus = game::battle::VersusSetup{.rivalDiscipline = guest.discipline},
       .allies = {},
+      .system = game::battle::BattleSystemId::Classic,
       .coopScaling = {}};
   return game::battle::Battle::start(std::move(setup), *rules_, *catalog_, std::move(*strategies),
                                      seed);

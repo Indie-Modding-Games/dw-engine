@@ -6,7 +6,9 @@
 #include <array>
 #include <format>
 #include <memory>
+#include <optional>
 #include <set>
+#include <utility>
 
 #include "coop_connection.hpp"
 #include "coop_gameplay_bridge.hpp"
@@ -52,6 +54,33 @@ public:
   std::string roomToken() const override { return "token"; }
 
 private:
+  dwe::net::PeerLink* peer_;
+};
+
+// Closes its route when it goes, as a WebRTC link does.
+class ClosingPeer final : public dwe::net::PeerLink {
+public:
+  ClosingPeer(dwe::net::LoopbackNetwork& network, std::size_t side)
+      : network_{&network}, peer_{&network.link(side)} {}
+  ClosingPeer(const ClosingPeer&) = delete;
+  ClosingPeer& operator=(const ClosingPeer&) = delete;
+  ClosingPeer(ClosingPeer&&) = delete;
+  ClosingPeer& operator=(ClosingPeer&&) = delete;
+  ~ClosingPeer() override { network_->cut(); }
+  void send(dwe::net::Lane lane, std::span<const std::uint8_t> bytes) override {
+    peer_->send(lane, bytes);
+  }
+  std::optional<dwe::net::Bytes> receive(dwe::net::Lane lane) override {
+    return peer_->receive(lane);
+  }
+  void poll(dwe::net::Millis now) override { peer_->poll(now); }
+  dwe::net::PeerState state() const override { return peer_->state(); }
+  dwe::net::PeerFailure failure() const override { return peer_->failure(); }
+  std::optional<dwe::net::Millis> lastHeard() const override { return peer_->lastHeard(); }
+  std::string roomCode() const override { return peer_->roomCode(); }
+
+private:
+  dwe::net::LoopbackNetwork* network_;
   dwe::net::PeerLink* peer_;
 };
 
@@ -257,6 +286,72 @@ TEST_CASE("the cooperative room's phase follows the link, the lobby and leaving"
   CHECK_FALSE(host.room()->noticesPending());
   guest.close();
   CHECK(guest.room()->phase() == RoomPhase::Closed);
+}
+
+TEST_CASE("a host that leaves or closes its game is heard leaving, not as a dropped link (#416)") {
+  using dwe::game::coop::LeaveReason;
+  using dwe::game::coop::LinkPhase;
+  const auto connect = [](dwe::net::LoopbackNetwork& network, CoopConnection& host,
+                          CoopConnection& guest) {
+    host.open();
+    guest.open();
+    REQUIRE(host.host());
+    REQUIRE(guest.join("TEST"));
+    for (std::uint32_t tick = 0; tick < 400 && (!host.connected() || !guest.connected()); ++tick) {
+      network.advance(dwe::net::Millis{10});
+      host.tick(network.now());
+      guest.tick(network.now());
+    }
+    REQUIRE(host.connected());
+    REQUIRE(guest.connected());
+  };
+  // Over a lossy route the transport stays until the goodbye went out.
+  {
+    dwe::net::LoopbackNetwork network{{.latency = dwe::net::Millis{30}, .lossPercent = 50}, 3};
+    CoopConnection host{roomDesc(
+        [&](const std::optional<dwe::net::PublicHost>&) {
+          return std::make_unique<ClosingPeer>(network, 0);
+        },
+        {})};
+    CoopConnection guest{roomDesc(
+        {}, [&](std::string_view) { return std::make_unique<BorrowedPeer>(network.link(1)); })};
+    connect(network, host, guest);
+    const dwe::game::coop::CoopLink* heard = guest.link();
+    host.close();
+    CHECK_FALSE(host.settled());
+    for (int tick = 0; tick < 60; ++tick) {
+      network.advance(dwe::net::Millis{10});
+      host.settle(network.now());
+      guest.tick(network.now());
+    }
+    REQUIRE(guest.link() == heard);
+    CHECK(heard->phase() == LinkPhase::Left);
+    CHECK(heard->leaveReason() == LeaveReason::Quit);
+    for (int tick = 0; tick < 120 && !host.settled(); ++tick) {
+      network.advance(dwe::net::Millis{10});
+      host.settle(network.now());
+    }
+    CHECK(host.settled());
+  }
+  // A game that closes without leaving its room still says goodbye.
+  {
+    dwe::net::LoopbackNetwork network{{}};
+    std::optional<CoopConnection> host{std::in_place,
+                                       roomDesc(
+                                           [&](const std::optional<dwe::net::PublicHost>&) {
+                                             return std::make_unique<BorrowedPeer>(network.link(0));
+                                           },
+                                           {})};
+    CoopConnection guest{roomDesc(
+        {}, [&](std::string_view) { return std::make_unique<BorrowedPeer>(network.link(1)); })};
+    connect(network, *host, guest);
+    const dwe::game::coop::CoopLink* heard = guest.link();
+    host.reset();
+    network.advance(dwe::net::Millis{10});
+    guest.tick(network.now());
+    REQUIRE(guest.link() == heard);
+    CHECK(heard->phase() == LinkPhase::Left);
+  }
 }
 
 TEST_CASE("a cooperative room that cannot be made closes with the error") {

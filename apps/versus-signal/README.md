@@ -74,7 +74,7 @@ A room of up to four keeps seating guests after its game starts (late joiners, a
 | `/v1/host/<code>?token=<token>&taken=<n>` (WebSocket) | The host's next socket in its room of more than two, waiting for the next guest. |
 | `/v1/join/<code>` (WebSocket) | Joins a room by its code. |
 | `GET /v1/rooms?compat=<key>` | The public rooms of that compatibility key (all without one) that are not playing, oldest first, 50 at most: `{"rooms":[{"roomId","joinCode","name","message","players","capacity","createdAt","state","phase","hostName","icon","compat","mode","updatedAt"}]}`. Over a WebSocket it is one message, then the server closes. |
-| `POST /v1/rooms/<code>/state` | The host's notice of how its public room goes, with `{"token","state"}`; `state` is `ready`, `playing` or `closed`. 204, or `{"error":…}`: `bad-token` (403), `no-room` (404), `bad-state` (400, or 409 for `ready`/`playing` before a guest arrived). Over a WebSocket (the game's client) the two go in the query (`?token=&state=`) and the answer is one message, `{"type":"state"}` or an error. |
+| `POST /v1/rooms/<code>/state` | The host's notice of how its public room goes, with `{"token","state"}`; `state` is `connected`, `ready`, `playing` or `closed` (hosts repeat it every minute). 204, or `{"error":…}`: `bad-token` (403), `no-room` (404), `bad-state` (400, or 409 for `ready`/`playing` before a guest arrived). Over a WebSocket (the game's client) the two go in the query (`?token=&state=`) and the answer is one message, `{"type":"state"}` or an error. |
 | `GET /v1/info` | What the server can do: `{"protocol":"v1","features":["public-rooms","room-state","seats","relay"]}` (`relay` only with TURN on; `seats`: rooms of up to four). Over a WebSocket it is one message. A server without this route is a first-version one: no public rooms. |
 
 ### Public rooms
@@ -91,8 +91,8 @@ The directory is one Durable Object (`DirectoryObject`, `src/directory.ts`) with
 | closed | The host's notice `closed`, or the room failing, expiring or its host leaving before both connected | Removed |
 
 `state` keeps the first version's two values (`waiting` for open, `full` for the rest). An open entry goes with its
-room (5 minutes); any other expires 10 minutes after the host's last notice, so a host that vanished leaves no
-entry behind. The compatibility key is the game's: its protocol and the first bytes of its content sum, so a game
+room (5 minutes); any other expires 3 minutes after the host's last notice (hosts repeat theirs every minute), so a
+host that vanished leaves no entry behind. The compatibility key is the game's: its protocol and the first bytes of its content sum, so a game
 only sees rooms it can play in.
 
 ### Limits

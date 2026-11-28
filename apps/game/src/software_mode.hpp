@@ -1,10 +1,13 @@
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <span>
+#include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "graphics_options.hpp"
@@ -14,6 +17,23 @@ namespace dwe::app {
 inline constexpr std::string_view SoftwareNoticeDocument = "software_notice";
 inline constexpr std::string_view SoftwareModeSetting = "software_mode";
 inline constexpr double SoftwareNoticeSeconds = 12.0;
+
+// The launcher's first reason for the processor or compatible mode, as "code|key=value|..."
+// (docs/architecture/graphics-diagnosis.md).
+inline constexpr std::string_view GraphicsReasonVariable = "DWE_GRAPHICS_REASON";
+inline constexpr std::string_view NoticeKindSetting = "software_notice.kind";
+inline constexpr std::string_view NoticeReasonSetting = "software_notice.reason";
+inline constexpr std::array<std::string_view, 6> NoticeParams{"gpu",    "adapter", "dedicated",
+                                                              "driver", "minimum", "api"};
+
+struct NoticeReason {
+  std::string code;
+  std::vector<std::pair<std::string, std::string>> params;
+
+  [[nodiscard]] std::string_view param(std::string_view key) const;
+};
+
+[[nodiscard]] std::optional<NoticeReason> parseNoticeReason(std::string_view text);
 
 enum class SoftwareMode : std::uint8_t { Auto, On, Off };
 
@@ -51,6 +71,7 @@ struct QualityDecision {
 };
 
 inline constexpr double DownMargin = 1.08;
+inline constexpr double FarDownMargin = 1.75;
 inline constexpr double UpHeadroom = 0.6;
 
 [[nodiscard]] QualityDecision decideQuality(std::span<const double> busySeconds, double targetFps,
@@ -78,6 +99,23 @@ private:
   double settleLeft_ = SettleSeconds;
   double windowSeconds_ = 0.0;
   std::vector<double> busy_;
+};
+
+// A weak graphics card's automatic quality steps one preset lighter after a window of mostly slow
+// frames (below 40 fps), never heavier.
+class SlowFrameWatch {
+public:
+  static constexpr double WindowSeconds = 5.0;
+  static constexpr double SettleSeconds = 3.0;
+  static constexpr double SlowFrameSeconds = 1.0 / 40.0;
+
+  [[nodiscard]] bool frame(double frameSeconds);
+  void pause();
+
+private:
+  double settleLeft_ = SettleSeconds;
+  double windowSeconds_ = 0.0;
+  std::vector<double> frames_;
 };
 
 class FrameLimiter {

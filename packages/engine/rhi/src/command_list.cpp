@@ -4,6 +4,7 @@
 
 #include <format>
 
+#include "vulkan_calls.hpp"
 #include "vulkan_util.hpp"
 
 namespace dwe::rhi {
@@ -56,11 +57,11 @@ void CommandList::beginRendering(const RenderingDesc& desc) {
   gpuNoteActivity(std::format("dynamic rendering: {}x{}{}{} at {} samples", desc.extent.width,
                               desc.extent.height, desc.depth.view ? " with depth" : "",
                               desc.color.resolve ? " resolving the color" : "", desc.samples));
-  vkCmdBeginRendering(commands_, &rendering);
+  sync2().beginRendering(commands_, &rendering);
 }
 
 void CommandList::endRendering() {
-  vkCmdEndRendering(commands_);
+  sync2().endRendering(commands_);
   gpuMarker(commands_, GpuWork::Frame);
 }
 
@@ -76,7 +77,7 @@ void CommandList::colorPassBarrier() {
   dependency.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
   dependency.memoryBarrierCount = 1;
   dependency.pMemoryBarriers = &barrier;
-  vkCmdPipelineBarrier2(commands_, &dependency);
+  sync2().pipelineBarrier2(commands_, &dependency);
 }
 
 void CommandList::prepareColorTarget(const Image& color) {

@@ -3,6 +3,7 @@
 #include <dwe/content/dev_assets.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/core/number_text.hpp>
+#include <dwe/game/modes/game_mode.hpp>
 #include <dwe/session/slot_names.hpp>
 
 #include <algorithm>
@@ -106,6 +107,10 @@ bool readOption(Options& options, std::string_view argument, std::string_view va
   if (argument == RulesetOption) {
     options.ruleset = value;
     return !value.empty();
+  }
+  if (argument == BattleOption) {
+    options.battle = value;
+    return value == game::modes::ClassicBattle || value == game::modes::FolderBattle;
   }
   if (argument == StoryStageOption) {
     options.storyStage = value;

@@ -3,12 +3,14 @@
 #include <dwe/screens/field_hud_view.hpp>
 #include <dwe/screens/screen_settings.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string_view>
 
 namespace dwe::game::battle {
 class Battle;
+using FighterId = std::size_t;
 } // namespace dwe::game::battle
 
 namespace dwe::screens {
@@ -53,6 +55,9 @@ inline constexpr std::int32_t DeathCountdownLastFrame = 150;
 // fall's count). Reviving the partner takes it away (item.c: handleRestore,
 // BTL_removeDeathCountdown).
 [[nodiscard]] std::optional<std::int32_t> deathCountdownTimerOf(const game::battle::Battle& battle);
+// The same for partner `own` of a co-op battle (this player's own, an ally of the fighting one).
+[[nodiscard]] std::optional<std::int32_t> deathCountdownTimerOf(const game::battle::Battle& battle,
+                                                                game::battle::FighterId own);
 
 // Where the countdown stands: the fallen partner's model node 1 as it showed when the countdown was
 // added (getEntityScreenPos(entity, 1)), held within 140 pixels of the original's screen's middle

@@ -1491,6 +1491,419 @@
         }
       }
     },
+    "folder": {
+      "type": "object",
+      "description": "The Folder battle's numbers (docs/architecture/folder-battle.md).",
+      "required": [
+        "stat_scale",
+        "processing_frames",
+        "preparation_frames",
+        "recovery_frames",
+        "give_up_frames",
+        "chase_frames",
+        "movement_min_percent",
+        "movement_span_percent",
+        "execution_cut_percent",
+        "processing_cut_percent",
+        "attack_percent",
+        "element_percent",
+        "stab_percent",
+        "type_percent",
+        "beats",
+        "cover_max_percent",
+        "cover_defense_times",
+        "cover_near_bonus_percent",
+        "cover_far_bonus_percent",
+        "cover_far_pixels",
+        "bar_defense_times",
+        "bar_drain_frames",
+        "bar_rest_frames",
+        "break_frames",
+        "break_debuff_percent",
+        "per_stat_cut_percent",
+        "stat_cut_cap_percent",
+        "timings",
+        "finisher_timing",
+        "techniques",
+        "mp_costs",
+        "catalog"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "stat_scale": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "processing_frames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "preparation_frames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "recovery_frames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "give_up_frames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "chase_frames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "movement_min_percent": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "movement_span_percent": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "execution_cut_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "processing_cut_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "attack_percent": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "element_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "stab_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "type_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "beats": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "description": "The specialty each specialty beats, by specialty number (combat-design.md §3.8)."
+        },
+        "cover_max_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "cover_defense_times": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cover_near_bonus_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Cover chance points added when the attack comes from point-blank (combat-design.md §7.4)."
+        },
+        "cover_far_bonus_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Cover chance points added from cover_far_pixels on."
+        },
+        "cover_far_pixels": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The distance in pixels where the cover bonus reaches cover_far_bonus_percent."
+        },
+        "bar_defense_times": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bar_drain_frames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bar_rest_frames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "break_frames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "break_debuff_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "per_stat_cut_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "stat_cut_cap_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "timings": {
+          "type": "array",
+          "description": "Preparation and recovery by MP cost, the cheapest tier first.",
+          "items": {
+            "type": "object",
+            "required": [
+              "mp_up_to",
+              "preparation_frames",
+              "recovery_frames"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "mp_up_to": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "preparation_frames": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "recovery_frames": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "finisher_timing": {
+          "type": "object",
+          "required": [
+            "preparation_frames",
+            "recovery_frames"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "preparation_frames": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "recovery_frames": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "description": "The finishers' preparation and recovery."
+        },
+        "techniques": {
+          "type": "object",
+          "description": "One technique's own preparation and recovery, by move id.",
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "preparation_frames",
+              "recovery_frames"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "preparation_frames": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "recovery_frames": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "mp_costs": {
+          "type": "object",
+          "description": "The MP cost formula of the trainer's techniques (costo-mp.md v0.2).",
+          "required": [
+            "power_percent",
+            "short_reach_up_to",
+            "medium_reach_up_to",
+            "small_area_up_to",
+            "medium_area_up_to",
+            "reach_costs",
+            "area_costs",
+            "status_costs",
+            "duration_percents",
+            "status_duration",
+            "light_buff_up_to",
+            "moderate_buff_up_to",
+            "single_buff_costs",
+            "several_buff_costs",
+            "buff_duration"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "power_percent": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "MP per 100 power."
+            },
+            "short_reach_up_to": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Pixels: a ranged technique up to this far is short."
+            },
+            "medium_reach_up_to": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Pixels: up to this far is medium, farther long."
+            },
+            "small_area_up_to": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Pixels: an area up to this radius is small."
+            },
+            "medium_area_up_to": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Pixels: up to this radius medium, wider large."
+            },
+            "reach_costs": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Personal, short, medium and long reach."
+            },
+            "area_costs": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Single target, small, medium and large area."
+            },
+            "status_costs": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Poison, confusion, stun and flattening, before chance and duration."
+            },
+            "duration_percents": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Short, medium and long effects."
+            },
+            "status_duration": {
+              "enum": [
+                "short",
+                "medium",
+                "long"
+              ]
+            },
+            "light_buff_up_to": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "moderate_buff_up_to": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "single_buff_costs": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Light, moderate and strong boost of one stat."
+            },
+            "several_buff_costs": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Light, moderate and strong boost of several stats."
+            },
+            "buff_duration": {
+              "enum": [
+                "short",
+                "medium",
+                "long"
+              ]
+            }
+          }
+        },
+        "catalog": {
+          "type": "object",
+          "description": "Per technique, by move id, what differs from the move table's reading (combat-design.md §3.10).",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "functions": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "offensive",
+                    "defensive",
+                    "support",
+                    "control"
+                  ]
+                }
+              },
+              "area": {
+                "enum": [
+                  "single",
+                  "around_self",
+                  "around_target",
+                  "global"
+                ]
+              },
+              "area_pixels": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "friendly_fire": {
+                "type": "boolean"
+              },
+              "effect_duration": {
+                "enum": [
+                  "short",
+                  "medium",
+                  "long"
+                ]
+              },
+              "mp_cost": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
     "quirks": {
       "type": "object",
       "required": [],

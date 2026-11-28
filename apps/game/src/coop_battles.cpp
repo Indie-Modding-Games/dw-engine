@@ -3,10 +3,16 @@
 #include "coop_battles.hpp"
 
 #include <dwe/core/log.hpp>
+#include <dwe/game/battle/text_keys.hpp>
+#include <dwe/render/map_camera.hpp>
+#include <dwe/screens/bag_view.hpp>
 #include <dwe/screens/battle_view.hpp>
+#include <dwe/screens/enemy_hp_bars.hpp>
 #include <dwe/screens/name_keys.hpp>
+#include <dwe/session/inventory_adapter.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -20,9 +26,11 @@
 #include <variant>
 #include <vector>
 
+#include "bag_slots.hpp"
 #include "coop_gameplay_bridge.hpp"
 #include "coop_world.hpp"
 #include "fighter_figure.hpp"
+#include "partner_menu.hpp"
 #include "play_session.hpp"
 
 namespace dwe::app {
@@ -42,6 +50,9 @@ constexpr float YawSteps = 65536.0F;
 constexpr float PaceSteps = 16.0F;
 // A number the guest's document reads as none (no target picked, no countdown shown).
 constexpr double NoTarget = -1.0;
+// The node the foes' bars point at (BattleScreen's), and a moved bar's show time in ticks.
+constexpr std::uint32_t HudHpBarNode = 1;
+constexpr std::uint64_t HudHpBarTicks = 180;
 
 std::uint16_t yawOf(float radians) {
   float turn = std::fmod(radians, FullTurn);
@@ -135,26 +146,6 @@ session::VisitingPartner visitorOf(const coop::BattleFighterProfile& profile) {
     }
   }
   return partner;
-}
-
-// The label of an order on the guest's document: the original's command names, the techniques'
-// and the finisher's own words.
-std::string orderLabelKey(game::battle::Command command) {
-  if (std::string key = screens::commandLabelKey(command); !key.empty()) {
-    return key;
-  }
-  switch (command) {
-  case game::battle::Command::Technique1:
-    return "battle.command.technique_1";
-  case game::battle::Command::Technique2:
-    return "battle.command.technique_2";
-  case game::battle::Command::Technique3:
-    return "battle.command.technique_3";
-  case game::battle::Command::Finisher:
-    return "battle.command.finisher";
-  default:
-    return "battle.command.none";
-  }
 }
 
 std::string_view phaseName(coop::BattlePhase phase) {
@@ -278,8 +269,13 @@ void CoopBattles::tick(PlaySession& play, std::span<const Peer> peers, Role role
       role == Role::Guest && !peers_.empty() ? peers_.front().bridge : nullptr;
   // A battle the guest's story starts is shared while the host stands on its map (#351); elsewhere
   // it is a solo battle of the guest's own game.
-  play.handBattlesToHost(host != nullptr && !play.battleScreen().active() &&
-                         coopPlayerHere(play.scene().field(), here_, coop::HostPlayerId));
+  const bool handOver = host != nullptr && !play.battleScreen().active() &&
+                        coopPlayerHere(play.scene().field(), here_, coop::HostPlayerId);
+  play.handBattlesToHost(handOver);
+  play.holdCoopBattles(role == Role::Host ? partnersDying(play) : handOver && play.partnerDying());
+  if (play.takeHeldCoopBattle()) {
+    notice_ = CoopBattleWaitsRebirthText;
+  }
   if (host != nullptr) {
     if (mirror_.self() != self && !mirror_.running() && !mirror_.pendingAsk()) {
       mirror_ = coop::BattleMirror{self};
@@ -307,6 +303,7 @@ void CoopBattles::reset() {
   shownFrame_.reset();
   fighters_.clear();
   target_.reset();
+  purse_.reset();
   actions_.clear();
   cameraOnBattle_ = false;
   play_ = nullptr;
@@ -346,7 +343,7 @@ void CoopBattles::hostTick(PlaySession& play) {
     }
     while (auto message = peer.bridge->receiveBattle()) {
       if (const auto* ask = std::get_if<coop::BattleAsk>(&*message)) {
-        answer(play, peer, *ask);
+        answer(play, peer.id, *ask);
       } else if (const auto* action = std::get_if<coop::BattleAction>(&*message)) {
         apply(play, peer.id, *action);
       } else if (const auto* offer = std::get_if<coop::BattleOffer>(&*message)) {
@@ -362,6 +359,14 @@ void CoopBattles::hostTick(PlaySession& play) {
     sendAll(beginOf(play, coop::HostPlayerId, 0));
   }
   // Each guest's frame shows its own partner's strip, bag and finisher.
+  if (referee_.running() && screen.active()) {
+    for (const coop::PlayerId guest : referee_.guests()) {
+      if (referee_.roleOf(guest) == coop::BattleRole::Ally &&
+          !std::ranges::contains(here_, guest)) {
+        screen.withdrawAlly(guest);
+      }
+    }
+  }
   if (referee_.running() && screen.active() && ticks_ % FrameTicks == 0) {
     ++frames_;
     for (const Peer& peer : peers_) {
@@ -370,6 +375,15 @@ void CoopBattles::hostTick(PlaySession& play) {
   }
   if (referee_.running() && !screen.active()) {
     endBattle(play);
+  }
+  screen.setCoopShared(referee_.running() &&
+                       std::ranges::any_of(referee_.guests(), [&](coop::PlayerId guest) {
+                         return referee_.roleOf(guest) != coop::BattleRole::Helper ||
+                                coopPlayerHere(play.scene().field(), here_, guest);
+                       }));
+  for (const coop::BattleReferee::WaitingAsk& waiting :
+       std::vector<coop::BattleReferee::WaitingAsk>{referee_.waiting()}) {
+    answer(play, waiting.guest, waiting.ask);
   }
   offerAllies(play);
 }
@@ -402,6 +416,17 @@ void CoopBattles::endBattle(PlaySession& play) {
     sendTo(end.to, std::move(end.end));
   }
   play.scene().setBattlePartner(std::nullopt);
+}
+
+// Blocks co-op battles while a partner here dies or waits to be reborn.
+bool CoopBattles::partnersDying(const PlaySession& play) const {
+  std::vector<coop::PlayerId> here;
+  for (const coop::PlayerId guest : referee_.guests()) {
+    if (coopPlayerHere(play.scene().field(), here_, guest)) {
+      here.push_back(guest);
+    }
+  }
+  return play.partnerDying() || referee_.partnerDying(here);
 }
 
 // The guests whose partners join a battle `starter` begins (docs/architecture/coop-combat.md §3):
@@ -444,30 +469,34 @@ void CoopBattles::offerAllies(PlaySession& play) {
 void CoopBattles::guestLeft(coop::PlayerId guest) {
   referee_.guestLeft(guest);
   if (play_ != nullptr) {
-    play_->battleScreen().releaseAlly(guest);
+    play_->battleScreen().withdrawAlly(guest);
   }
 }
 
-void CoopBattles::answer(PlaySession& play, const Peer& from, const coop::BattleAsk& ask) {
-  if (!coopPlayerHere(play.scene().field(), here_, from.id)) {
-    // The session puts the guest elsewhere (its states have not reached this map yet).
-    core::logInfo("coop: player {}'s battle {} is refused: it is not on this map", from.id,
-                  ask.ask);
-    send(from.bridge, coop::BattleRefused{.ask = ask.ask, .reason = coop::BattleRefusal::NotHere});
+void CoopBattles::answer(PlaySession& play, coop::PlayerId from, const coop::BattleAsk& ask) {
+  const game::field::Field& field = play.scene().field();
+  const coop::BattleAskVerdict verdict = referee_.judge(
+      ask, {.map = field.mapChangePending() ? std::string_view{} : std::string_view{field.mapId()},
+            .guestHere = coopPlayerHere(field, here_, from),
+            .battling = play.battleScreen().active(),
+            .held = play.coopBattleBlocked(),
+            .partnerDying = partnersDying(play) || referee_.partnerDying(std::array{from})});
+  if (verdict.waits) {
+    if (referee_.wait(from, ask, ticks_)) {
+      return;
+    }
+    core::logInfo("coop: player {}'s battle {} is refused: this game stayed held{}", from, ask.ask,
+                  verdict.waitRefusal == coop::BattleRefusal::PartnerDying
+                      ? " while a partner is reborn"
+                      : "");
+    sendTo(from, coop::BattleRefused{.ask = ask.ask, .reason = verdict.waitRefusal});
     return;
   }
-  if (const auto refusal =
-          referee_.judge(ask, play.scene().field().mapId(), play.battleScreen().active())) {
-    core::logInfo("coop: player {}'s battle {} is refused: the world is busy or elsewhere", from.id,
+  referee_.forget(from);
+  if (verdict.refusal) {
+    core::logInfo("coop: player {}'s battle {} is refused: the world is busy or elsewhere", from,
                   ask.ask);
-    send(from.bridge, coop::BattleRefused{.ask = ask.ask, .reason = *refusal});
-    return;
-  }
-  if (play.coopBattleBlocked()) {
-    // A screen, a scene or a script holds this game: the guest's game runs the battle, solo.
-    core::logInfo("coop: player {}'s battle {} runs on its own game: this one is held", from.id,
-                  ask.ask);
-    send(from.bridge, coop::BattleRefused{.ask = ask.ask, .reason = coop::BattleRefusal::Failed});
+    sendTo(from, coop::BattleRefused{.ask = ask.ask, .reason = *verdict.refusal});
     return;
   }
   std::vector<std::int32_t> npcs;
@@ -478,22 +507,21 @@ void CoopBattles::answer(PlaySession& play, const Peer& from, const coop::Battle
   // so does every other free guest's on this map.
   std::vector<BattleScreen::CoopAlly> allies{
       {.owner = coop::HostPlayerId, .visitor = std::nullopt}};
-  std::ranges::move(freeAllies(play, from.id), std::back_inserter(allies));
+  std::ranges::move(freeAllies(play, from), std::back_inserter(allies));
   BattleScreen& screen = play.battleScreen();
-  screen.setCoopScaling(scalingOf(play, from.id, allies));
+  screen.setCoopScaling(scalingOf(play, from, allies));
   screen.setCoopAllies(std::move(allies));
-  if (auto started = play.startVisitorBattle(from.id, npcs, visitorOf(ask.fighter), ask.fixedFight,
+  if (auto started = play.startVisitorBattle(from, npcs, visitorOf(ask.fighter), ask.fixedFight,
                                              ask.predefined);
       !started) {
-    core::logWarning("coop: player {}'s battle did not start: {}", from.id,
-                     started.error().message);
-    send(from.bridge, coop::BattleRefused{.ask = ask.ask, .reason = coop::BattleRefusal::Failed});
+    core::logWarning("coop: player {}'s battle did not start: {}", from, started.error().message);
+    sendTo(from, coop::BattleRefused{.ask = ask.ask, .reason = coop::BattleRefusal::Failed});
     return;
   }
-  core::logInfo("coop: player {}'s partner fights{}", from.id,
+  core::logInfo("coop: player {}'s partner fights{}", from,
                 screen.fighterOf(coop::HostPlayerId) ? ", this player's beside it"
                                                      : "; this player helps");
-  sendAll(beginOf(play, from.id, ask.ask));
+  sendAll(beginOf(play, from, ask.ask));
 }
 
 void CoopBattles::apply(PlaySession& play, coop::PlayerId from, const coop::BattleAction& action) {
@@ -517,6 +545,13 @@ void CoopBattles::apply(PlaySession& play, coop::PlayerId from, const coop::Batt
   case coop::BattleActionKind::Cheer:
     screen.cheer(from);
     break;
+  case coop::BattleActionKind::Order:
+    static_cast<void>(screen.orderFromPlayer(from, action.value));
+    break;
+  case coop::BattleActionKind::Stance:
+    static_cast<void>(
+        screen.stanceFromPlayer(from, static_cast<game::battle::Stance>(action.value)));
+    break;
   case coop::BattleActionKind::CloseEnd:
     if (screen.coopPhase() == coop::BattlePhase::End) {
       screen.closeEnd();
@@ -534,7 +569,9 @@ coop::BattleBegin CoopBattles::beginOf(PlaySession& play, coop::PlayerId starter
   }
   std::vector<std::string> species;
   std::vector<coop::PlayerId> allies;
+  bool folder = false;
   if (const game::battle::Battle* battle = screen.battle()) {
+    folder = battle->system() == game::battle::BattleSystemId::Folder;
     for (const auto& fighter : battle->state().fighters) {
       species.push_back(fighter.combatant.species);
     }
@@ -543,46 +580,31 @@ coop::BattleBegin CoopBattles::beginOf(PlaySession& play, coop::PlayerId starter
     }
   }
   frames_ = 0;
-  return referee_.begin(starter, ask, play.scene().field().mapId(), std::move(enemies),
-                        std::move(species), screen.fixedFight(), std::move(allies));
+  coop::BattleBegin begin =
+      referee_.begin(starter, ask, play.scene().field().mapId(), std::move(enemies),
+                     std::move(species), screen.fixedFight(), std::move(allies), folder);
+  if (const game::battle::Battle* battle = screen.battle()) {
+    begin.moves = coopBattleMovesOf(*battle);
+  }
+  return begin;
 }
 
 coop::BattleFrame CoopBattles::frameOf(const PlaySession& play, coop::PlayerId to) {
   const BattleScreen& screen = play.battleScreen();
-  coop::BattleFrame frame{.battle = referee_.running()->battle,
-                          .frame = frames_,
-                          .phase = screen.coopPhase(),
-                          .command = 0,
-                          .menu = 0,
-                          .bagAvailable = false,
-                          .finisherCharging = false,
-                          .fighters = {},
-                          .figures = {},
-                          .throws = screen.coopThrows()};
-  if (const game::battle::Battle* battle = screen.battle()) {
-    const game::battle::BattleState& state = battle->state();
-    // The guest's own partner's strip, bag and finisher (the fighting one's when it has none).
-    const game::battle::FighterId own = screen.fighterOf(to).value_or(game::battle::PartnerId);
-    const game::battle::CommandState& commands = state.commandsOf(own);
-    frame.command = static_cast<std::uint8_t>(commands.current);
-    for (const game::battle::Command command : commands.menu) {
-      frame.menu = static_cast<std::uint16_t>(frame.menu | (1U << static_cast<unsigned>(command)));
-    }
-    frame.bagAvailable = battle->bagAvailableFor(own);
-    frame.finisherCharging = state.finisher.charging;
-    for (game::battle::FighterId id = 0;
-         id < state.fighters.size() && frame.fighters.size() < coop::MaxBattleFighters; ++id) {
-      const game::battle::Fighter& fighter = state.fighters[id];
-      const std::optional<std::int32_t> revive = screens::reviveSecondsOf(*battle, id);
-      frame.fighters.push_back(
-          {.hp = fighter.hp,
-           .mp = fighter.mp,
-           .maxHp = fighter.stats.maxHp,
-           .maxMp = fighter.stats.maxMp,
-           .down = fighter.hp <= 0,
-           .reviveSeconds = static_cast<std::uint8_t>(std::clamp(revive.value_or(0), 0, 255))});
-    }
+  // A helper shows the fighting partner's strip, bag, finisher and plate.
+  const game::battle::Battle* battle = screen.battle();
+  coop::BattleFrame frame =
+      battle != nullptr
+          ? coopBattleFrameOf(*battle, screen.fighterOf(to).value_or(game::battle::PartnerId))
+          : coop::BattleFrame{};
+  frame.battle = referee_.running()->battle;
+  frame.frame = frames_;
+  frame.phase = screen.coopPhase();
+  if (const auto& outcome = screen.coopOutcome();
+      outcome && frame.phase != coop::BattlePhase::Fight) {
+    frame.outcome = coopOutcomeOf(*outcome);
   }
+  frame.throws = screen.coopThrows();
   for (const FieldScene::HeldFigure& held : play.scene().heldFigures()) {
     if (frame.figures.size() >= coop::MaxBattleFigures) {
       break;
@@ -611,7 +633,7 @@ void CoopBattles::guestTick(PlaySession& play, CoopGameplayBridge& bridge) {
   // A battle the guest's own story asked for: the host runs it, or it does not happen (one runs).
   if (auto handed = play.takeHandedBattle()) {
     if (mirror_.running() || mirror_.pendingAsk()) {
-      play.finishHandedBattle(game::story::BattleOutcome::NotStarted);
+      play.finishHandedBattle(game::story::BattleOutcome::Refused);
     } else {
       std::vector<std::int16_t> enemies;
       for (const std::int32_t npc : handed->npcs) {
@@ -628,10 +650,14 @@ void CoopBattles::guestTick(PlaySession& play, CoopGameplayBridge& bridge) {
   sendOffer(play, bridge);
   if (const auto refused = mirror_.takeRefused()) {
     asked_.reset();
-    if (refused->reason == coop::BattleRefusal::Busy) {
+    if (refused->reason == coop::BattleRefusal::PartnerDying) {
+      core::logInfo("coop: the host refused battle {}: a partner is being reborn", refused->ask);
+      notice_ = CoopBattleWaitsRebirthText;
+      play.finishHandedBattle(game::story::BattleOutcome::Refused);
+    } else if (refused->reason == coop::BattleRefusal::Busy) {
       // Another battle runs in the world: this player watches and helps in that one.
       core::logInfo("coop: the host refused battle {}: another one runs", refused->ask);
-      play.finishHandedBattle(game::story::BattleOutcome::NotStarted);
+      play.finishHandedBattle(game::story::BattleOutcome::Refused);
     } else {
       // The host left the map or could not start it: the battle is this game's own, solo.
       core::logInfo("coop: the host refused battle {}: it runs here", refused->ask);
@@ -639,13 +665,19 @@ void CoopBattles::guestTick(PlaySession& play, CoopGameplayBridge& bridge) {
     }
   }
   if (const auto began = mirror_.takeBegan()) {
+    purse_.reset();
     startShowing(play, *began);
   }
+  followPurse(play);
   for (coop::BattleAction& action : std::exchange(actions_, {})) {
     send(&bridge, std::move(action));
   }
+  if (mirror_.running() && watching_ && !ownBattle_ && play.scene().field().mapChangePending()) {
+    walkAway(play);
+  }
   if (mirror_.running() && watching_) {
     showFrame(play);
+    stepHud();
   }
   if (const auto ended = mirror_.takeEnded()) {
     if (watching_) {
@@ -658,6 +690,19 @@ void CoopBattles::guestTick(PlaySession& play, CoopGameplayBridge& bridge) {
   }
 }
 
+void CoopBattles::followPurse(PlaySession& play) {
+  const auto& frame = mirror_.frame();
+  if (!frame) {
+    return;
+  }
+  for (const std::string& item : purse_.due(frame->throws, mirror_.self(), frame->frame)) {
+    if (!play.takeCoopItem(item)) {
+      core::logWarning("coop: the host threw {} for this player, which its bag no longer has",
+                       item);
+    }
+  }
+}
+
 // The guest offers its partner for the host's battles while it stands on the host's map, free of
 // menus, scenes and battles (docs/architecture/coop-combat.md §3); checked a few times a second,
 // sent when it changes.
@@ -665,10 +710,10 @@ void CoopBattles::sendOffer(PlaySession& play, CoopGameplayBridge& bridge) {
   if (ticks_ % OfferTicks != 0) {
     return;
   }
-  const bool available = !mirror_.running() && !mirror_.pendingAsk() && !asked_ &&
-                         !play.heldForCoopBattle() && !play.coopBattleBlocked() &&
+  const bool available = mirror_.partnerFree(!play.coopBattleBlocked()) &&
+                         !play.heldForCoopBattle() && !play.localScreensBusy() &&
                          coopPlayerHere(play.scene().field(), here_, coop::HostPlayerId);
-  if (auto offer = mirror_.offer(available, profileOf(play.coopFighter()))) {
+  if (auto offer = mirror_.offer(available, profileOf(play.coopFighter()), play.partnerDying())) {
     send(&bridge, std::move(*offer));
   }
 }
@@ -691,6 +736,8 @@ void CoopBattles::startShowing(PlaySession& play, const coop::BattleBegin& begin
     return;
   }
   shownFixedFight_ = begin.fixedFight;
+  shownFolder_ = begin.folder;
+  hudPartner_ = play.coopBattleFighter();
   core::logInfo("coop: battle {} began on the host; this player {}", begin.battle,
                 ownBattle_    ? "commands its partner"
                 : allyBattle_ ? "commands its partner beside the host's"
@@ -899,6 +946,23 @@ void CoopBattles::stopShowing(PlaySession& play, const coop::BattleEnd& end) {
   hideDocument();
 }
 
+// This player's map changes under the host's battle (a warp, a script): it stops watching and goes;
+// the host's battle makes its partner run off (withdrawAlly) and its end still brings the result.
+void CoopBattles::walkAway(PlaySession& play) {
+  core::logInfo("coop: this player left the host's battle for another map");
+  stopThrows(play);
+  play.scene().releaseFighters(shownFixedFight_);
+  lookBack(play);
+  play.holdForCoopBattle(false);
+  play.scene().setBattlePartner(std::nullopt);
+  watching_ = false;
+  shownFrame_.reset();
+  fighters_.clear();
+  target_.reset();
+  actions_.clear();
+  hideDocument();
+}
+
 // What the battle left this player's partner, when it fought (its own battle, or beside the host's
 // partner): the host's world kept the bits and the drops.
 void CoopBattles::applySpoils(PlaySession& play, const coop::BattleEnd& end) {
@@ -942,10 +1006,14 @@ void CoopBattles::hostLeft(PlaySession* play) {
   shownFrame_.reset();
   fighters_.clear();
   actions_.clear();
+  purse_.reset();
   hideDocument();
 }
 
 bool CoopBattles::handle(const ui::UiCommand& command) {
+  if (handleHud(command)) {
+    return true;
+  }
   const auto kind = [&]() -> std::optional<coop::BattleActionKind> {
     if (command.name == CoopBattleOrderCommand) {
       return coop::BattleActionKind::Command;
@@ -976,14 +1044,19 @@ bool CoopBattles::handle(const ui::UiCommand& command) {
     item = *text;
   }
   if (*kind == coop::BattleActionKind::ThrowItem) {
-    // The item comes out of this player's own bag; the host's lends one to throw, at the partner
-    // picked (its fighter's number + 1; 0 for this player's own or the fighting one).
+    // Paid from this player's bag once the host throws it (followPurse); the target is the
+    // fighter's number + 1, 0 for its own or the fighting one.
     const auto& frame = mirror_.frame();
     PlaySession* play = play_;
-    if (play == nullptr || !frame || !frame->bagAvailable || !play->takeCoopItem(item)) {
+    if (play == nullptr || !frame || !frame->bagAvailable || !purse_.canAsk() ||
+        !std::ranges::any_of(play->coopThrowableItems(),
+                             [&](const auto& stack) { return stack.first == item; })) {
+      core::logInfo("coop: the throw of {} is refused here (bag {}, a throw awaits {})", item,
+                    frame && frame->bagAvailable ? "free" : "busy", !purse_.canAsk());
       return true;
     }
-    value = target_ ? static_cast<std::int32_t>(*target_) + 1 : 0;
+    purse_.asked(frame->frame);
+    value = target_.take();
   }
   if (auto action = mirror_.action(*kind, value, std::move(item))) {
     actions_.push_back(std::move(*action));
@@ -992,7 +1065,18 @@ bool CoopBattles::handle(const ui::UiCommand& command) {
 }
 
 void CoopBattles::press(const input::InputState& input) {
-  if (!mirror_.running() || !watching_ || !input.wasPressed("extra")) {
+  if (!mirror_.running() || !watching_) {
+    return;
+  }
+  if (hudBag_ && (input.wasPressed("tab_previous") || input.wasPressed("tab_next"))) {
+    target_.pick(
+        coopNextThrowTarget(*mirror_.running(), mirror_.role().value_or(coop::BattleRole::Helper),
+                            mirror_.self(), target_.lit(), input.wasPressed("tab_next") ? 1 : -1));
+    if (play_ != nullptr) {
+      publish(*play_);
+    }
+  }
+  if (!input.wasPressed("extra")) {
     return;
   }
   // The square button calls this player's partner's finisher, and charges (or cheers for) a
@@ -1020,7 +1104,8 @@ void CoopBattles::pickTarget(const ui::UiValue& value) {
     const auto index = static_cast<std::size_t>(*number);
     const std::size_t enemies = running->enemyNpcs.size();
     const bool partner = index < fighters_.size() && (index == 0 || index > enemies);
-    target_ = partner && target_ != index ? std::optional<std::size_t>{index} : std::nullopt;
+    target_.pick(partner && target_.lit() != index ? std::optional<std::size_t>{index}
+                                                   : std::nullopt);
   }
   if (play_ != nullptr) {
     publish(*play_);
@@ -1057,10 +1142,14 @@ void CoopBattles::publish(const PlaySession& play) {
       {.name = "coop_battle.command", .value = static_cast<double>(frame ? frame->command : 0)},
       {.name = "coop_battle.bag", .value = frame && frame->bagAvailable},
       {.name = "coop_battle.fighter_count", .value = static_cast<double>(fighters_.size())},
-      {.name = "coop_battle.target", .value = target_ ? static_cast<double>(*target_) : NoTarget}};
+      {.name = "coop_battle.target",
+       .value = target_.lit() ? static_cast<double>(*target_.lit()) : NoTarget}};
   const std::optional<coop::PlayerId> waitingFor = mirror_.waitingFor();
   const CoopPeerLabel starter = labelOf_ ? labelOf_(running->starter) : CoopPeerLabel{};
   settings.push_back({.name = "coop_battle.waiting", .value = waitingFor.has_value()});
+  settings.push_back(
+      {.name = "coop_battle.outcome",
+       .value = std::string{coopOutcomeName(frame ? frame->outcome : std::nullopt)}});
   settings.push_back({.name = "coop_battle.starter.name", .value = starter.name});
   settings.push_back({.name = "coop_battle.starter.name_key", .value = starter.key});
   settings.push_back(
@@ -1092,16 +1181,12 @@ void CoopBattles::publish(const PlaySession& play) {
   }
   std::size_t orders = 0;
   if (commands && frame) {
-    for (unsigned number = 1; number <= static_cast<unsigned>(game::battle::Command::Finisher);
-         ++number) {
-      if ((frame->menu & (1U << number)) == 0) {
-        continue;
-      }
+    for (const std::uint8_t number : frame->menu) {
       const auto command = static_cast<game::battle::Command>(number);
       settings.push_back({.name = screens::listEntryName("coop_battle.order", orders, "command"),
                           .value = static_cast<double>(number)});
       settings.push_back({.name = screens::listEntryName("coop_battle.order", orders, "label_key"),
-                          .value = orderLabelKey(command)});
+                          .value = coopOrderLabelKey(command, shownFolder_)});
       ++orders;
     }
   }
@@ -1118,13 +1203,190 @@ void CoopBattles::publish(const PlaySession& play) {
   settings.push_back(
       {.name = "coop_battle.item_count", .value = static_cast<double>(items.size())});
   screens::publish(*ui_, settings, CoopBattleRevisionSetting);
-  if (!documentShown_ || !ui_->isVisible(CoopBattleDocument)) {
+  publishHud(play);
+  const bool endBox = frame && (frame->phase == coop::BattlePhase::End ||
+                                frame->phase == coop::BattlePhase::Closing);
+  if (endBox && (!documentShown_ || !ui_->isVisible(CoopBattleDocument))) {
     ui_->show(CoopBattleDocument, true);
     documentShown_ = true;
+  } else if (!endBox && documentShown_) {
+    documentShown_ = false;
+    ui_->hide(CoopBattleDocument);
   }
 }
 
+screens::BattleView CoopBattles::hudViewOf(const PlaySession& play) const {
+  const coop::BattleRole role = mirror_.role().value_or(coop::BattleRole::Helper);
+  return coopBattleViewOf(
+      {.begin = &*mirror_.running(),
+       .frame = &*mirror_.frame(),
+       .fighters = fighters_,
+       .role = role,
+       .self = mirror_.self(),
+       .partner = role != coop::BattleRole::Helper && hudPartner_ ? &*hudPartner_ : nullptr,
+       .moves = play.coopMoves(),
+       .bagOpen = hudBag_,
+       .throwTarget = target_.lit()},
+      play.coopNameKeys());
+}
+
+void CoopBattles::publishHud(const PlaySession& play) {
+  const auto& running = mirror_.running();
+  const auto& frame = mirror_.frame();
+  const std::optional<std::string_view> phase =
+      running && frame ? coopHudPhaseOf(frame->phase) : std::nullopt;
+  if (!phase) {
+    hideHud();
+    return;
+  }
+  if (!hudShown_) {
+    screens::publish(*ui_,
+                     screens::settingsOf(screens::BattleIntroView{}, running->enemyNpcs.size()),
+                     screens::IntroRevisionSetting);
+  }
+  screens::publish(*ui_, screens::settingsOf(hudViewOf(play)), screens::BattleRevisionSetting);
+  ui_->setSetting(BattlePhaseSetting, std::string{*phase});
+  publishHudBars(play);
+  if (!hudShown_) {
+    hudShown_ = true;
+    hudMenu_.open();
+    hudBars_.reset();
+    ui_->setSetting(BattleActiveSetting, true);
+    ui_->show(BattleDocument, true);
+  }
+}
+
+// Mirrors BattleScreen::publishHpBars.
+void CoopBattles::publishHudBars(const PlaySession& play) {
+  const auto& running = mirror_.running();
+  std::vector<screens::EnemyHpBar> bars;
+  const render::MapCamera* camera = play.scene().camera();
+  if (running && camera != nullptr && camera->viewportSize().y > 0.0F) {
+    const double aspect = static_cast<double>(camera->viewportSize().x) /
+                          static_cast<double>(camera->viewportSize().y);
+    const ui::UiValue option = ui_->setting(screens::EnemyHpBarsAlwaysSetting);
+    const auto* always = std::get_if<bool>(&option);
+    const std::size_t enemies = running->enemyNpcs.size();
+    hudFoes_.resize(enemies + 1);
+    for (std::size_t enemy = 1; enemy <= enemies && enemy < fighters_.size(); ++enemy) {
+      const coop::BattleFighterState& foe = fighters_[enemy];
+      FoeHp& seen = hudFoes_[enemy];
+      if (foe.hp != seen.hp) {
+        seen.hitAt = seen.hp != 0 || seen.hitAt ? std::optional{ticks_} : std::nullopt;
+        seen.hp = foe.hp;
+      }
+      const bool recentlyHit = seen.hitAt && ticks_ - *seen.hitAt < HudHpBarTicks;
+      if (!screens::enemyHpBarShown({.always = shownFolder_ || (always != nullptr && *always),
+                                     .match = false,
+                                     .recentlyHit = recentlyHit,
+                                     .standing = foe.hp > 0 && !foe.down})) {
+        continue;
+      }
+      const std::optional<glm::vec2> node =
+          play.scene().fighterNodeOnWindow(running->enemyNpcs[enemy - 1], HudHpBarNode);
+      if (!node) {
+        continue;
+      }
+      bars.push_back(screens::enemyHpBarOf({.enemy = enemy,
+                                            .node = {.x = node->x, .y = node->y},
+                                            .aspect = aspect,
+                                            .hp = foe.hp,
+                                            .maxHp = foe.maxHp}));
+    }
+  }
+  screens::publish(*ui_, screens::settingsOf(bars), screens::HpBarsRevisionSetting);
+}
+
+void CoopBattles::stepHud() {
+  if (!hudShown_) {
+    return;
+  }
+  if (hudBag_ && !ui_->isVisible(PartnerMenuDocument)) {
+    hudBag_ = false;
+    closeCoopHudBag(*ui_, target_);
+    if (play_ != nullptr) {
+      publishHud(*play_);
+    }
+  }
+  hudMenu_.step(true);
+  hudBars_.step(hudMenu_.active());
+  screens::ScreenSettings settings = hudMenu_.settings();
+  std::ranges::move(hudBars_.settings(), std::back_inserter(settings));
+  screens::publish(*ui_, settings, screens::CommandMenuRevisionSetting);
+}
+
+void CoopBattles::hideHud() {
+  if (!hudShown_) {
+    return;
+  }
+  hudShown_ = false;
+  if (hudBag_) {
+    hudBag_ = false;
+    closeCoopHudBag(*ui_, target_);
+  }
+  hudFoes_.clear();
+  ui_->setSetting(BattleActiveSetting, false);
+  ui_->hide(BattleDocument);
+}
+
+bool CoopBattles::handleHud(const ui::UiCommand& command) {
+  if (!hudShown_) {
+    return false;
+  }
+  if (command.name == BattleCommandName) {
+    return handle({.name = std::string{CoopBattleOrderCommand}, .value = command.value});
+  }
+  if (command.name == BattleChargeCommand) {
+    return handle({.name = std::string{CoopBattleCheerCommand}, .value = {}});
+  }
+  if (command.name == BattleBagOpenCommand) {
+    openHudBag();
+    return true;
+  }
+  if (command.name == BattleBagCloseCommand) {
+    ui_->hide(PartnerMenuDocument);
+    return true;
+  }
+  // The bag is closed by the time its Use comes: here the Use throws, never feeds.
+  if (command.name == BattleThrowCommand || command.name == BagUseCommand) {
+    session::InventoryAdapter* inventory = play_ != nullptr ? play_->coopInventory() : nullptr;
+    const std::optional<std::size_t> slot = coopHudThrownSlot(command);
+    if (inventory != nullptr && slot) {
+      if (const std::optional<assets::ItemHandle> item =
+              itemAt(inventory->inventory().slots(), slot)) {
+        handle(
+            {.name = std::string{CoopBattleItemCommand}, .value = inventory->items().at(*item).id});
+      }
+    }
+    hudBag_ = false;
+    closeCoopHudBag(*ui_, target_);
+    if (play_ != nullptr) {
+      publishHud(*play_);
+    }
+    return true;
+  }
+  return command.name == BattleCloseCommand || command.name == BattleEndCountCommand ||
+         command.name == BattleEndCountedCommand;
+}
+
+void CoopBattles::openHudBag() {
+  const auto& frame = mirror_.frame();
+  session::InventoryAdapter* inventory = play_ != nullptr ? play_->coopInventory() : nullptr;
+  if (!frame || !frame->bagAvailable || inventory == nullptr) {
+    return;
+  }
+  hudBag_ = true;
+  target_.reset();
+  publishPlayerPoint(*ui_, play_->scene());
+  showCoopHudBag(*ui_,
+                 screens::settingsOf(screens::bagViewOf(inventory->inventory(), inventory->items(),
+                                                        play_->coopNameKeys(),
+                                                        game::inventory::UseContext::Battle)),
+                 hudViewOf(*play_));
+}
+
 void CoopBattles::hideDocument() {
+  hideHud();
   if (!documentShown_) {
     return;
   }

@@ -243,7 +243,7 @@
 	border-radius: 8dp;
 }
 
-#prompt-bag {
+#prompt-bag, #prompt-cheer {
 	margin-left: 14dp;
 }
 
@@ -702,5 +702,353 @@
 }
 
 .ally-revive.hidden {
+	display: none;
+}
+
+/* Its current order, at the right of its name. With three allies each card keeps its name, order and HP only. */
+.ally-order {
+	float: right;
+	margin-right: 8dp;
+	font-size: 16dp;
+	color: #8fd0ff;
+}
+
+#allies.compact .ally-mp {
+	display: none;
+}
+
+#allies.compact .ally {
+	padding: 4dp 10dp;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The Folder battle (not in the original): a card like the fighters' beside the partner's panel at the bottom left; an
+   empty line takes no room. The other skins only change the look and the place. */
+#folder-panel {
+	position: absolute;
+	left: 396dp;
+	bottom: 56dp;
+	width: 330dp;
+	padding: 8dp 12dp;
+	background-color: #10161ee0;
+	border: 1dp #3a4a5e;
+	border-radius: 8dp;
+}
+
+.folder-row {
+	display: flex;
+	align-items: center;
+	margin-bottom: 4dp;
+}
+
+.folder-label {
+	margin-right: 8dp;
+	font-size: 22dp;
+}
+
+.folder-track {
+	flex: 1;
+	height: 10dp;
+	background-color: #2a323d;
+	border-radius: 3dp;
+}
+
+.folder-fill {
+	width: 0%;
+	height: 100%;
+	border-radius: 3dp;
+}
+
+#folder-bar-fill { background-color: #ffd34f; }
+#folder-bar-fill.broken { background-color: #ff5a48; }
+
+#folder-phase {
+	height: 6dp;
+	margin: 2dp 0 4dp 0;
+}
+
+#folder-panel.hidden,
+#folder-panel .hidden {
+	display: none;
+}
+
+/* The Folder strip's buttons name the commands: the line under the strip only shows why one cannot be ordered. */
+#fight.folder #command-label {
+	display: none;
+}
+
+#command-problem {
+	font-size: 18dp;
+	color: #ff7a6b;
+}
+
+#fight.folder #command-name {
+	display: none;
+}
+
+#fight.folder #command-name.problem,
+#fight.folder #command-name.reach {
+	display: inline-block;
+	padding: 2dp 10dp;
+	background-color: #10161ee0;
+	border: 1dp #5a3a3a;
+	border-radius: 6dp;
+}
+
+#command-problem.hidden {
+	display: none;
+}
+
+#command-reach {
+	font-size: 18dp;
+	color: #b9c6d4;
+}
+
+#command-reach.hidden {
+	display: none;
+}
+
+#command-name.reach #command-problem {
+	margin-left: 10dp;
+}
+
+/* The open bag covers down to the panel (and the bottom in boxed skins): the panel hides meanwhile. */
+#fight.bag-open #folder-panel {
+	display: none;
+}
+
+/* The key that types on the end box's text, while the text waits for it. */
+#end-more {
+	display: block;
+	float: right;
+	margin-top: 2dp;
+}
+
+#end-more.hidden {
+	display: none;
+}
+
+#folder-panel {
+	width: 470dp;
+	height: 136dp;
+	box-sizing: border-box;
+	overflow: hidden;
+}
+
+#folder-message,
+#folder-active,
+#folder-queue {
+	height: 26dp;
+	line-height: 26dp;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+#folder-message.status { color: #c9a3ff; }
+#folder-message.notice { color: #ffb347; }
+#folder-message.broken { color: #ff5a48; }
+#folder-queue { color: #9aa7b6; }
+
+#folder-active {
+	flex: 0 0 auto;
+	width: 58%;
+	margin-right: 10dp;
+}
+
+#folder-phase {
+	flex: 1;
+	margin: 0;
+}
+
+/* A Classic strip holds the original's commands: the finisher goes with its own key from the gauge's card. */
+#fight:not(.folder) .command.no-icon {
+	display: none;
+}
+
+/* The Folder strip in three blocks, each button placed by logic.lua (lay_out_strip). */
+/* Grouped buttons are placed against the full-width #commands, not the row: a row sized by them would squeeze them. */
+#command-row.grouped {
+	position: static;
+	padding: 0;
+}
+
+#command-row.grouped .command {
+	position: absolute;
+	margin: 0;
+	white-space: nowrap;
+}
+
+#command-row.grouped .command.kind-technique {
+	color: #ffd34a;
+}
+
+#command-row.grouped .command.kind-stance {
+	border: 1dp #3a4a5e;
+	border-radius: 0;
+	background-color: #1a2330;
+}
+
+#command-row.grouped .command.kind-stance.current {
+	border: 1dp #6fc3ff;
+	background-color: #24537a;
+	color: #ffffff;
+}
+
+#command-row.grouped .command.kind-technique:focus,
+#command-row.grouped .command.kind-stance:focus {
+	border-color: #f0a73a;
+	background-color: #f0a73a;
+	color: #1a1f27;
+}
+
+#command-row.grouped .command.short,
+#command-row.grouped .command.short:focus {
+	color: #e0796c;
+	background-color: #2a2228;
+}
+
+#fight.folder #command-name.problem,
+#fight.folder #command-name.reach {
+	position: absolute;
+	margin: 0;
+}
+
+/* The stance chip beside the defense bar, red while a broken defense forces it. */
+#folder-stance {
+	margin-left: 8dp;
+	padding: 0 6dp;
+	font-size: 16dp;
+	line-height: 22dp;
+	white-space: nowrap;
+	color: #bfe3ff;
+	border: 1dp #6fc3ff;
+	border-radius: 4dp;
+}
+
+#folder-stance.forced {
+	color: #ff9a8a;
+	border-color: #ff5a48;
+}
+
+/* The order's five phases; the lock lights once the technique commits: a hit no longer stops it. */
+#folder-phase {
+	display: flex;
+	height: 8dp;
+}
+
+.folder-step {
+	position: relative;
+	flex: 1;
+	height: 100%;
+	margin-right: 2dp;
+	background-color: #2a323d;
+	border-radius: 2dp;
+}
+
+.folder-step.done { background-color: #34587f; }
+.folder-step.now { background-color: #4f9cff; }
+
+#folder-lock {
+	position: absolute;
+	left: -2dp;
+	top: -4dp;
+	width: 4dp;
+	height: 16dp;
+	background-color: #6b7480;
+}
+
+#folder-lock.locked {
+	background-color: #ffd34f;
+}
+
+.folder-chip {
+	display: inline-block;
+	margin-right: 6dp;
+	padding: 0 6dp;
+	font-size: 16dp;
+	line-height: 22dp;
+	color: #c9d3de;
+	border: 1dp #3a4a5e;
+	border-radius: 4dp;
+}
+
+/* Twin foes carry a letter; the targeted foe's card is lit, a queued order's foe gets an orange edge. */
+.fighter-tag {
+	margin-right: 6dp;
+	padding: 0 5dp;
+	color: #10161e;
+	background-color: #ffd34a;
+	border-radius: 3dp;
+}
+
+.fighter-tag.hidden, .hb-tag.hidden {
+	display: none;
+}
+
+.fighter.enemy.targeted {
+	border: 2dp #6fc3ff;
+}
+
+.fighter.enemy.queued {
+	border-left-width: 6dp;
+	border-left-color: #ffb347;
+}
+
+.hb-tag {
+	position: absolute;
+	width: 24dp;
+	height: 24dp;
+	line-height: 24dp;
+	font-size: 18dp;
+	text-align: center;
+	color: #10161e;
+	background-color: #ffd34a;
+	border-radius: 4dp;
+}
+
+.hb.targeted .hb-tag {
+	background-color: #6fc3ff;
+}
+
+.hb.queued .hb-tag {
+	border: 2dp #ffb347;
+}
+
+#finisher-percent {
+	margin-left: 6dp;
+	font-size: 18dp;
+	color: #9aa7b6;
+}
+
+#finisher.ready #finisher-percent {
+	color: #ffd34f;
+}
+
+/* Without an order the target takes the whole row: the phase is hidden. */
+#folder-active.alone {
+	width: 100%;
+}
+
+/* A co-op guest's next item flies to this ally. */
+.ally.throw-target {
+	border: 2dp #f0a43a;
+}
+
+.ally.throw-target .fighter-name {
+	color: #f0a43a;
+}
+
+/* The open bag covers the ally rows' place: they move to the Folder panel's, which hides meanwhile. */
+#fight.bag-open #allies {
+	left: 404dp;
+	top: 480dp;
+}
+
+#finisher.ready #finisher-ready {
+	display: inline-block;
+	margin-left: 8dp;
+}
+
+#finisher-push {
 	display: none;
 }

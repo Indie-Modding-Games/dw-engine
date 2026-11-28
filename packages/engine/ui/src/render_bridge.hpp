@@ -46,12 +46,12 @@ public:
   void SetScissorRegion(Rml::Rectanglei region) override;
   void SetTransform(const Rml::Matrix4f* transform) override;
 
-  // Whether a texture draws with sharp texel edges (rml.slang: sharpUv): only one LoadTexture read
-  // from a source TextureSources::isPixelArt names. Generated textures (font atlases, minimaps)
-  // never do.
+  // rml.slang sharpUv: pixel-art sources and the texture after generateNextSharp (the font atlas).
   [[nodiscard]] bool drawsSharp(Rml::TextureHandle texture) const {
     return sharpTextures_.contains(texture);
   }
+
+  void generateNextSharp() { nextGeneratedSharp_ = true; }
 
   // Where the images a source asks to smooth (TextureSources::isSmoothed) keep their upscaled
   // pixels, so each is upscaled once; none upscales them on every load.
@@ -85,6 +85,7 @@ private:
   // The textures of the disc's pixel art (TextureSources::isPixelArt), drawn with sharp texel
   // edges.
   std::set<Rml::TextureHandle> sharpTextures_;
+  bool nextGeneratedSharp_ = false;
   std::shared_ptr<const render::UpscaleCache> upscaleCache_;
   // The smoothings under way, by the texture they smooth, and those whose texture was released
   // first (joined once finished, so none blocks a frame). One smooths at a time: the upscaler

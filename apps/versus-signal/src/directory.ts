@@ -7,13 +7,15 @@ import { MAX_SEATS } from "./seats.ts";
 
 /** An open room leaves the list with its room (5 minutes); this is only the fallback. */
 export const OPEN_MAX_AGE_MS = 5 * 60 * 1000;
-/** A room past open lives this long after its host's last notice, then leaves by itself. */
-export const STATE_MAX_AGE_MS = 10 * 60 * 1000;
+/** A room past open leaves this long after its host's last notice (see ROOM_REFRESH_MS). */
+export const STATE_MAX_AGE_MS = 3 * 60 * 1000;
+/** How often a host repeats its room's state while the room lasts (the game's RoomSession). */
+export const ROOM_REFRESH_MS = 60 * 1000;
 /** The most entries kept at all (open or not); the oldest go first. */
 const MAX_ENTRIES = 200;
 
-/** What the host may tell the directory: how the room goes, or that it closed. */
-export const NOTICES = ["ready", "playing", "closed"] as const;
+/** What the host may tell the directory: how the room goes (again, to keep it listed), or that it closed. */
+export const NOTICES = ["connected", "ready", "playing", "closed"] as const;
 export type Notice = (typeof NOTICES)[number];
 
 interface DirectoryState {
@@ -148,7 +150,7 @@ export class DirectoryObject {
     return new Response(null, { status: 204 });
   }
 
-  /** The host's notice: its token must be the room's. Ready and playing update it; closed removes it. */
+  /** The token must be the room's; connected, ready and playing keep it listed, closed drops it. */
   async #notice(code: string, body: unknown): Promise<Response> {
     const { token, state } = (typeof body === "object" && body !== null ? body : {}) as {
       token?: unknown;
@@ -163,11 +165,17 @@ export class DirectoryObject {
     if (typeof token !== "string" || !token || token !== entry.token) {
       return Response.json({ error: "bad-token" }, { status: 403 });
     }
-    // Ready and playing come after a guest arrived (the room counts it).
+    // Connected, ready and playing come after a guest arrived (the room counts it).
     if (state !== "closed" && entry.players < 2) return Response.json({ error: "bad-state" }, { status: 409 });
     const others = entries.filter((room) => room !== entry);
     if (state !== "closed") {
-      const phase: RoomPhase = state === "ready" ? "ready" : "playing";
+      const phase: RoomPhase = state === "connected" ? "connected" : state === "ready" ? "ready" : "playing";
+      // A game under way stays one: a late notice of the lobby does not take it back.
+      if (entry.phase === "playing" && phase !== "playing") {
+        others.push({ ...entry, updatedAt: this.#now() });
+        await this.#save(others);
+        return new Response(null, { status: 204 });
+      }
       // A game its seated room already lists as one to join keeps that (the two may cross).
       const keep = phase === "playing" && entry.phase === "playing";
       others.push({ ...entry, phase, state: keep ? entry.state : "full", updatedAt: this.#now() });

@@ -46,11 +46,22 @@ versiones que vio, por ejemplo `vulkan: Vulkan 1.4 path (host image copy on; dev
   descriptor por draw, y solo añadirían una segunda rama sin quitar código.
 - **Vulkan 1.3**: el loader o la GPU se quedan en 1.3, o `--vulkan13` (`DeviceDesc::forceVulkan13`) la pide para
   depurar o comparar. La instancia pide entonces 1.3 y no se consulta nada de 1.4.
-- **Vulkan 1.2 compatible**: `--compatible` en una GPU por debajo de 1.3. El modo compatible nunca toma la ruta 1.4,
-  ni en una GPU 1.4.
+- **Vulkan 1.2 compatible**: `--compatible`, o el respaldo de abajo. La instancia pide 1.2, así que toda GPU, también
+  una 1.4, corre como una 1.2: los drivers y la capa de validación ven exactamente lo que vería una tarjeta antigua.
+  El renderizado dinámico y synchronization2 vienen de sus extensiones, y sus puntos de entrada
+  (`vkCmdBeginRenderingKHR`, `vkCmdPipelineBarrier2KHR`, `vkQueueSubmit2KHR`...) se cargan con `vkGetDeviceProcAddr`
+  (`vulkan_calls.hpp`): un driver estricto no da puntos de entrada del núcleo 1.3 a un dispositivo 1.2. Las cadenas de
+  mipmaps se copian con el `vkCmdBlitImage` de 1.0, que tienen todas las rutas.
 
-`chooseVulkanPath` es una función pura (versiones y bits de características de entrada, ruta de salida) con sus tests
-en `tests/vulkan_path_test.cpp`. `Device::vulkanPath` dice cuál corre, y el informe gráfico la añade a la línea del
+**Respaldo.** Cuando una ruta no consigue crear el dispositivo (ninguna GPU pasa su selección, falla `vkCreateDevice` o
+la swapchain), `Device::create` prueba la siguiente en la misma llamada y escribe en el log por qué: 1.4, luego 1.3,
+luego 1.2 compatible (`nextVulkanAttempt`). Una GPU que funciona se queda en su primera ruta, así que para ella no
+cambia nada. Si ninguna funciona, el juego sale con el código 114, que el lanzador lee como «este paso gráfico no
+arranca aquí» ([lanzador](../apps/launcher.md#requisitos-del-equipo)). `--check-system` sigue la misma cadena e imprime
+`floor=1.2` cuando solo pasó el mínimo compatible.
+
+`chooseVulkanPath` y `nextVulkanAttempt` son funciones puras (versiones y bits de características de entrada, ruta de
+salida) con sus tests en `tests/vulkan_path_test.cpp`. `Device::vulkanPath` dice cuál corre, y el informe gráfico la añade a la línea del
 controlador. `NativeHandles::apiVersion` y VMA reciben la versión de la ruta.
 
 `LinearAllocator` y `SlotAllocator` son la contabilidad de CPU del anillo y de la tabla; sus tests no necesitan GPU.

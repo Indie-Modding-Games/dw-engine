@@ -38,7 +38,8 @@ using dwe::game::gym::TreadmillCourse;
 // award gives one point of speed.
 class FakePorts final : public GymPorts {
 public:
-  void setTraining(bool /*training*/) override {}
+  void setTraining(bool training) override { trainings.push_back(training); }
+  bool hourRuns() override { return hourLeft; }
   void animate(Actor actor, std::int32_t animation) override {
     if (actor == Actor::Tamer) {
       tamerClips.push_back(animation);
@@ -102,6 +103,8 @@ public:
   }
 
   int awards = 0;
+  std::vector<bool> trainings;
+  bool hourLeft = false;
   int textboxesClosed = 0;
   std::int64_t loops = 0;
   // The looping voices still sounding.
@@ -306,6 +309,25 @@ TEST_CASE("gym.md clip: the speed course lets the run clip carry the partner, ne
   // The first run clip, then one per lap.
   CHECK(std::ranges::count(ports.partnerClips, 4) ==
         static_cast<std::ptrdiff_t>(ports.placed.size()) + 1);
+}
+
+TEST_CASE("gym.md co-op hour: a session cut short holds its actors until the world ran its hour") {
+  // In co-op the partner pays the session's hour, so the course lasts it.
+  const GymRules gym = gymRules();
+  FakePorts ports;
+  ports.hourLeft = true;
+  CourseRun run{gym, gym.courses.front(), false};
+  frames(run, ports, 10);
+  frames(run, ports, 1, GymInput{.cancel = true});
+  frames(run, ports, 400, GymInput{.confirm = true});
+  CHECK(ports.awards == 1);
+  CHECK_FALSE(run.finished());
+  CHECK(ports.trainings == std::vector<bool>{true});
+  ports.hourLeft = false;
+  frames(run, ports, 1);
+  CHECK(run.finished());
+  CHECK(ports.trainings == std::vector<bool>{true, false});
+  CHECK(ports.awards == 1);
 }
 
 TEST_CASE("gym.md sites: the treadmill runs in place, loops its sound and leaves to its spot") {

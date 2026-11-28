@@ -12,8 +12,10 @@ use tauri_plugin_updater::UpdaterExt;
 
 use crate::auto_update::{self, Action, LastCheck};
 use crate::content::{self, Identity};
+use crate::diagnosis::{self, Advice, Meanwhile};
 use crate::disc::{self, Pick};
 use crate::failure::{code, Failure, Result};
+use crate::graphics_step::{self, GraphicsStep, StepOptions};
 use crate::launch;
 use crate::log_line;
 use crate::manifest;
@@ -49,6 +51,8 @@ pub struct Status {
     compatibility_mode: bool,
     low_performance_mode: bool,
     launch_mode: LaunchMode,
+    /// Where an early graphics failure left the automatic start (graphics_step.rs).
+    graphics_step: GraphicsStep,
     extra_args: String,
     extra_env: String,
     /// A new launcher installed in this session: it runs after a restart.
@@ -93,7 +97,13 @@ struct GameExit {
     reason: Option<launch::ExitReason>,
     offer_software: bool,
     offer_compatible: bool,
+    /// The step the next start takes after this one failed early (graphics_step.rs).
+    next_step: Option<GraphicsStep>,
     log: Vec<String>,
+    /// Why it failed, most actionable first (diagnosis.rs), and what the next start does.
+    advice: Vec<Advice>,
+    meanwhile: Option<Meanwhile>,
+    report: String,
 }
 
 #[derive(Serialize)]
@@ -165,6 +175,7 @@ fn status_of(app: &AppHandle, state: &AppState) -> Status {
         compatibility_mode: settings.compatibility_mode,
         low_performance_mode: settings.low_performance_mode,
         launch_mode: settings.launch_mode,
+        graphics_step: settings.graphics_step,
         extra_args: settings.extra_args.clone(),
         extra_env: settings.extra_env.clone(),
         launcher_ready: state.launcher_ready.lock().unwrap().clone(),
@@ -580,6 +591,13 @@ async fn graphics_of(state: &AppState, game: &Game, again: bool, compatibility: 
         .await
         .unwrap_or_else(|_| GraphicsCheck::unknown());
     *kept = Some((game.dir.clone(), compatibility, check.clone()));
+    let mut settings = state.settings.lock().unwrap();
+    if !graphics_step::still_holds(settings.graphics_step, &settings.graphics_step_gpu, check.gpu.as_ref()) {
+        log_line!("graphics step {:?} dropped: the GPU or its driver changed", settings.graphics_step);
+        settings.graphics_step = GraphicsStep::Card;
+        settings.graphics_step_gpu.clear();
+        let _ = settings.save();
+    }
     check
 }
 
@@ -615,6 +633,7 @@ pub fn open_driver_page(app: AppHandle, page: String) -> Result<()> {
         "amd" => system_check::driver_page(system_check::Vendor::Amd),
         "intel" => system_check::driver_page(system_check::Vendor::Intel),
         "windows-update" if cfg!(windows) => Some(system_check::WINDOWS_UPDATE),
+        "windows-graphics" if cfg!(windows) => Some(system_check::WINDOWS_GRAPHICS),
         _ => None,
     }
     .ok_or_else(|| Failure::new(code::IO, page.clone()))?;
@@ -631,13 +650,14 @@ pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
     if state.game_running.load(Ordering::SeqCst) {
         return Ok(());
     }
-    let (data, own, graphics_flags, launch_mode, extra_args, extra_env) = {
+    let (data, own, graphics_flags, launch_mode, step, extra_args, extra_env) = {
         let settings = state.settings.lock().unwrap();
         (
             settings.data_folder(),
             settings.uses_default_data_folder(),
             settings.graphics_flags(),
             settings.launch_mode,
+            settings.graphics_step,
             settings.game_args(),
             settings.game_env(),
         )
@@ -648,13 +668,16 @@ pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
         return Err(Failure::new(code::MISSING_FILE, content.display().to_string()));
     }
     require_space(&state, system_check::PLAY_BYTES)?;
-    let graphics = if launch_mode == LaunchMode::Auto {
+    let auto = launch_mode == LaunchMode::Auto;
+    let graphics = if auto {
         graphics_of(&state, &game, false, graphics_flags.compatibility).await
     } else {
         log_line!("launch mode {launch_mode}: skipping the GPU check");
         GraphicsCheck::unknown()
     };
-    let GraphicsCheck { graphics: kind, env: graphics_env, .. } = graphics;
+    // The step may have been dropped by the check (a new driver).
+    let step = if auto { state.settings.lock().unwrap().graphics_step } else { step };
+    let GraphicsCheck { graphics: kind, env: graphics_env, compat_rescues, .. } = graphics.clone();
     // Never refused: a game that cannot start writes why to its log, which the launcher then shows.
     if kind == Graphics::Blocked {
         log_line!("no GPU can run the game: starting it anyway to see what the game reports");
@@ -662,7 +685,8 @@ pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
     if state.game_running.swap(true, Ordering::SeqCst) {
         return Ok(());
     }
-    let mut env = if launch_mode == LaunchMode::Software {
+    let software_step = auto && step == GraphicsStep::Software;
+    let mut env = if launch_mode == LaunchMode::Software || software_step {
         system_check::software_env_for(&game)
     } else {
         graphics_env
@@ -670,11 +694,36 @@ pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
     if launch_mode == LaunchMode::Software && env.is_empty() {
         log_line!("launch mode software: this game has no software driver, starting it with the system's");
     }
-    let on_software = !env.is_empty() && (launch_mode == LaunchMode::Software || kind == Graphics::Fallback);
+    let mut flags = if auto { graphics_flags.with_step(step) } else { graphics_flags };
+    if auto && compat_rescues && launch::knows_modes(&game) {
+        flags.compatibility = true;
+    }
+    if auto && step != GraphicsStep::Card {
+        log_line!("graphics step {step:?} after an earlier failed start");
+    }
+    let on_software = !env.is_empty() && (launch_mode == LaunchMode::Software || software_step || kind == Graphics::Fallback);
     let offer_software = !on_software && system_check::software_manifest(&game).is_some();
-    let offer_compatible = !on_software && !graphics_flags.compatibility && launch::knows_modes(&game);
+    let offer_compatible = !on_software && !flags.compatibility && launch::knows_modes(&game);
+    let options = StepOptions {
+        vulkan13: graphics.offers_vulkan14() && launch::knows_vulkan13(&game),
+        compatible: launch::knows_modes(&game),
+        software: system_check::software_manifest(&game).is_some(),
+    };
+    let ran_on = if on_software {
+        GraphicsStep::Software
+    } else if flags.compatibility || kind == Graphics::Compatible {
+        GraphicsStep::Compatible
+    } else {
+        step
+    };
+    let gpu_key = graphics_step::gpu_key(graphics.gpu.as_ref());
+    if on_software || ran_on == GraphicsStep::Compatible {
+        if let Some(reason) = diagnosis::reason_env(&graphics.advice) {
+            env.push((diagnosis::REASON_ENV.into(), reason.into()));
+        }
+    }
     env.extend(extra_env);
-    let mut child = match launch::start(&game, &data, own, &env, graphics_flags, &extra_args) {
+    let mut child = match launch::start(&game, &data, own, &env, flags, &extra_args) {
         Ok(child) => child,
         Err(failure) => {
             state.game_running.store(false, Ordering::SeqCst);
@@ -690,10 +739,26 @@ pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
     }
     let log = launch::game_log(&data);
     let exited = game.clone();
+    let started = std::time::Instant::now();
     std::thread::spawn(move || {
         let code = child.wait().ok().and_then(|s| s.code());
         let failed = code != Some(0);
         log_line!("the game ended (exit {code:?})");
+        let reason = launch::exit_reason(&exited, code);
+        let written = if failed { diagnosis::from_log_file(&log) } else { None };
+        let next_step = if auto && !diagnosis::keeps_the_step(written.as_ref()) && graphics_step::failed_early(reason, started.elapsed()) {
+            graphics_step::next_step(ran_on, options)
+        } else {
+            None
+        };
+        if let Some(next) = next_step {
+            log_line!("the graphics failed early on {ran_on:?}: the next start uses {next:?}");
+            let state = app.state::<AppState>();
+            let mut settings = state.settings.lock().unwrap();
+            settings.graphics_step = next;
+            settings.graphics_step_gpu = gpu_key;
+            let _ = settings.save();
+        }
         app.state::<AppState>().game_running.store(false, Ordering::SeqCst);
         if let Some(window) = app.get_webview_window("main") {
             let _ = window.show();
@@ -701,10 +766,26 @@ pub async fn play(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
             let _ = window.set_focus();
         }
         let tail = if failed { launch::tail(&log, 30) } else { Vec::new() };
-        let reason = launch::exit_reason(&exited, code);
-        let _ = app.emit("game-exited", GameExit { code, failed, reason, offer_software, offer_compatible, log: tail });
+        let graphics_failure = matches!(reason, Some(launch::ExitReason::GraphicsStart) | Some(launch::ExitReason::DeviceLost));
+        let advice = diagnosis::exit_advice(written.as_ref(), &graphics.advice, graphics_failure, std::env::consts::OS);
+        let meanwhile = if advice.is_empty() { None } else { diagnosis::exit_meanwhile(next_step, graphics_failure) };
+        let report = diagnosis::report(written.as_ref().or(graphics.diagnosis.as_ref()), &advice, &tail);
+        let _ = app.emit("game-exited", GameExit { code, failed, reason, offer_software, offer_compatible, next_step, log: tail, advice, meanwhile, report });
     });
     Ok(())
+}
+
+/// Puts the automatic start back on the graphics card after an early failure moved it down.
+#[tauri::command]
+pub fn reset_graphics_step(app: AppHandle, state: State<'_, AppState>) -> Result<Status> {
+    {
+        let mut settings = state.settings.lock().unwrap();
+        settings.graphics_step = GraphicsStep::Card;
+        settings.graphics_step_gpu.clear();
+        settings.save()?;
+    }
+    log_line!("graphics step back to the card");
+    Ok(status_of(&app, &state))
 }
 
 #[tauri::command]

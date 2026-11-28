@@ -25,6 +25,7 @@
 #include <dwe/render/screen_fade.hpp>
 #include <dwe/render/upscale_cache.hpp>
 #include <dwe/rhi/device.hpp>
+#include <dwe/rhi/gpu_diagnosis.hpp>
 #include <dwe/rhi/system_check.hpp>
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/script/script_vm.hpp>
@@ -69,6 +70,7 @@
 #include "control_log.hpp"
 #include "control_socket.hpp"
 #include "coop_battles.hpp"
+#include "coop_events.hpp"
 #include "coop_gameplay_bridge.hpp"
 #include "coop_guest_return.hpp"
 #include "coop_hud.hpp"
@@ -111,6 +113,7 @@
 #include "save_figure.hpp"
 #include "save_indicator.hpp"
 #include "screenshot.hpp"
+#include "shared_pause.hpp"
 #include "slow_frame_log.hpp"
 #include "software_mode.hpp"
 #include "state_trace.hpp"
@@ -127,6 +130,41 @@
 namespace dwe::app {
 namespace {
 
+// The launcher reads this log line (docs/architecture/graphics-diagnosis.md).
+void logDiagnosis(std::optional<rhi::StartFailure> failure) {
+  const rhi::SystemFacts facts = rhi::gatherSystemFacts(std::move(failure));
+  core::logInfo("{}{}", rhi::DiagnosisLogPrefix, rhi::diagnosisJson(facts, rhi::diagnose(facts)));
+}
+
+// The launcher's first reason, else in the compatible mode the game's own diagnosis.
+std::optional<NoticeReason> noticeReason(bool compatible) {
+  // NOLINTNEXTLINE(concurrency-mt-unsafe): read once at start; nothing sets it.
+  if (const char* passed = std::getenv(GraphicsReasonVariable.data()); passed != nullptr) {
+    return parseNoticeReason(passed);
+  }
+  if (!compatible) {
+    return std::nullopt;
+  }
+  const rhi::Diagnosis diagnosis = rhi::diagnose(rhi::gatherSystemFacts());
+  const auto found = std::ranges::find_if(diagnosis.reasons, [](const rhi::Reason& reason) {
+    return reason.severity != rhi::Severity::Info;
+  });
+  if (found == diagnosis.reasons.end()) {
+    return std::nullopt;
+  }
+  return NoticeReason{.code = found->code, .params = found->params};
+}
+
+void showGraphicsNotice(ui::Ui& ui, bool compatible, const std::optional<NoticeReason>& reason) {
+  ui.setSetting(NoticeKindSetting, std::string{compatible ? "compatible" : "software"});
+  ui.setSetting(NoticeReasonSetting, reason ? reason->code : std::string{});
+  for (const std::string_view key : NoticeParams) {
+    ui.setSetting(std::format("software_notice.{}", key),
+                  std::string{reason ? reason->param(key) : std::string_view{}});
+  }
+  ui.show(SoftwareNoticeDocument);
+}
+
 core::Result<game::save::SaveFile> readSaveSlot(const assets::VirtualFileSystem& files,
                                                 const Options& options, game::save::SlotId slot,
                                                 bool backup) {
@@ -142,6 +180,9 @@ core::Result<game::save::SaveFile> readSaveSlot(const assets::VirtualFileSystem&
 
 // Smaller changes of the map change's fade are not worth telling the UI.
 constexpr double FadeEpsilon = 1e-4;
+
+constexpr double CoopShutdownSeconds = 1.5;
+constexpr double CoopSleepWaitSeconds = 8.0;
 
 // Tells the HUD what the map change shows: how much the fade takes away and the key of the map name
 // it shows, which the HUD writes in the player's language.
@@ -573,6 +614,8 @@ int runGame(const Options& requested) {
       platform::Window::create({.title = "dwe", .width = options.width, .height = options.height});
   if (!window) {
     core::logError("{}", window.error().message);
+    logDiagnosis(rhi::StartFailure{
+        .stage = rhi::StartStage::Window, .result = 0, .message = window.error().message});
     return EXIT_FAILURE;
   }
   Settings settings{.fullscreen = false, .uiScale = 1.0, .vsync = display.vsync};
@@ -583,13 +626,23 @@ int runGame(const Options& requested) {
       core::logWarning("game: {}", changed.error().message);
     }
   }
+  // Kept under the user's data like the settings, so the second start skips most shader builds.
+  std::filesystem::path pipelineCacheFile;
+  if (settingsFile) {
+    if (const auto data =
+            platform::userDataFolder(content::UserDataOrganization, content::UserDataApplication)) {
+      pipelineCacheFile = *data / "cache" / "pipelines.bin";
+    }
+  }
   auto device = rhi::Device::create(*window, {.validation = Validation,
                                               .vsync = display.vsync,
                                               .compatibleMode = options.compatibleMode,
-                                              .forceVulkan13 = options.forceVulkan13});
+                                              .forceVulkan13 = options.forceVulkan13,
+                                              .pipelineCacheFile = pipelineCacheFile});
   if (!device) {
     core::logError("{}", device.error().message);
-    return EXIT_FAILURE;
+    logDiagnosis(rhi::lastStartFailure());
+    return GraphicsStartExitCode;
   }
   core::logInfo("game: validation layer {}, vsync {}",
                 validationState((*device)->validationEnabled()), display.vsync ? "on" : "off");
@@ -678,6 +731,24 @@ int runGame(const Options& requested) {
                   "automatic quality {}",
                   gpu.name, threads, level, startGraphics.renderScale, startGraphics.frameLimit,
                   startGraphics.autoQuality ? "on" : "off");
+  }
+  // Weak cards (integrated, Compatible12) start unchosen options balanced, auto quality on.
+  const bool compatiblePath = (*device)->vulkanPath() == rhi::VulkanPath::Compatible12;
+  const bool weakGpu = !softwareMode && autotest == nullptr && !options.lowPerformance &&
+                       (gpu.kind == rhi::GpuKind::Integrated || compatiblePath);
+  std::optional<SlowFrameWatch> weakGpuWatch;
+  std::string autoReason = softwareMode ? "software" : "";
+  if (weakGpu) {
+    automaticKnobs = unchosenKnobs(userSettings);
+    automaticKnobs.reset(knobIndex(GraphicsKnob::FrameLimit));
+    automaticKnobs.reset(knobIndex(GraphicsKnob::Weather));
+    startGraphics = withPreset(startGraphics, GraphicsPreset::Balanced, automaticKnobs);
+    startGraphics.autoQuality = userSettings.autoQuality.value_or(true);
+    weakGpuWatch.emplace();
+    autoReason = compatiblePath ? "compatible" : "integrated";
+    core::logInfo("game: weak graphics card {} ({}): the options not chosen start balanced, "
+                  "automatic quality {}",
+                  gpu.name, autoReason, startGraphics.autoQuality ? "on" : "off");
   }
   if (options.lowPerformance) {
     const GraphicsOptions kept = startGraphics;
@@ -867,11 +938,24 @@ int runGame(const Options& requested) {
   MinimapChanger minimapChanger{userSettings, settingsFile};
   GraphicsChanger graphics{userSettings, settingsFile, startGraphics};
   graphics.setAutomatic(automaticKnobs);
-  (*ui)->setSetting(SoftwareModeSetting, softwareMode);
-  double softwareNoticeLeft = softwareMode ? SoftwareNoticeSeconds : 0.0;
-  if (softwareMode) {
-    (*ui)->show(SoftwareNoticeDocument);
+  if (weakGpu) {
+    graphics.setAutomaticPreset(GraphicsPreset::Balanced);
   }
+  (*ui)->setSetting(GraphicsModeSetting,
+                    std::string{gpu.kind == rhi::GpuKind::Software ? "processor"
+                                : compatiblePath                   ? "compatible"
+                                                                   : "card"});
+  (*ui)->setSetting(GraphicsGpuSetting, gpu.name);
+  (*ui)->setSetting(GraphicsAutoReasonSetting, autoReason);
+  (*ui)->setSetting(SoftwareModeSetting, softwareMode);
+  const bool compatibleNotice = !softwareMode && autotest == nullptr &&
+                                (*device)->vulkanPath() == rhi::VulkanPath::Compatible12;
+  double softwareNoticeLeft = softwareMode || compatibleNotice ? SoftwareNoticeSeconds : 0.0;
+  if (softwareMode || compatibleNotice) {
+    showGraphicsNotice(**ui, compatibleNotice, noticeReason(compatibleNotice));
+  }
+  // Seconds to an early cache save, so the first field's pipelines survive a crash.
+  double pipelineCacheSaveLeft = 15.0;
   FrameLimiter frameLimiter;
   double limiterWaited = 0.0;
   // The title's pictures, smoothed with the texture filter «upscaled», keep what the upscaler made
@@ -906,6 +990,8 @@ int runGame(const Options& requested) {
                     userSettings.difficulty.value_or(std::string{DifficultyNormal}));
   (*ui)->setSetting(ShopJobModeSetting,
                     userSettings.shopJobMode.value_or(std::string{ShopJobImproved}));
+  (*ui)->setSetting(BattleSystemSetting, std::string{game::modes::DefaultBattle});
+  (*ui)->setSetting(std::string{OptionsLockedPrefix} + std::string{BattleSystemSetting}, true);
   (*ui)->setSetting(CoopDifficultySetting,
                     std::string{coopLevelName(coopLevelOf(userSettings.coopDifficulty))});
   (*ui)->setSetting(RoamingRareChanceSetting,
@@ -987,6 +1073,11 @@ int runGame(const Options& requested) {
   std::optional<std::string> consoleShopJobMode;
   (*scripts)->bindCommand(ShopJobModeSetting, [&consoleShopJobMode](std::string_view mode) {
     consoleShopJobMode = std::string{mode};
+  });
+  // The console's and routes' battle_system(), applied between frames like the options row.
+  std::optional<std::string> consoleBattleSystem;
+  (*scripts)->bindCommand(BattleSystemSetting, [&consoleBattleSystem](std::string_view name) {
+    consoleBattleSystem = std::string{name};
   });
   // The console's ui_skin("<id>"), the menus' skin setting, applied between frames in the same way.
   std::optional<std::string> consoleUiSkin;
@@ -1142,6 +1233,8 @@ int runGame(const Options& requested) {
   CoopTrades coopTrades{**ui};
   // The world's clock and who trains (#365).
   CoopTraining coopTraining;
+  CoopEvents coopEvents;
+  bool coopSleepWaitShown = false;
   // The host's room went while the guest played: its game ends after this frame's ticks.
   bool coopHostLeft = false;
   // How a player of the session is named (the trades' document and notices): a player of a link
@@ -1653,6 +1746,9 @@ int runGame(const Options& requested) {
   while (running) {
     if ((*device)->lost()) {
       core::logError("game: the GPU stopped responding (device lost); closing without saving");
+      logDiagnosis(rhi::StartFailure{.stage = rhi::StartStage::Running,
+                                     .result = VK_ERROR_DEVICE_LOST,
+                                     .message = "device lost while playing"});
       exitCode = DeviceLostExitCode;
       return exitCode;
     }
@@ -1880,6 +1976,12 @@ int runGame(const Options& requested) {
       if (!(*ui)->isVisible(MenuDocument)) {
         optionsDirect = false;
       }
+      // Co-op: menus and pause hold only this player's input; the world goes on (shared_pause.hpp).
+      const bool coopShared =
+          flow.playing() != nullptr && flow.playing()->coopGame() && coop.connected();
+      if (PlaySession* shared = flow.playing()) {
+        shared->shareWorld(coopShared);
+      }
       // Start's pause freezes everything but the box, menus and battle included (handlePause).
       if (const PauseStep pause =
               pauseBox.tick(input.wasPressed("pause") || (settingsAsked && pauseBox.paused()),
@@ -1891,10 +1993,13 @@ int runGame(const Options& requested) {
         } else if (pause.closed) {
           (*ui)->hide(PauseBoxDocument);
         }
-        if (pause.paused) {
+        if (pause.paused && localScreensHoldWorld({.pauseBox = true}, coopShared)) {
           input.endTick();
           ++ticksRun;
           continue;
+        }
+        if (pause.paused) {
+          input.endTick();
         }
       }
       if (flow.playing() != nullptr && input.wasPressed("menu")) {
@@ -2058,6 +2163,7 @@ int runGame(const Options& requested) {
           // A trade with that player closes; a swap the host applied for it is undone.
           coopTrades.playerLeft(peer->id);
           coopTraining.playerLeft(peer->id);
+          coopEvents.playerLeft(peer->id);
           coopHud.notice(CoopDisconnectedText, peer->label);
           break;
         case CoopLinkLoss::HostLeft:
@@ -2079,6 +2185,10 @@ int runGame(const Options& requested) {
         coopGuestWorld.reset();
         coopSync.reset();
         coopTraining.reset();
+        coopEvents.reset();
+        if (play != nullptr) {
+          play->leaveNpcsBe({});
+        }
         coop.takeLinkBack();
         core::logInfo("coop: the link or the game ended, the gameplay bridges were dropped");
         // A co-op game that ended (back to the title) ends its room: the others hear it leave
@@ -2193,11 +2303,20 @@ int runGame(const Options& requested) {
       // the others must still hear from the host in between.
       if (play != nullptr && coop.isHost()) {
         for (CoopPeer& peer : coopPeers) {
+          if (const game::coop::PlayerRecord* record =
+                  coopHostWorld ? coopHostWorld->authority().find(peer.id) : nullptr;
+              record != nullptr && !record->partnerSpecies.empty() &&
+              record->partnerSpecies != peer.partner) {
+            peer.partner = record->partnerSpecies;
+            peer.attachFailed = nullptr;
+          }
           if (peer.attachFailed == play) {
             continue;
           }
           const game::field::Field& field = play->scene().field();
-          const bool partnerMissing = !peer.partner.empty() && !field.partner(peer.id);
+          const bool partnerMissing =
+              !peer.partner.empty() && (!field.partner(peer.id) ||
+                                        play->scene().coopPartnerSpecies(peer.id) != peer.partner);
           if (!field.player(peer.id) || partnerMissing) {
             if (auto added = play->scene().addCoopGuest(peer.id, peer.partner); !added) {
               core::logError("coop: could not add player {} to the field: {}", peer.id,
@@ -2251,7 +2370,7 @@ int runGame(const Options& requested) {
       if (!pointerWalks) {
         mouse.release();
       }
-      if (play != nullptr && !(*ui)->capturesInput()) {
+      if (play != nullptr && !(*ui)->capturesInput() && !pauseBox.paused()) {
         move = input.vector("move_left", "move_right", "move_up", "move_down");
         // Up gives a negative y; the field's y points away from the camera.
         walk = walkOrderOf(
@@ -2310,18 +2429,31 @@ int runGame(const Options& requested) {
           }
         }
         if (coopGuestWorld && coopLinked) {
-          applyCoopMove(play->scene(), *coopGuestWorld);
+          applyCoopMove(play->scene(), *coopGuestWorld, play->ownDeathHoldsMap());
+          if (coopGuestWorld->takeZoneChange()) {
+            coopHud.notice(CoopHostChangedZoneText, coopLabelOf(game::coop::HostPlayerId));
+          }
         }
         play->tick(commands, guestIntents);
         if (coopLinked) {
           std::vector<CoopOutgoing> outgoing;
           if (coopHostWorld) {
+            coopHostWorld->setPartner(game::coop::HostPlayerId,
+                                      std::string{play->partnerSpecies()});
             outgoing = coopHostWorld->tick(play->scene().field(), play->scene().mapSerial(),
                                            play->scene().mapArrival().exit, coopNow);
+            const auto away = coopHostWorld->away(play->scene().field().mapId());
+            for (const game::field::PlayerId id : play->scene().coopPlayers()) {
+              play->scene().showCoopGuest(id, !std::ranges::contains(away, id));
+            }
           } else if (coopGuestWorld) {
-            if (auto state = coopGuestWorld->report(play->scene().field(),
-                                                    play->scene().movingCoopSelf(), ticksRun)) {
+            if (auto state = coopGuestWorld->report(
+                    play->scene().field(), play->scene().movingCoopSelf(), ticksRun,
+                    play->ownDeathHoldsMap() || !play->scene().stage().showsOtherPlayers())) {
               outgoing.push_back({.to = game::coop::HostPlayerId, .message = std::move(*state)});
+            }
+            if (auto form = coopGuestWorld->partnerForm(play->partnerSpecies(), ticksRun)) {
+              outgoing.push_back({.to = game::coop::HostPlayerId, .message = std::move(*form)});
             }
           }
           // The world's interactions (#357): what this game changed of the shared world, and the
@@ -2355,7 +2487,8 @@ int runGame(const Options& requested) {
             watched.push_back({.id = peer.id, .bridge = peer.bridge.get()});
           }
           for (const std::string& line :
-               coopSync.hostTick(play->scene().field(), coopWorldTick, watched, coopNow)) {
+               coopSync.hostTick(play->scene().field(), coopWorldTick, watched, coopNow,
+                                 coopHostWorld ? &coopHostWorld->authority() : nullptr)) {
             core::logInfo("coop sync: {}", line);
           }
         } else if (coopLinked && coopGuestWorld) {
@@ -2373,6 +2506,36 @@ int runGame(const Options& requested) {
         } else if (coopLinked && coopGuestWorld) {
           coopTraining.guestTick(play->gameSession(), play->trainingCourse(),
                                  coopGuestWorld->self(), *coopBridge());
+        }
+        // An event starts once in the shared world: the NPCs in the others' events are left be.
+        if (coopLinked && (coop.isHost() || coopGuestWorld)) {
+          const std::string_view eventMap = play->scene().field().mapId();
+          const std::optional<CoopEvent> ownEvent =
+              play->eventNpc().and_then([&](std::int32_t npc) -> std::optional<CoopEvent> {
+                if (!std::in_range<std::uint16_t>(npc)) {
+                  return std::nullopt;
+                }
+                return CoopEvent{.mapId = std::string{eventMap},
+                                 .npc = static_cast<std::uint16_t>(npc)};
+              });
+          game::coop::PlayerId self = game::coop::HostPlayerId;
+          if (coop.isHost()) {
+            std::vector<CoopEventPeer> others;
+            for (CoopPeer& peer : coopPeers) {
+              others.push_back({.id = peer.id, .bridge = peer.bridge.get()});
+            }
+            coopEvents.hostTick(ownEvent, others);
+          } else {
+            self = coopGuestWorld->self();
+            coopEvents.guestTick(ownEvent, self, *coopBridge());
+          }
+          play->leaveNpcsBe(coopEvents.heldByOthers(self, eventMap));
+        }
+        if (coopLinked && play->sleepWaitsForWorld() != coopSleepWaitShown) {
+          coopSleepWaitShown = !coopSleepWaitShown;
+          if (coopSleepWaitShown) {
+            coopHud.notice(CoopSleepWaitText, {}, CoopSleepWaitSeconds);
+          }
         }
         if (coopLinked && coopTraining.takeClockNotice()) {
           coopHud.notice(CoopTrainingClockText);
@@ -2398,6 +2561,9 @@ int runGame(const Options& requested) {
                                          : CoopBattles::Role::Guest,
                          coopGuestWorld ? coopGuestWorld->self() : game::coop::HostPlayerId,
                          coopHere, coopLabelOf);
+        if (auto notice = coopBattles.takeNotice()) {
+          coopHud.notice(*notice);
+        }
         // The trades: on the host, where every player of the session stands; a battle on the
         // host's map keeps everyone there busy (they fight or watch it).
         std::vector<game::coop::TradePlace> tradeWorld;
@@ -2436,8 +2602,10 @@ int runGame(const Options& requested) {
         if (coopLinked && coop.isHost() && ticksRun % 3 == 0) {
           // One capture of the world for every guest, each told the newest of its own commands
           // the host took.
-          auto snapshot = makeCoopSnapshot(play->scene().field(), play->scene().field().mapId(),
-                                           ++coopWorldTick, 0);
+          const std::string& mapId = play->scene().field().mapId();
+          auto snapshot = makeCoopSnapshot(play->scene().field(), mapId, ++coopWorldTick, 0,
+                                           coopHostWorld ? coopHostWorld->away(mapId)
+                                                         : std::vector<game::coop::PlayerId>{});
           if (snapshot) {
             for (CoopPeer& peer : coopPeers) {
               snapshot->acknowledgedCommand = peer.controller->latestSequence().value_or(0);
@@ -2626,6 +2794,13 @@ int runGame(const Options& requested) {
       if (command.name == ShopJobModeSetting) {
         if (const std::string* mode = std::get_if<std::string>(&command.value)) {
           changeShopJobMode(*mode);
+        }
+        continue;
+      }
+      if (command.name == BattleSystemSetting) {
+        const std::string* name = std::get_if<std::string>(&command.value);
+        if (PlaySession* play = flow.playing(); play != nullptr && name != nullptr) {
+          play->changeBattleSystem(*name);
         }
         continue;
       }
@@ -2849,7 +3024,10 @@ int runGame(const Options& requested) {
         const net::Millis drawnAt{static_cast<std::int64_t>(platform->nowSeconds() * 1000.0)};
         const auto presented = coopBridge()->presentedWorld(drawnAt);
         presentCoopPlayers(play->scene(), presented ? &*presented : nullptr, *coopGuestWorld,
-                           coop.remotePartnerSpecies());
+                           coop.remotePartnerSpecies(), coopBattles.fighting());
+        play->mirrorCoopNpcs(presented ? &*presented : nullptr, drawnAt);
+      } else {
+        play->mirrorCoopNpcs(nullptr, {});
       }
       play->update(sessionCommands, autotest.get(), frameStats, gameSeconds, drawAlpha);
       // A tag over each other player: the host's guests; on a guest the host and the other
@@ -2872,12 +3050,13 @@ int runGame(const Options& requested) {
       std::vector<CoopTagView> coopTags;
       for (const auto& [id, label] : coopOthers) {
         const std::optional<glm::vec2> head = play->scene().coopHeadInWindow(id);
-        coopTags.push_back(coopTagViewOf(
-            label,
-            head ? std::optional{screens::WindowFraction{.x = head->x, .y = head->y}}
-                 : std::nullopt,
-            play->fieldRunning(), coopTrades.askNearest(*play, id) && !coopTraining.training(id),
-            coopTraining.training(id)));
+        coopTags.push_back(
+            coopTagViewOf(label,
+                          head ? std::optional{screens::WindowFraction{.x = head->x, .y = head->y}}
+                               : std::nullopt,
+                          play->fieldRunning() && !play->localMenusOpen(),
+                          coopTrades.askNearest(*play, id) && !coopTraining.training(id),
+                          coopTraining.training(id)));
       }
       coopHud.showTags(coopTags);
       screenFade->setDarkness(play->fadeLevel());
@@ -2898,7 +3077,9 @@ int runGame(const Options& requested) {
       sessionCommands.drop(autotest.get());
       coopHud.showTag({});
     }
-    coopHud.advance(frameSeconds);
+    // Its notices last the game's time, the ticks that ran: a stall or the control channel's
+    // pause does not eat them.
+    coopHud.advance(ticks * TickSeconds / ticksPerTick);
     phases.mark(FramePhases::Update, platform->nowSeconds());
     if (consoleUiSkin) {
       uiSkinChanger.change(*std::exchange(consoleUiSkin, std::nullopt));
@@ -2915,6 +3096,11 @@ int runGame(const Options& requested) {
     }
     if (consoleShopJobMode) {
       changeShopJobMode(*std::exchange(consoleShopJobMode, std::nullopt));
+    }
+    if (const auto name = std::exchange(consoleBattleSystem, std::nullopt)) {
+      if (PlaySession* play = flow.playing()) {
+        play->changeBattleSystem(*name);
+      }
     }
     if (consoleBattleSpeed) {
       battleSpeed.change(ui::UiValue{*std::exchange(consoleBattleSpeed, std::nullopt)});
@@ -3011,7 +3197,7 @@ int runGame(const Options& requested) {
       // The portrait follows the partner's form ahead of the status page: loaded on that page's
       // first frame, its model and textures stalled the menu (#221). A new form comes in as the
       // game starts (under its fade in) or evolves.
-      const std::string species{flow.playing()->partnerSpecies()};
+      const std::string species = flow.playing()->drawnPartnerSpecies();
       if (species != portraitSpecies) {
         portraitSpecies = species;
         (*portrait)->clear();
@@ -3083,7 +3269,13 @@ int runGame(const Options& requested) {
             showingMovie ? 1.0F : static_cast<float>(graphics.options().renderScale) / 100.0F,
     });
     phases.mark(FramePhases::Render, platform->nowSeconds());
-    if (softwareNoticeLeft > 0.0) {
+    if (pipelineCacheSaveLeft > 0.0) {
+      pipelineCacheSaveLeft -= std::clamp(frameSeconds, 0.0, MaxFrameSeconds);
+      if (pipelineCacheSaveLeft <= 0.0) {
+        (*device)->savePipelineCache();
+      }
+    }
+    if (softwareNoticeLeft > 0.0 && !showingMovie) {
       softwareNoticeLeft -= std::clamp(frameSeconds, 0.0, MaxFrameSeconds);
       if (softwareNoticeLeft <= 0.0) {
         (*ui)->hide(SoftwareNoticeDocument);
@@ -3107,6 +3299,20 @@ int runGame(const Options& requested) {
     } else if (qualityTuner) {
       qualityTuner->pause();
     }
+    if (weakGpuWatch && graphics.options().autoQuality && graphics.automaticPreset() && drawn &&
+        !showingMovie && flow.playing() != nullptr && !loadAfterIndicator) {
+      if (const auto lighter = lighterPreset(*graphics.automaticPreset());
+          lighter && weakGpuWatch->frame(frameSeconds - limiterWaited)) {
+        graphics.setAutomaticPreset(*lighter);
+        graphics.applyAutomatic(withPreset(graphics.options(), *lighter, graphics.automatic()),
+                                **ui);
+        (*ui)->setSetting(GraphicsAutoReasonSetting, std::string{"slow"});
+        core::logInfo("game: slow frames on {}: automatic quality {}", gpu.name,
+                      graphicsPresetName(*lighter));
+      }
+    } else if (weakGpuWatch) {
+      weakGpuWatch->pause();
+    }
     if (loadAfterIndicator) {
       loadingIndicatorSeconds += std::max(0.0, frameSeconds);
       if (loadingIndicatorSeconds >= 0.3) {
@@ -3129,6 +3335,8 @@ int runGame(const Options& requested) {
   if (PlaySession* play = flow.playing()) {
     bringGuestHome(*play, true);
   }
+  // Leaves the room at once: the others do not wait on the transport's keep-alive.
+  coop.shutDown([&] { return platform->nowSeconds(); }, CoopShutdownSeconds);
   if (!autotest) {
     // The locals go in reverse order: the scene and the UI release their textures into the renderer
     // before it.

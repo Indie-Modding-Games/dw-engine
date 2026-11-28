@@ -47,6 +47,7 @@ care.praise: "ほめる"
 care.scold: "しかる"
 care.feed_hint: "パートナーにごはんをあげるには、バッグの食べ物を使ってください。"
 care.training_hint: "トレーニングはフィールドのトレーニング場所でできます。"
+throw_target_hint: "パートナーを選ぶ"
 care_result.praised: "パートナーをほめた。"
 care_result.scolded: "パートナーをしかった。"
 

@@ -575,6 +575,98 @@ coop_scaling:
   hard_hp_bonus_percent: 25
 
 # Quirks of the original (docs/reference/battle.md, "Quirks"). true reproduces the original; another ruleset turns them off.
+# The Folder battle (docs/architecture/folder-battle.md), an engine addition the original does not have: the numbers of
+# the combat design (docs/architecture/combat-design.md) that Folder Mode's battle plays with. Times are battle frames
+# (20 per second); percents are of the base value. Values marked provisional wait for balance.
+folder:
+  # §6.3: the formulas read the stats out of 1000 (the game caps them at 999).
+  stat_scale: 1000
+  # §4.2, §6.5: an order is processed in 0.8 s, shortened by INT. Provisional.
+  processing_frames: 16
+  # §4.2, §6.4: the preparation before the technique starts, shortened by VEL. Provisional.
+  preparation_frames: 10
+  # §4.2: the recovery after a technique whose MP cost no tier of `timings` reaches. Provisional.
+  recovery_frames: 20
+  # §5: each technique's preparation and recovery by its MP cost, the dearer the slower (the original's costs: 40 MP
+  # for most). `finisher_timing` is the finishers'; `techniques` gives one technique, by move id, its own. Provisional:
+  # the catalogue is pending balance.
+  timings:
+    - {mp_up_to: 20, preparation_frames: 6, recovery_frames: 14}
+    - {mp_up_to: 45, preparation_frames: 10, recovery_frames: 20}
+    - {mp_up_to: 80, preparation_frames: 14, recovery_frames: 26}
+    - {mp_up_to: 999, preparation_frames: 18, recovery_frames: 32}
+  finisher_timing: {preparation_frames: 20, recovery_frames: 36}
+  techniques: {}
+  # §4.6: positioning this long without reaching the range gives the order up.
+  give_up_frames: 200
+  # §2.9: Aggressive chases its target to point-blank this long, then uses the technique from its reach. Provisional.
+  chase_frames: 40
+  # §6.4: MovementMultiplier = 0.75 + 0.5 x VEL / 1000.
+  movement_min_percent: 75
+  movement_span_percent: 50
+  # §6.4: ExecutionMultiplier = 1 - 0.4 x VEL / 1000.
+  execution_cut_percent: 40
+  # §6.5: ResponseMultiplier = 1 - 0.5 x INT / 1000.
+  processing_cut_percent: 50
+  # §6.2: the attribute modifier is ATK times this percent. Provisional: 200 keeps the duels' odds closest to Classic's
+  # (the balance probe in folder/balance_probe_tests.cpp); at 100 DEF outweighs ATK and any stronger foe always wins.
+  attack_percent: 200
+  # §3.8: every elemental advantage or resistance is worth 20 % of the technique's power, STAB 20 % more, and the
+  # Vaccine, Data and Virus cycle 25 %.
+  element_percent: 20
+  stab_percent: 20
+  type_percent: 25
+  # §3.8: the specialty each specialty beats (0 fire, 1 battle, 2 air, 3 earth, 4 ice, 5 mech, 6 filth): fire > earth >
+  # air > fire, ice > filth > mech > battle > ice.
+  beats: [3, 4, 0, 2, 6, 1, 5]
+  # §2.9: outside Guard a hit is covered with a chance of DEF / 1000 x 30 %; Guard and cover subtract DEF twice.
+  cover_max_percent: 30
+  cover_defense_times: 2
+  # §7.4: damage does not fall off with distance; instead the cover chance gains points by the attacker's distance. The
+  # design's proposal: the closer, the easier to cover. Provisional: +10 points at point-blank, none from 800 pixels on.
+  cover_near_bonus_percent: 10
+  cover_far_bonus_percent: 0
+  cover_far_pixels: 800
+  # §2.9: the defense bar holds 6 x DEF of damage and empties from full in 6 s; it waits 1 s after a hit before it
+  # drains (provisional).
+  bar_defense_times: 6
+  bar_drain_frames: 120
+  bar_rest_frames: 20
+  # §2.9: the break lasts 4 s with -50 % ATK, VEL and DEF; VEL and DEF shorten it and speed the drain by up to 15 %
+  # each, 30 % together.
+  break_frames: 80
+  break_debuff_percent: 50
+  per_stat_cut_percent: 15
+  stat_cut_cap_percent: 30
+  # costo-mp.md v0.2: what the trainer's techniques cost in a Folder battle (enemies keep the move table's).
+  # MP = ceil(power x 30 % + status cost x chance x duration + boost + reach + area). A ranged technique's reach class
+  # comes from its distance (up to 200 px short, up to 500 medium, farther long), a melee one is short, a support one
+  # and an area around the user are personal; an area up to 300 px is small, up to 600 medium, wider large (global
+  # counts as large). Flattening costs as a technique lock (60). The original's statuses and boosts read as short and
+  # long (boosts last the battle). Provisional: the costs are pending balance (costo-mp.md §11).
+  mp_costs:
+    power_percent: 30
+    short_reach_up_to: 200
+    medium_reach_up_to: 500
+    small_area_up_to: 300
+    medium_area_up_to: 600
+    reach_costs: [0, 0, 30, 60]
+    area_costs: [0, 20, 40, 60]
+    status_costs: [35, 40, 50, 60]
+    duration_percents: [100, 125, 150]
+    status_duration: short
+    light_buff_up_to: 10
+    moderate_buff_up_to: 20
+    single_buff_costs: [25, 40, 60]
+    several_buff_costs: [45, 70, 100]
+    buff_duration: long
+  # §3.10: what one technique, by move id, changes from the move table's reading: functions (offensive, defensive,
+  # support, control), area (single, around_self, around_target, global), area_pixels, friendly_fire,
+  # effect_duration (short, medium, long) and mp_cost. Without an entry: power makes it offensive, a status control, a
+  # boost support and the counter defensive; an area move is an area around its user as wide as its distance; an
+  # offensive area hits the user's side too (§2.8), nothing else does.
+  catalog: {}
+
 quirks:
   # partner_impl.c: handlePostBattleTiredness divides the spent MP by the max before multiplying by 10, so it
   # almost always adds 0.

@@ -275,7 +275,7 @@ A type byte at the start of each message, in the range `0x60–0x6F` (versus use
 | `0x63` | `Commands` | unreliable | client → host | `PlayerCommands` of the last 3 ticks. |
 | `0x64` | `OwnPose` | unreliable | client → host | Position, heading and animation of the client's player. |
 | `0x65` | `PoseFix` | reliable | host → client | Corrected position when the client's is not possible. |
-| `0x66` | `Snapshot` | unreliable | host → client | Tick, game clock, entities (delta against the last confirmed), HUD of the two partners. |
+| `0x66` | `Snapshot` | unreliable | host → client | Tick, game clock, entities (delta against the last confirmed): every player and partner, then the map's NPCs (#419). HUD of the two partners. |
 | `0x67` | `SnapshotAck` | unreliable | client → host | Last snapshot received, for the deltas. |
 | `0x68` | `Event` | reliable | host → client | Map change, dialog, battle start and end, shared menu. |
 | `0x69` | `Action` | reliable | client → host | An action that cannot be lost (it also goes in `Commands`; the host discards duplicates per tick). |
@@ -386,7 +386,7 @@ registry), the map the group is on and every player's newest valid transform.
 | A guest's own position | the guest, checked by the host | `PlayerState`, refused or corrected when impossible |
 | The host's position, NPCs, story, clock, battles | host | snapshots (§5.1) and events |
 | How a remote player is drawn | each game, locally | interpolation (below); it never writes the authority |
-| What players change in the world (chests, triggers, doors, ground items) | host | `WorldChange`, `WorldSync`, `GroundItems` (§5.8) |
+| What players change in the world (chests, triggers, doors, ground items, poop piles) | host | `WorldChange`, `WorldSync`, `GroundItems`, `PoopPiles` (§5.8) |
 
 **Messages.** Three kinds join the table of §5.5 and take the place of its `OwnPose` and `PoseFix` sketch (protocol
 version 4):
@@ -396,6 +396,7 @@ version 4):
 | `0x70` | `PlayerState` | unreliable | client → host | Player id, sequence (the guest's tick), the correction epoch it follows, map, position, heading, motion. Every 3 ticks. |
 | `0x71` | `PlayerCorrection` | reliable | host → client | Where the host puts that player: map, position, heading, the exit for a map change, and a new epoch. |
 | `0x72` | `Roster` | reliable | host → client | Revision and, per player, id, name and partner species. |
+| `0x73` | `PartnerForm` | reliable | client → host | The guest's partner species now (protocol 14, #412). |
 
 **Transform sync.** The guest moves its own player and reports it. The host takes a state only when the link owns that
 player, it is newer than the last one taken (late, duplicated and reordered packets are dropped), it carries the
@@ -406,28 +407,80 @@ agree again. A guest-side jump (a script's `place`) is one of those refusals: it
 
 **Maps (decision 2 of §6).** The group goes where the host goes. The guest's own exits are held
 (`Field::holdExits`); when the host changes map, every guest gets a correction with the new map, the exit and the
-host's spawn spot, and arrives there exactly. States from the old map or epoch are refused, and the guest reports
-nothing while it travels. Each player still has its own current map: a remote player on another map is neither drawn
+host's spawn spot, and arrives there exactly. Its partner arrives next to it, as on any map entry, and a correction on
+the map it already stands on (a join, a reset) brings the partner along too (`Field::placePlayerWithPartner`). States
+from the old map or epoch are refused, and the guest reports nothing while it travels. Each player still has its own current map: a remote player on another map is neither drawn
 nor driven, and is shown again when it arrives.
 
-**Interpolation.** Remote players are drawn from a short buffer of timed states (`PoseTrack`): 100 ms behind the
-newest one, blending between the two around that moment. Late states never move a track back, a short gap
-extrapolates for at most 100 ms and then holds, a step longer than 800 units (a warp or a correction) is drawn as a
-jump, and a sender whose clock paused is picked up again without a slow catch-up. The host draws guests this way,
-and guests draw everyone from the host's snapshots, timed on the host's clock. Drawing is presentation only: it
-never changes what the authority holds.
+**The zone notice (#356).** Before a guest follows the host to another map, its game waits
+`CoopGuestWorld::ZoneLeadTicks` (45 ticks, 0.75 s) with the notice `online.coop.host_changed_zone` ("{name} went to
+another area", the host's name) up, then fades. The lead starts once per change (`CoopGuestWorld::takeZoneChange`
+gives the map and the correction's epoch for a skin that wants its own look) and waits while the guest's own map
+change runs. Joining, a room reset on the same map and being brought back after a guest's own story warp show no
+notice and do not wait. The guest reports nothing during the lead, as during the trip. A field notice open on the
+guest (a sickness, a medal, a level change) never holds the trip: it goes away while the guest follows the host
+(`AwardScreen::holdsField`) and opens again once it walks on the new map, so the guest never stays behind on a black
+screen and misses the host's battles there.
+
+**Interpolation (#358).** Remote players and their partners are drawn from a short buffer of timed states
+(`PoseTrack`): 100 ms behind the newest one, blending between the two around that moment. A late state that is still
+ahead of the playback fills its place; one already played, or repeated, is dropped, and a straggler from the map before
+a change never takes the track back there. A gap extrapolates for at most 100 ms and then holds; when states come
+again the track catches up from where it held within the 100 ms delay instead of jumping. A step longer than the
+sender could have moved in the time between two states (2500 units a second plus 64, on the sender's clock) is a
+teleport, such as a warp inside a map, a script putting a character somewhere or a correction, and is drawn as a jump,
+never a slide; a map change starts the track over. A sender whose clock paused is picked up again without a slow
+catch-up. The host draws guests this way, and guests draw everyone from the host's snapshots, timed on the host's
+clock. Drawing is presentation only: it never changes what the authority holds. A teleport hidden inside a long loss
+cannot be told from a run, so it is drawn as the 100 ms catch-up. Audit: [#358](audits/358-audit.md).
+
+**The partner's form (#412).** Each partner lives and evolves in its owner's game only, so its form travels like the
+roster's names. The host lists its own partner's species in the roster on every tick it changes; a guest tells its own
+with `PartnerForm` while the roster lists another, once a second until it does (a form sent before the host's play
+read the link is told again). The host takes the form as the link's player's, bumps the roster's revision and sends
+it to everyone; each game then loads the new model in place of the old one, on the host's field body and on every
+guest's drawing, so no game keeps the old form or draws two. The partner's stats and condition are its owner's game's:
+a battle takes them from there when it starts (§6.1).
+
+**What a script plays (#420).** A gym course, a scene or a talk plays clips on the player and the partner instead of
+their motion's. Snapshots and guest states carry that clip (the original's animation id and how many times a script
+started it, so a push started again plays again) with protocol 14. A guest's states also carry its partner's place and
+the clip a script plays on it, on every report (#411: before, only while its game held the partner): the host draws the
+guest's partner there, smoothed on a track of its own as the body is, instead of running a follow of its own that
+drifted away from the guest's. A battle that starts places that partner where its player sees it, and other guests see
+it there in the host's snapshots. A guest that sends no partner gets the follow as before. A partner reported more than
+2000 units from its player is not drawn there. A clip a script no longer plays leaves nothing behind: the body goes
+back to its motion's clip on every machine.
+
+**The map's NPCs (#419).** Each game used to walk its map NPCs on its own, so a wild one stood, chased and left
+differently on each screen. With protocol 14 the host's snapshots also list its map's NPCs, id `0x100` plus the slot,
+after the players (none when they do not fit in one datagram). On a guest standing on the host's map, every NPC the
+snapshot lists stands where the host's does and moves its way, as smoothly as the players; a script of the guest's own
+game holding or animating one still comes first. One the host no longer has (a battle took it off, a story change made
+it leave) leaves the guest's map once it has been missing for a second while no script runs there, so nothing stays
+behind. On another map, during a map change or a co-op battle, or with no link, the guest's NPCs walk on their own;
+during a battle of the guest's own game they are its fighters and stand where that battle puts them.
+They react to the host's player, as the host's game sees them; an NPC only the host has is not added on the guest.
 
 **Lifecycle.** A guest joins when its handshake completes: it gets the lowest free id, a body and partner in the
 host's field next to the host, a correction to that spot and a new roster. It leaves on `Leave`, a dropped link or a
 crash: its record, body, partner and buffers go on both sides, and the roster drops it. When a co-op game ends on
 either side (return to title, quit), that side sends `Leave` and closes the room; a guest whose host left goes back
 to the title. A player who comes back joins as new, with a clean state.
+Closing the window counts as quitting (#416): the game sends `Leave` to everyone and the room's last notice before it
+shuts down (at most 1.5 s), and a link that said goodbye keeps its transport for a second (`CoopLeaveFlush`) so the
+goodbye gets through instead of the others seeing a dropped link and trying to rejoin. A public room's host repeats
+its room's state to the directory every minute (`net::RoomRefreshEvery`), so the entry of a host that crashed or lost
+its line leaves the list within three minutes.
 
 **Presence.** `WorldAuthority::playersOn(map)` (host) and `CoopGameplayBridge::playersOn(map)` (guest, from the
 latest snapshot) say which players stand on a map, for systems that need the others nearby (battles, shared
 objects).
 
-Tests: `packages/game/coop/tests/authority_tests.cpp`, `apps/game/tests/coop_world_tests.cpp`,
+Tests: `packages/game/coop/tests/authority_tests.cpp`, `packages/game/coop/tests/replication_tests.cpp`,
+`apps/game/tests/coop_world_tests.cpp`, `apps/game/tests/coop_replication_tests.cpp`,
+`apps/game/tests/coop_npc_mirror_tests.cpp`,
+`packages/game/coop/tests/pose_track_tests.cpp`,
 `apps/game/tests/coop_snapshot_interpolation_tests.cpp`, `apps/game/tests/player_registry_tests.cpp` and the
 co-op cases of `packages/game/field/tests/field_tests.cpp`.
 
@@ -448,7 +501,11 @@ applies a shared interaction to the world; the others' games ask, and are told t
 | Doors and mechanisms a script moves while players watch | live map edits (object flags, closed cells) | shared with the players on that map; on the next visit the map's head script rebuilds them from the shared triggers | `WorldAsk` → host → `WorldChange` |
 | Medals, raised species, the player page's key items (rods) | story triggers | local: each player's own | never sent |
 | A script's freeze, the talk facing trigger, the next map's name | story variables and a trigger | local: they follow that player's own scripts | never sent |
+| Rewards a script gives once per player: the meat farm's days since its last meat (Palmon's and the farm's daily meat, #421) | story variables (`player_own_variables` in the story rules) | local: each player gets its own meat once a day | never sent |
+| The canyon shop's job: customers served, the tally and its meter, each turn's result, the halfway line (#423) | story variables and a trigger (`player_own_variables`, `player_own_triggers`), the tally and the haggle | local: each player runs its own job; one player opening the shop never moves the other's meter | never sent |
+| What a script hands to the engine's routines right before the call: a map object and its animation, a mood bubble's character and face, the bird's map and entrance (variables 247 and 248); the scratch roll in 110 (the Toy Mansion's doors roll it on map entry, scripts 142 to 144) | story variables (`player_own_variables`) | local: no script reads them back, so another player's call never changes them under a running script | never sent |
 | The bag, bits, the partner and its care, menus, dialogs on screen, the camera | session systems | local | never sent (battles: §6.1) |
+| Poop piles the partners leave on the field | the host's `poop_piles`, every map's | shared: every game shows the host's piles of the map it stands on, a pile any partner leaves shows in every game on that map, and a pile is eaten once; what leaving or eating one does to the partner and its stats stays its player's own | `PoopPiles` from the host; a guest's pile left or eaten is a `PileAsk`, an eat answered by `PileAnswer` |
 
 The local facts come from the story rules (`StoryAdapter::playerOwnTrigger` and `playerOwnVariable`): a ruleset that
 moves the freeze or the talk facing to another number moves them too.
@@ -473,11 +530,46 @@ id, and then it sets the trigger or takes the item off its ground and tells ever
 nothing and the notice says another player took it (`online.coop.item_gone`). The host takes at once, as in single
 player, so its take within the same round trip comes first; a take that finds the item gone while its notice was open
 gets the same notice. On a map the host is not on, a guest's ground is its own and needs no claim. Single player never
-claims.
+claims. The host's ground list replaces the guest's ground but keeps its length, so the slot a guest's open notice holds
+stays readable after the host's list dropped its item (a granted take of the last item used to read past the ground and
+crash the guest, #414).
+
+**Poop piles.** The host's world holds every map's piles, as in single player (`poop_piles`, the care rules' limits).
+The host's partner leaves and eats piles at once, as in single player. A guest's partner leaves its pile on its own
+screen at once (with the cloud) and its game sends a `PileAsk`: the host puts the pile on that tile of that map, or a
+random step away if one lies there already. A guest's partner that eats piles walks to one and plays its eat clip as
+usual; then its game asks the host (`PileAsk`) and holds the partner until the `PileAnswer`. Only a granted answer
+eats: the partner gets the host's pile's size (its care effects, `handleEatingPoop`, on its own stats); refused (another
+partner ate it first, the host's within the same round trip included) or with no answer for ten seconds, the partner
+eats nothing. The host answers each guest's asks in order and once. Whenever a map's piles change on the host, every
+guest gets that map's list (`PoopPiles`), which replaces that map's piles in its game; each game draws only the piles of
+the map it stands on. A guest that joins, and every guest when the host enters a map, gets a list that restarts its piles
+first and then one for each map that has some, so a pile its copy of the world kept from before is gone. The piles are
+the host's world, so they are in its save and never in a guest's. Single player is unchanged.
+
+**Events start once (#417).** Each game runs its own story, so two players who talk to the same NPC used to both
+play its event, each with their own name, and both start its battle. While a player's game plays an NPC's event (a
+section a touch or a talk started, until the script ends), that NPC is held: a guest tells the host with `EventStatus`
+(`0xC2`, protocol 14), the host tells every guest about everyone's, its own included, and every other game on that map
+drops its own touches and talks with the NPC meanwhile. Once the event ends its story changes reach the others as
+usual, so the next player who talks to the NPC sees what the event left. A player who leaves lets its NPC go. NPCs
+that share a script id (a map's wild NPCs of one species) are held together. Two touches within the same round trip
+can still both start.
 
 **Joining late and changing map.** A guest that joins gets the whole shared story (`WorldSync`, in parts that fit a
 datagram) and the host's ground; every guest gets them again when the host enters a map. The sync carries the host's
 revision, so a change already in it is not applied again.
+
+**Room resets (#422).** A script's warp back onto the map the group is on reloads it: a trial room starts over this way
+(the Centarumon forest's path, the arrows' route and its gates). Every load of the host's map takes a revision of its
+own, and each `WorldAsk` says the newest revision the guest's game had taken (`seen`). What a guest asked for that map
+before it saw the reload (a step on the old path, a gate its script moved) is overtaken: map edits are dropped and facts
+are told back to everyone with the world's value, so nothing of the old room survives the reset. A fact another player
+changed after the revision a guest had seen overtakes that guest's ask the same way; a player's own earlier change never
+overtakes its later asks. A guest the reset brings back (a `PlayerCorrection` with an exit on the map it already stands
+on) loads the map again as the host did, instead of only being put at the host's spot with what its scripts left there;
+the host's map edits that come while it loads wait for the load to end. A guest's asks from the map the group left keep
+their facts.
 
 **Saves (§5.6).** The world is the host's: what a guest changes in it is in the host's next save, like anything the
 host does. Nothing of the world goes into the guest's own save: only its partner and bag go home (§5.6).
@@ -486,12 +578,15 @@ host does. Nothing of the world goes into the guest's own save: only its partner
 
 | Type | Name | Channel | Direction | Content |
 |---|---|---|---|---|
-| `0x90` | `WorldAsk` | reliable | client → host | The guest's ask number, its map and the edits (trigger, variable, map object, closed cells). |
+| `0x90` | `WorldAsk` | reliable | client → host | The guest's ask number, the newest host revision it had taken (protocol version 14), its map and the edits (trigger, variable, map object, closed cells). |
 | `0x91` | `WorldChange` | reliable | host → client | Revision, the player it came from and its ask, the map, the edits. |
 | `0x92` | `WorldSync` | reliable | host → client | Revision, part, and a run of triggers (bits) and variables. |
 | `0x93` | `GroundItems` | reliable | host → client | The host's map and map load, and each item on the ground: id, slot, item, cell and place. |
 | `0x94` | `ItemClaim` | reliable | client → host | The guest's claim number, chest or ground item, the chest's trigger or the item's slot and id, the map. |
 | `0x95` | `ClaimAnswer` | reliable | host → client | The claim number and whether it was granted. |
+| `0x96` | `PoopPiles` | reliable | host → client | A map, whether it restarts the guest's piles (protocol version 15), and each pile on it: tile and size. |
+| `0x97` | `PileAsk` | reliable | client → host | The guest's ask number, left or eaten, the map, the tile, and a left pile's size (protocol version 15). |
+| `0x98` | `PileAnswer` | reliable | host → client | The ask number, whether the eat was granted, and the pile's size (protocol version 15). |
 
 **World changes shown at once.** A map's head section decides on load which characters stand on it, from the story's
 triggers and variables (a recruited character is gone, its helper stands in its place, a shop keeper comes by day). The
@@ -526,7 +621,10 @@ guests over encoded messages), `apps/game/tests/coop_npc_presence_tests.cpp` (a 
 `packages/game/field/tests/npc_spawns_tests.cpp`, `apps/dwx/tests/script_warps_command_tests.cpp` (the spawns derived
 from the Lua, a mod's patch included), the MAPHEAD case of
 `packages/formats/tests/script_guarded_walk_tests.cpp`, the co-op case of
-`packages/game/field/tests/field_items_tests.cpp` and of `packages/session/tests/story_adapter_tests.cpp`.
+`packages/game/field/tests/field_items_tests.cpp` and of `packages/session/tests/story_adapter_tests.cpp`; the piles:
+`apps/game/tests/coop_poop_piles_tests.cpp` (a host and two guests over real links: piles left on either side, one
+pile eaten by two partners at once, a late joiner and a new map) and the shared piles case of
+`packages/game/partner/tests/toilet_tests.cpp`.
 ### 5.9 Rooms of four and the sync diagnostics
 
 What #352 and #359 add (protocol version 7, kinds `0xA0`–`0xA2`).
@@ -554,22 +652,35 @@ link is still connecting (`online.member.<n>.arriving`).
 **Play.** On the host every guest has its own gameplay bridge, controller and body: its commands move its own player
 (`GuestFieldIntent`), its states reach the authority under its id, corrections and rosters go only to it, and each
 gets the snapshots with its own command acknowledgement. A guest draws everyone from the snapshots and tags each other
-player (`coop_hud.tag.<n>.*`). Every guest's link carries its own battle messages: any guest can start a battle, and
+player (`coop_hud.tag.<n>.*`); the tags hide while this player's game menu or partner pages are open, and the HUD's
+notices last their seconds of the game's ticks, not of the window's frames. Every guest's link carries its own battle messages: any guest can start a battle, and
 every free player on that map fights in it ([co-op combat](coop-combat.md) §12). A bridge drops the messages no part of
 the play reads (a lobby's ready, a save's chunks) instead of queueing them, so a peer that keeps sending them grows
 nothing on the other side.
 
-**Sync diagnostics.** A developer tool behind the console (F1), which only opens with the developer tools on, so it
-never runs in release builds. `coop_sync("on")` on the host tells every guest to report; `coop_sync("report")` prints
-the whole picture once and `coop_sync("off")` stops it. While on, the log says when a player changes map, when
-snapshots or commands are lost or come late, and when a guest holds a player somewhere else (another map, or farther
-than 600 units) for more than two seconds, and again when it is back in sync. The report lists every player's place
-on the host and, per guest, what it holds, how many world ticks it is behind and what it lost.
+**A player leaving while the others play.** Its link alone ends; the other guests keep theirs (`room_tests.cpp`). The
+host takes it out of the roster at once, but a battle it fights in keeps its bodies until that battle ends, on the host
+and on every guest (`CoopGuestWorld::keepsBodies` with `BattleMirror::fighting`): a guest no longer drops them the
+moment the roster loses them, so their partner never borrows this guest's own partner's body. A battle's `BattleBegin`
+takes any player as its starter; before, the check stopped a battle that the third or fourth player started from going
+out. Audit: [#352](audits/352-audit.md).
+
+**Sync diagnostics.** A developer tool behind the console (F1), which only opens with the developer tools on. A build
+configured with `DWE_COOP_SYNC=OFF` (the default of a package, `DWE_PACKAGE`) leaves it out: its host never asks and its
+guests never report. `coop_sync("on")` on the host tells every guest to report; `coop_sync("trace")` does the same and
+also logs every report, player by player, next to where the host has that player; `coop_sync("report")` prints the
+whole picture once and `coop_sync("off")` stops it. While on, the log says when a player changes map, when snapshots or
+commands are lost or come late, and when a guest holds a player somewhere else (another map, or farther than 600
+units) for more than two seconds, and again when it is back in sync. Every such line starts with the host's time and
+world tick. The report lists every player's authoritative place (the host's own in its field, each guest's newest
+valid state as the authority took it) and, per guest, what it holds, how many world ticks it is behind and what it
+lost. Audit: [#359](audits/359-audit.md).
 `coop_fell("<player>")` (same console, host only) fells that player's partner in the host's co-op battle, so the ally
 countdown and the Aim of the bag can be checked without a long fight.
 
 Tests: `packages/game/coop/tests/sync_watch_tests.cpp`, `apps/game/tests/coop_connection_tests.cpp` (four seats),
-`apps/game/tests/coop_sync_tests.cpp` (2, 3 and 4 players headless over lossy links, converging) and the seat tests of
+`apps/game/tests/coop_sync_tests.cpp` (2, 3 and 4 players headless over lossy links, converging, and one guest cut off
+from the snapshots diverging alone) and the seat tests of
 `apps/versus-signal/test`.
 
 ### 5.10 Joining and rejoining a game in progress
@@ -629,7 +740,7 @@ Proposed on 2026-11-16 with a recommendation each; this is how they were built.
 | 2 | Shared map? | Yes: the group goes where the host goes. A guest's own exits are held and the host's map change takes everyone (§5.7). Each game still knows its own map, so a player who is still loading is simply not drawn. |
 | 3 | Battle | **Every partner fights.** Whoever starts it, every free partner on that map joins, up to four (§6.1, [co-op combat](coop-combat.md) §12), and the enemies scale with how many fight ([co-op difficulty](coop-difficulty.md)). |
 | 4 | Progress | The story, the triggers, the money and the world are **the host's**, saved in the host's own slot as single-player (§5.6). Every player's changes to that world go through the host (§5.8). The guest plays with its own partner, moves, raised species and bag with its bits, and takes them home to its own slot when it leaves and at safe points meanwhile (C4, §5.6); nothing of the host's world goes with them. |
-| 5 | Pause and menus | Every game runs its own copy of the host's world, so a menu or the pause stops only that player's game; the others play on. A shared battle waits while the host has its menu open (§6.1). |
+| 5 | Pause and menus | A menu or Start's pause is that player's only, the host's too (#415): while others share the world it holds only that player's input, and the world, its clock and its battles go on for everyone. A battle that starts closes the game menu of whoever has it open. The host's scripts and full screens of its own (a talk, the gym's menu, a shop, the fishing) no longer stand the world's clock either: its partner stands and lives that time once let go ([training](coop-training.md) §4.8). Alone, menus, scripts and the pause stop the game as in the original (`shared_pause.hpp`). |
 | 6 | Dialogs and scenes | A player's scripts run in that player's game: its dialogs and scenes are its own, and the others keep playing. What a scene changes in the world reaches the others through the host (§5.8), and the NPCs it brings or takes away show at once in every game. |
 
 ### 6.1 Battles (decision 3)
@@ -651,18 +762,24 @@ the **host's simulation**:
   guest's partner stands in its field (`session::BattleRequest::visitor`); the host's own partner takes no part.
 - **One battle at a time.** The shared world runs one battle, so one encounter never makes two. An ask while one
   runs is refused as busy (`BattleRefused`): the guest's script gets "not started", as when a battle cannot start in
-  the original, and the guest is pulled into the running battle as its helper. An ask the host cannot take for any
-  other reason (it left the map meanwhile, or it is in a screen, scene or script) is refused too, and the guest's game
-  then runs that battle itself, solo. Every battle the host starts on the guest's map (its story's, a tournament's) is
-  shown to the guest the same way.
+  the original, and the guest is pulled into the running battle as its helper. An ask the host cannot take yet (it is
+  in a screen, scene or script, a map change, the end of a battle, or its presence query does not place the guest
+  there yet) waits on the host, at most `BattleAskWaitTicks` (10 seconds), and starts as soon as the host is free; one
+  that waits longer is refused as busy. Only an ask from another map than the host's is refused as not here, and the
+  guest's game then runs that battle itself, solo. So the guest never fights alone an encounter the host could still
+  start, and one encounter is never fought twice. While its ask waits the guest keeps its partner offered, so a battle
+  the host starts meanwhile takes it as an ally, not as a helper. Every battle the host starts on the guest's map (its
+  story's, a tournament's) is shown to the guest the same way.
 - **What the other player sees.** The host sends `BattleBegin`, then a `BattleFrame` every 3 ticks (phase, current
   order, the orders available, whether the bag can be used, the fighters' HP and MP, and every held figure: place,
   heading, clip and its start), then `BattleEnd`. The guest's field holds and draws its own actors where the frames put
-  them; the `coop_battle` screen shows the life bars, the starter's orders and the helper's help.
+  them; its `battle` screen shows the fight as the host's own HUD in its skin (the partners' current orders and status, its own
+  partner's finisher gauge and Folder plate included, from the host's intro on), and the `coop_battle` screen only the end box.
   A helper's camera turns to the battle when it begins and comes back when it ends.
 - **What each player can do.** The starter gives the orders (the strip's commands, the finisher) and closes the end
   box; the others see whom they wait on in its place (`Waiting for <name> to continue...`, `BattleMirror::waitingFor`)
-  until the starter closes it. Both can throw an item **from their own bag** (the guest's item leaves its bag; the host's game lends one and
+  until the starter closes it. The end box's headline says how the battle ended (victory, defeat or a retreat; the
+  frame's outcome, `coop_battle.outcome`), not the invitation the battle started with. Both can throw an item **from their own bag** (the guest's item leaves its bag; the host's game lends one and
   throws it) and **cheer** (a press of the finisher's charge). On the host, a guest's battle blocks the host's strip and
   finisher button; its bag works. The screen's buttons take the mouse, or the arrows and confirm; the field's extra
   button calls the finisher for the starter and cheers for the helper.
@@ -683,11 +800,38 @@ joins the host's battle as an **ally**, after the enemies: the guest's role is `
 throws at it, and its partner's result comes back in the spoils. A partner away or busy is left out and its player
 helps as above. Each partner runs or is knocked out on its own; the team loses only when no partner is left.
 
+**No battle while a partner dies.** In the original no encounter starts while the death and the egg's rebirth play: the
+death script holds the player, so no talk or touch reaches a battle. In co-op no battle starts while the partner of the
+host, or of a guest on its map, dies or waits to be reborn (the death's scene runs or waits; the guest's offer says so):
+the host's story battle is refused and its section ends where it stands, with no flight back to the previous screen
+(the NPC can start it again), a guest's ask waits and is then refused because a partner is reborn, and a dying guest's
+own story ends its section the same way. The player who asked sees a notice that the battle waits for a partner's
+rebirth. A guest whose own partner dies stays on its wake map, out of the host's moves, until the
+rebirth script ends; then it follows the host again. A death section that a map change drops before it runs is asked
+for again while the partner stays dead. A death, an evolution or a lost life's scene is this player's own: the other
+players and their partners are not drawn on its black stage and darken with its scenery. Single player is unchanged.
+
 Limits of this first version: the techniques' effects, the damage numbers and the status marks are drawn only on the
 host; the guest sees the fighters move and the life bars. Tournament fighters that are not map NPCs are not drawn on
 the guest. A helper's item is drawn thrown from the host's tamer. The enemies jump to the host's places when the battle
-starts (each game simulates its own NPCs until then). Drops fall only in the host's world. While the host has its menu
-open, the battle waits for both.
+starts (each game simulates its own NPCs until then). Drops fall only in the host's world. A battle no longer waits for the
+host's menu or pause (#415). A battle another player watches or fights in keeps the original speed: the host's
+quick battle (`battle_speed`) speeds up only its own battles, since the guests animate the frames at 1x. On the host,
+a guest's battle shows the host's bag, revive countdown and finisher gauge for the partner the host commands. In the
+field a partner is not stopped by another player's body (a tamer still is), so a partner left on another tamer after a
+battle walks off it instead of being placed behind its player.
+
+The battle messages (each guest's link carries its own):
+
+| Type | Name | Channel | Direction | Content |
+|---|---|---|---|---|
+| `0x64` | `BattleAsk` | reliable | client → host | The guest's ask number, map, the enemies' NPC slots, the fixed-fight and predefined flags, and its partner's fighter. |
+| `0x65` | `BattleBegin` | reliable | host → client | Battle number, starter, the ask it answers, map, the enemies' NPC slots, every fighter's species, fixed fight, the allies' players, whether it is a Folder battle and (protocol version 15) every fighter's four equipped move ids, the enemies' empty, which name the partners' orders on the guest's HUD. |
+| `0x67` | `BattleRefused` | reliable | host → client | The ask number and why (busy, not here, failed, a partner is reborn). |
+| `0x68` | `BattleFrame` | unreliable | host → client | Battle and frame number, phase; for the guest's own partner (the fighting one for a helper) its current command, the strip, the bag, and (protocol version 15) its finisher gauge's progress and goal and, in a Folder battle, its plate (active order with phase and progress, commit, waiting orders with their targets, target, stance, defense bar and capacity, break seconds, the last order's notice); whether a finisher charges; every fighter's HP, MP, maxima, down, revive seconds and (protocol version 15) current order, stance, status and whether its HP bar shows; the held figures; the items thrown; (protocol version 15) how the battle ended, once it has. |
+| `0x69` | `BattleAction` | reliable | client → host | A command, an order, a stance, a cheer, the end box's close, or an item thrown with the partner it flies to (fighter plus one, 0 for its own or the fighting one). |
+| `0x6B` | `BattleEnd` | reliable | host → client | Outcome, the NPCs that left the map, bits, and this guest's partner's spoils. |
+| `0x80` | `BattleOffer` | reliable | client → host | Whether the guest's partner can join the host's battles, and as what fighter; (protocol version 15) whether it dies or waits to be reborn. |
 
 ### 6.2 Item trades (#360)
 
@@ -802,7 +946,7 @@ What is built, by ticket (the issues #351 to #362 are the player stories; they s
 |---|---|
 | Saves never touched by co-op (#350) | §5.6 |
 | Authority, players, maps, interpolation (#353 to #356, #358) | §5.7 |
-| Shared world: triggers, chests, ground items, doors, NPCs shown at once (#357) | §5.8 |
+| Shared world: triggers, chests, ground items, poop piles, doors, NPCs shown at once (#357) | §5.8 |
 | Rooms of four, sync diagnostics (#352, #359) | §5.9, [room browser](coop-browser-4p.md) |
 | Joining and rejoining a game in progress (#352, #356) | §5.10 |
 | Battles with every partner (#351, #362) and co-op difficulty (#361) | §6.1, [co-op combat](coop-combat.md), [co-op difficulty](coop-difficulty.md) |

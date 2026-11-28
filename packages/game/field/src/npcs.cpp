@@ -301,6 +301,65 @@ std::optional<std::size_t> FieldNpcs::slotOf(scene::Entity entity) const {
   return found != npcs_.end() ? std::optional{found->slot} : std::nullopt;
 }
 
+std::vector<NpcPose> FieldNpcs::poses() const {
+  const entt::registry& registry = world_->registry();
+  std::vector<NpcPose> poses;
+  poses.reserve(npcs_.size());
+  for (const Npc& npc : npcs_) {
+    const auto& transform = registry.get<Transform>(npc.entity);
+    poses.push_back({.slot = npc.slot,
+                     .position = transform.position,
+                     .yaw = transform.yaw,
+                     .motion = npc.motion});
+  }
+  return poses;
+}
+
+bool FieldNpcs::mirror(const NpcPose& pose) {
+  const auto found = std::ranges::find(npcs_, pose.slot, &Npc::slot);
+  if (found == npcs_.end()) {
+    return false;
+  }
+  Npc& npc = *found;
+  npc.mirrored = true;
+  if (npc.held || npc.scriptedAnimation != 0) {
+    return true;
+  }
+  entt::registry& registry = world_->registry();
+  auto& transform = registry.get<Transform>(npc.entity);
+  transform.position = pose.position;
+  transform.yaw = pose.yaw;
+  transform.previousPosition = pose.position;
+  transform.previousYaw = pose.yaw;
+  npc.motion = pose.motion;
+  npc.blocker = Blocker::None;
+  registry.get<AnimationIntent>(npc.entity) = {.motion = pose.motion, .speedScale = 1.0F};
+  return true;
+}
+
+bool FieldNpcs::releaseMirror(std::size_t slot) {
+  const auto found = std::ranges::find(npcs_, slot, &Npc::slot);
+  if (found == npcs_.end() || !found->mirrored) {
+    return false;
+  }
+  found->mirrored = false;
+  restart(*found);
+  return true;
+}
+
+void FieldNpcs::releaseMirrors() {
+  for (const Npc& npc : npcs_) {
+    if (npc.mirrored) {
+      releaseMirror(npc.slot);
+    }
+  }
+}
+
+bool FieldNpcs::mirrored(std::size_t slot) const {
+  const Npc* npc = findSlot(slot);
+  return npc != nullptr && npc->mirrored;
+}
+
 bool FieldNpcs::hold(std::int32_t scriptId, bool held) {
   Npc* npc = find(scriptId);
   if (npc == nullptr) {
@@ -508,6 +567,9 @@ void FieldNpcs::tick(float seconds, const assets::MapCollision& collision,
       npc.motion = Motion::Idle;
       npc.blocker = Blocker::None;
       registry.get<AnimationIntent>(npc.entity) = {.motion = Motion::Idle, .speedScale = 1.0F};
+      continue;
+    }
+    if (npc.mirrored) {
       continue;
     }
     // overworld.c:1239: the path runs while the NPC has not seen the player.

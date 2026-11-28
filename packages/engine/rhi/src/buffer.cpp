@@ -6,6 +6,7 @@
 #include <format>
 #include <utility>
 
+#include "vulkan_calls.hpp"
 #include "vulkan_util.hpp"
 
 namespace dwe::rhi {
@@ -112,7 +113,7 @@ core::Result<Buffer> Buffer::createWithData(Device& device, BufferUsage usage,
     dependency.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
     dependency.memoryBarrierCount = 1;
     dependency.pMemoryBarriers = &barrier;
-    vkCmdPipelineBarrier2(commands, &dependency);
+    sync2().pipelineBarrier2(commands, &dependency);
   });
   if (!copied) {
     return std::unexpected{copied.error()};

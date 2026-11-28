@@ -12,7 +12,9 @@ namespace dwe::game::coop {
 namespace {
 
 // The highest kind: the ranges below it that hold no kind decode as another protocol's.
-constexpr std::uint8_t LastKind = TrainingStatusKind;
+constexpr std::uint8_t LastKind = EventStatusKind;
+// A motion byte with this bit set is followed by the character's scripted clip (ActionClip).
+constexpr std::uint8_t ActionBit = 0x80;
 
 // A kind this protocol may decode: any byte outside is another protocol's (versus, lockstep).
 constexpr bool coopKind(std::uint8_t kind) {
@@ -38,20 +40,44 @@ void put(net::WireWriter& out, const FieldCommand& field) {
   }
 }
 
-void put(net::WireWriter& out, const EntityState& entity) {
-  out.put(entity.networkId).put(entity.owner).put(entity.role);
-  out.put(entity.x).put(entity.y).put(entity.z).put(entity.yaw).put(entity.motion);
+void putMotion(net::WireWriter& out, Motion motion, const std::optional<ActionClip>& action) {
+  const auto byte = static_cast<std::uint8_t>(static_cast<std::uint8_t>(motion) |
+                                              (action ? ActionBit : std::uint8_t{0}));
+  out.put(byte);
+  if (action) {
+    out.put(action->clip).put(action->starts);
+  }
 }
 
-EntityState readEntity(net::WireReader& in) {
-  return {.networkId = in.get<std::uint16_t>(),
-          .owner = in.get<PlayerId>(),
-          .role = static_cast<EntityRole>(in.get<std::uint8_t>()),
-          .x = in.get<std::int32_t>(),
-          .y = in.get<std::int32_t>(),
-          .z = in.get<std::int32_t>(),
-          .yaw = in.get<std::uint16_t>(),
-          .motion = static_cast<Motion>(in.get<std::uint8_t>())};
+// The motion byte and the clip it may carry; false for a motion this protocol does not know.
+bool getMotion(net::WireReader& in, Motion& motion, std::optional<ActionClip>& action) {
+  const std::uint8_t byte = in.get<std::uint8_t>();
+  const auto value = static_cast<std::uint8_t>(byte & ~ActionBit);
+  if ((byte & ActionBit) != 0) {
+    action = ActionClip{.clip = in.get<std::uint16_t>(), .starts = in.get<std::uint8_t>()};
+  }
+  motion = static_cast<Motion>(value);
+  return value <= static_cast<std::uint8_t>(Motion::Run);
+}
+
+void put(net::WireWriter& out, const EntityState& entity) {
+  out.put(entity.networkId).put(entity.owner).put(entity.role);
+  out.put(entity.x).put(entity.y).put(entity.z).put(entity.yaw);
+  putMotion(out, entity.motion, entity.action);
+}
+
+std::optional<EntityState> readEntity(net::WireReader& in) {
+  EntityState entity{.networkId = in.get<std::uint16_t>(),
+                     .owner = in.get<PlayerId>(),
+                     .role = static_cast<EntityRole>(in.get<std::uint8_t>()),
+                     .x = in.get<std::int32_t>(),
+                     .y = in.get<std::int32_t>(),
+                     .z = in.get<std::int32_t>(),
+                     .yaw = in.get<std::uint16_t>()};
+  if (!getMotion(in, entity.motion, entity.action)) {
+    return std::nullopt;
+  }
+  return entity;
 }
 
 bool validIdentity(const Identity& identity) {
@@ -128,6 +154,24 @@ bool getTexts(net::WireReader& in, std::vector<std::string>& texts, std::size_t 
       return false;
     }
     texts.push_back(std::move(text));
+  }
+  return in.ok();
+}
+
+// Each fighter's equipped move ids, "" for an empty place: none, or one set per fighter.
+bool getMoves(net::WireReader& in, std::vector<BattleMoveIds>& fighters) {
+  const std::uint8_t count = in.get<std::uint8_t>();
+  if (!in.ok() || count > MaxBattleFighters) {
+    return false;
+  }
+  for (std::uint8_t i = 0; i < count && in.ok(); ++i) {
+    BattleMoveIds& moves = fighters.emplace_back();
+    for (std::string& move : moves) {
+      move = in.text();
+      if (move.size() > MaxBattleText) {
+        return false;
+      }
+    }
   }
   return in.ok();
 }
@@ -278,6 +322,98 @@ bool getThrow(net::WireReader& in, BattleThrow& thrown) {
          validCoordinate(thrown.x, MaxWorldCoordinate) &&
          validCoordinate(thrown.z, MaxWorldCoordinate) &&
          validCoordinate(thrown.height, MaxWorldCoordinate);
+}
+
+// A fighter of a battle in one byte, this for none.
+constexpr std::uint8_t NoBattleFighter = 0xFF;
+
+void putFighterIndex(net::WireWriter& out, const std::optional<std::uint8_t>& fighter) {
+  out.put(fighter.value_or(NoBattleFighter));
+}
+
+bool getFighterIndex(net::WireReader& in, std::optional<std::uint8_t>& fighter) {
+  const auto byte = in.get<std::uint8_t>();
+  if (byte != NoBattleFighter) {
+    fighter = byte;
+  }
+  return in.ok() && (byte == NoBattleFighter || byte < MaxBattleFighters);
+}
+
+void put(net::WireWriter& out, const BattleOrderShown& order) {
+  out.put(order.slot);
+  putFighterIndex(out, order.target);
+}
+
+bool getOrder(net::WireReader& in, BattleOrderShown& order) {
+  order.slot = in.get<std::uint8_t>();
+  return getFighterIndex(in, order.target) && order.slot < OrderSlots;
+}
+
+void put(net::WireWriter& out, const BattleFolderPlate& plate) {
+  out.put(plate.active.has_value());
+  if (plate.active) {
+    put(out, *plate.active);
+  }
+  out.put(plate.phase).put(plate.phasePercent).put(plate.committed);
+  out.put(static_cast<std::uint8_t>(plate.queue.size()));
+  for (const BattleOrderShown& order : plate.queue) {
+    put(out, order);
+  }
+  putFighterIndex(out, plate.target);
+  out.put(plate.stance).put(plate.bar).put(plate.barMax).put(plate.brokenSeconds);
+  out.put(plate.notice.has_value());
+  if (plate.notice) {
+    out.put(plate.notice->slot).put(plate.notice->end).put(plate.notice->problem);
+    putFighterIndex(out, plate.notice->by);
+  }
+}
+
+bool getPlate(net::WireReader& in, BattleFolderPlate& plate) {
+  constexpr std::uint8_t Hundred = 100;
+  bool active = false;
+  if (!getFlag(in, active)) {
+    return false;
+  }
+  if (active && !getOrder(in, plate.active.emplace())) {
+    return false;
+  }
+  plate.phase = in.get<std::uint8_t>();
+  plate.phasePercent = in.get<std::uint8_t>();
+  if (!getFlag(in, plate.committed)) {
+    return false;
+  }
+  const auto queued = in.get<std::uint8_t>();
+  if (!in.ok() || queued > MaxBattleQueue) {
+    return false;
+  }
+  for (std::uint8_t i = 0; i < queued; ++i) {
+    if (!getOrder(in, plate.queue.emplace_back())) {
+      return false;
+    }
+  }
+  if (!getFighterIndex(in, plate.target)) {
+    return false;
+  }
+  plate.stance = in.get<std::uint8_t>();
+  plate.bar = in.get<std::uint16_t>();
+  plate.barMax = in.get<std::uint16_t>();
+  plate.brokenSeconds = in.get<std::uint8_t>();
+  bool notice = false;
+  if (!getFlag(in, notice)) {
+    return false;
+  }
+  if (notice) {
+    BattleOrderNotice& told = plate.notice.emplace();
+    told.slot = in.get<std::uint8_t>();
+    told.end = in.get<std::uint8_t>();
+    told.problem = in.get<std::uint8_t>();
+    if (!getFighterIndex(in, told.by) || told.slot >= OrderSlots || told.end > LastOrderEnd ||
+        told.problem > LastOrderProblem || (told.by && *told.by >= OrderSlots)) {
+      return false;
+    }
+  }
+  return in.ok() && plate.phase <= LastOrderPhase && plate.phasePercent <= Hundred &&
+         plate.stance <= LastStance;
 }
 
 void put(net::WireWriter& out, const BattleSpoils& spoils) {
@@ -432,6 +568,7 @@ net::Bytes encode(const Message& message) {
           for (const EntityState& entity : body.entities) {
             put(out, entity);
           }
+          out.put(body.npcsWhole);
         } else if constexpr (std::is_same_v<T, ViewState>) {
           out.put(ViewStateKind).put(body.player).put(body.sequence);
           out.put(std::string_view{body.mapId});
@@ -439,7 +576,15 @@ net::Bytes encode(const Message& message) {
         } else if constexpr (std::is_same_v<T, PlayerState>) {
           out.put(PlayerStateKind).put(body.player).put(body.sequence).put(body.epoch);
           out.put(std::string_view{body.mapId});
-          out.put(body.x).put(body.y).put(body.z).put(body.yaw).put(body.motion);
+          out.put(body.x).put(body.y).put(body.z).put(body.yaw);
+          putMotion(out, body.motion, body.action);
+          out.put(body.partner.has_value());
+          if (body.partner) {
+            out.put(body.partner->x).put(body.partner->y).put(body.partner->z);
+            out.put(body.partner->yaw);
+            putMotion(out, body.partner->motion, body.partner->action);
+          }
+          out.put(body.away);
         } else if constexpr (std::is_same_v<T, PlayerCorrection>) {
           out.put(PlayerCorrectionKind).put(body.player).put(body.epoch);
           out.put(std::string_view{body.mapId}).put(body.exit.has_value());
@@ -454,8 +599,10 @@ net::Bytes encode(const Message& message) {
             out.put(entry.id).put(std::string_view{entry.name});
             out.put(std::string_view{entry.partnerSpecies});
           }
+        } else if constexpr (std::is_same_v<T, PartnerForm>) {
+          out.put(PartnerFormKind).put(body.player).put(std::string_view{body.species});
         } else if constexpr (std::is_same_v<T, WorldAsk>) {
-          out.put(WorldAskKind).put(body.ask).put(std::string_view{body.mapId});
+          out.put(WorldAskKind).put(body.ask).put(body.seen).put(std::string_view{body.mapId});
           putEdits(out, body.edits);
         } else if constexpr (std::is_same_v<T, WorldChange>) {
           out.put(WorldChangeKind).put(body.revision).put(body.origin).put(body.ask);
@@ -490,6 +637,17 @@ net::Bytes encode(const Message& message) {
           out.put(std::string_view{body.mapId});
         } else if constexpr (std::is_same_v<T, ClaimAnswer>) {
           out.put(ClaimAnswerKind).put(body.claim).put(body.granted);
+        } else if constexpr (std::is_same_v<T, PoopPiles>) {
+          out.put(PoopPilesKind).put(std::string_view{body.mapId}).put(body.restart);
+          out.put(static_cast<std::uint8_t>(body.piles.size()));
+          for (const PileEntry& pile : body.piles) {
+            out.put(pile.x).put(pile.y).put(pile.size);
+          }
+        } else if constexpr (std::is_same_v<T, PileAsk>) {
+          out.put(PileAskKind).put(body.ask).put(body.action).put(std::string_view{body.mapId});
+          out.put(body.x).put(body.y).put(body.size);
+        } else if constexpr (std::is_same_v<T, PileAnswer>) {
+          out.put(PileAnswerKind).put(body.ask).put(body.granted).put(body.size);
         } else if constexpr (std::is_same_v<T, Leave>) {
           out.put(LeaveKind).put(body.reason);
         } else if constexpr (std::is_same_v<T, BattleAsk>) {
@@ -507,18 +665,35 @@ net::Bytes encode(const Message& message) {
           for (const PlayerId ally : body.allies) {
             out.put(ally);
           }
+          out.put(body.folder);
+          out.put(static_cast<std::uint8_t>(body.moves.size()));
+          for (const BattleMoveIds& moves : body.moves) {
+            for (const std::string& move : moves) {
+              out.put(std::string_view{move});
+            }
+          }
         } else if constexpr (std::is_same_v<T, BattleOffer>) {
           out.put(BattleOfferKind).put(body.available);
           put(out, body.fighter);
+          out.put(body.partnerDying);
         } else if constexpr (std::is_same_v<T, BattleRefused>) {
           out.put(BattleRefusedKind).put(body.ask).put(body.reason);
         } else if constexpr (std::is_same_v<T, BattleFrame>) {
           out.put(BattleFrameKind).put(body.battle).put(body.frame).put(body.phase);
-          out.put(body.command).put(body.menu).put(body.bagAvailable).put(body.finisherCharging);
+          out.put(body.command).put(static_cast<std::uint8_t>(body.menu.size()));
+          for (const std::uint8_t command : body.menu) {
+            out.put(command);
+          }
+          out.put(body.bagAvailable).put(body.finisherCharging);
           out.put(static_cast<std::uint8_t>(body.fighters.size()));
           for (const BattleFighterState& fighter : body.fighters) {
             out.put(fighter.hp).put(fighter.mp).put(fighter.maxHp).put(fighter.maxMp);
-            out.put(fighter.down).put(fighter.reviveSeconds);
+            out.put(fighter.down)
+                .put(fighter.reviveSeconds)
+                .put(fighter.order)
+                .put(fighter.stance)
+                .put(fighter.status)
+                .put(fighter.hpBarShown);
           }
           out.put(static_cast<std::uint8_t>(body.figures.size()));
           for (const BattleFigure& figure : body.figures) {
@@ -527,6 +702,14 @@ net::Bytes encode(const Message& message) {
           out.put(static_cast<std::uint8_t>(body.throws.size()));
           for (const BattleThrow& thrown : body.throws) {
             put(out, thrown);
+          }
+          out.put(body.finisherProgress).put(body.finisherGoal).put(body.folder.has_value());
+          if (body.folder) {
+            put(out, *body.folder);
+          }
+          out.put(body.outcome.has_value());
+          if (body.outcome) {
+            out.put(*body.outcome);
           }
         } else if constexpr (std::is_same_v<T, BattleAction>) {
           out.put(BattleActionMessageKind).put(body.battle).put(body.kind).put(body.value);
@@ -573,6 +756,8 @@ net::Bytes encode(const Message& message) {
           out.put(body.speedThousandths);
         } else if constexpr (std::is_same_v<T, TrainingStatus>) {
           out.put(TrainingStatusKind).put(body.player).put(std::string_view{body.course});
+        } else if constexpr (std::is_same_v<T, EventStatus>) {
+          out.put(EventStatusKind).put(body.player).put(std::string_view{body.mapId}).put(body.npc);
         } else {
           out.put(ProfileChunkKind)
               .put(body.transferId)
@@ -652,11 +837,11 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     }
     std::unordered_set<std::uint16_t> ids;
     for (std::uint16_t i = 0; i < count && in.ok(); ++i) {
-      EntityState entity = readEntity(in);
-      if (!validEntity(entity) || !ids.insert(entity.networkId).second) {
+      const std::optional<EntityState> entity = readEntity(in);
+      if (!entity || !validEntity(*entity) || !ids.insert(entity->networkId).second) {
         return core::fail("invalid or duplicate entity in cooperative join state");
       }
-      state.entities.push_back(entity);
+      state.entities.push_back(*entity);
     }
     if (state.formatVersion != 1 || state.mapId.empty() || state.saveTransferId == 0 ||
         state.saveChunkCount == 0 || state.saveChunkCount > MaxProfileChunks) {
@@ -685,13 +870,13 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     }
     std::unordered_set<std::uint16_t> ids;
     for (std::uint16_t i = 0; i < count && in.ok(); ++i) {
-      EntityState entity = readEntity(in);
-      if (!validEntity(entity) || !ids.insert(entity.networkId).second) {
+      const std::optional<EntityState> entity = readEntity(in);
+      if (!entity || !validEntity(*entity) || !ids.insert(entity->networkId).second) {
         return core::fail("invalid or duplicate entity in cooperative snapshot");
       }
-      snapshot.entities.push_back(entity);
+      snapshot.entities.push_back(*entity);
     }
-    if (snapshot.mapId.empty()) {
+    if (!getFlag(in, snapshot.npcsWhole) || snapshot.mapId.empty()) {
       return core::fail("cooperative snapshot has no map id");
     }
     if (bytes.size() + 1 > net::MaxDatagram) {
@@ -764,10 +949,12 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     for (std::uint8_t i = 0; i < allies && in.ok() && allies < MaxPlayers; ++i) {
       begin.allies.push_back(in.get<PlayerId>());
     }
-    if (!in.ok() || allies >= MaxPlayers || begin.battle == 0 || begin.starter > GuestPlayerId ||
-        begin.mapId.empty() || begin.enemyNpcs.empty() ||
+    if (!getFlag(in, begin.folder) || !getMoves(in, begin.moves) || allies >= MaxPlayers ||
+        begin.battle == 0 || !validPlayer(begin.starter) || begin.mapId.empty() ||
+        begin.enemyNpcs.empty() ||
         begin.species.size() != begin.enemyNpcs.size() + 1 + begin.allies.size() ||
-        (begin.starter == GuestPlayerId) != (begin.ask != 0) ||
+        (!begin.moves.empty() && begin.moves.size() != begin.species.size()) ||
+        (begin.starter != HostPlayerId) != (begin.ask != 0) ||
         !std::ranges::all_of(begin.allies, [&](PlayerId ally) {
           return validPlayer(ally) && ally != begin.starter;
         })) {
@@ -778,7 +965,8 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
   }
   case BattleOfferKind: {
     BattleOffer offer;
-    if (!getFlag(in, offer.available) || !getFighter(in, offer.fighter)) {
+    if (!getFlag(in, offer.available) || !getFighter(in, offer.fighter) ||
+        !getFlag(in, offer.partnerDying)) {
       return core::fail("invalid cooperative battle offer");
     }
     message = std::move(offer);
@@ -788,7 +976,8 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     BattleRefused refused;
     refused.ask = in.get<std::uint32_t>();
     const auto reason = in.get<std::uint8_t>();
-    if (!in.ok() || refused.ask == 0 || reason > static_cast<std::uint8_t>(BattleRefusal::Failed)) {
+    if (!in.ok() || refused.ask == 0 ||
+        reason > static_cast<std::uint8_t>(BattleRefusal::PartnerDying)) {
       return core::fail("invalid cooperative battle refusal");
     }
     refused.reason = static_cast<BattleRefusal>(reason);
@@ -801,7 +990,17 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     frame.frame = in.get<std::uint32_t>();
     const auto phase = in.get<std::uint8_t>();
     frame.command = in.get<std::uint8_t>();
-    frame.menu = in.get<std::uint16_t>();
+    const std::uint8_t menu = in.get<std::uint8_t>();
+    if (!in.ok() || menu > LastBattleCommand) {
+      return core::fail("invalid cooperative battle frame menu");
+    }
+    for (std::uint8_t i = 0; i < menu; ++i) {
+      const auto command = in.get<std::uint8_t>();
+      if (!in.ok() || command == 0 || command > LastBattleCommand) {
+        return core::fail("invalid cooperative battle frame menu");
+      }
+      frame.menu.push_back(command);
+    }
     if (!getFlag(in, frame.bagAvailable) || !getFlag(in, frame.finisherCharging) ||
         frame.battle == 0 || phase > static_cast<std::uint8_t>(BattlePhase::Closing) ||
         frame.command > LastBattleCommand) {
@@ -821,6 +1020,16 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
         return core::fail("invalid cooperative battle fighter");
       }
       fighter.reviveSeconds = in.get<std::uint8_t>();
+      fighter.order = in.get<std::uint8_t>();
+      fighter.stance = in.get<std::uint8_t>();
+      fighter.status = in.get<std::uint8_t>();
+      if (!getFlag(in, fighter.hpBarShown)) {
+        return core::fail("invalid cooperative battle fighter");
+      }
+      if (!in.ok() || fighter.order > LastBattleCommand || fighter.stance > LastStance ||
+          fighter.status > LastBattleStatus) {
+        return core::fail("invalid cooperative battle fighter");
+      }
       frame.fighters.push_back(fighter);
     }
     const std::uint8_t figures = in.get<std::uint8_t>();
@@ -845,6 +1054,23 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
       }
       frame.throws.push_back(std::move(thrown));
     }
+    frame.finisherProgress = in.get<std::uint16_t>();
+    frame.finisherGoal = in.get<std::uint16_t>();
+    bool plate = false;
+    if (!getFlag(in, plate) || (plate && !getPlate(in, frame.folder.emplace()))) {
+      return core::fail("invalid cooperative battle frame plate");
+    }
+    bool ended = false;
+    if (!getFlag(in, ended)) {
+      return core::fail("invalid cooperative battle frame outcome");
+    }
+    if (ended) {
+      const auto outcome = in.get<std::uint8_t>();
+      if (!in.ok() || outcome > static_cast<std::uint8_t>(BattleOutcome::Defeat)) {
+        return core::fail("invalid cooperative battle frame outcome");
+      }
+      frame.outcome = static_cast<BattleOutcome>(outcome);
+    }
     if (bytes.size() + 1 > net::MaxDatagram) {
       return core::fail("cooperative battle frame exceeds the unreliable datagram limit");
     }
@@ -858,7 +1084,7 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     action.value = in.get<std::int32_t>();
     action.item = in.text();
     if (!in.ok() || action.battle == 0 ||
-        actionKind > static_cast<std::uint8_t>(BattleActionKind::CloseEnd)) {
+        actionKind > static_cast<std::uint8_t>(BattleActionKind::Stance)) {
       return core::fail("invalid cooperative battle action");
     }
     action.kind = static_cast<BattleActionKind>(actionKind);
@@ -866,7 +1092,12 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
          (action.value <= 0 || action.value > LastBattleCommand)) ||
         (action.kind == BattleActionKind::ThrowItem &&
          (action.item.empty() || action.item.size() > MaxBattleText || action.value < 0 ||
-          std::cmp_greater(action.value, MaxBattleFighters)))) {
+          std::cmp_greater(action.value, MaxBattleFighters))) ||
+        (action.kind == BattleActionKind::Order &&
+         (action.value < 0 ||
+          action.value >= battleOrderValue(0, static_cast<std::int32_t>(MaxBattleFighters) + 1))) ||
+        (action.kind == BattleActionKind::Stance &&
+         (action.value < 0 || action.value > LastStance))) {
       return core::fail("invalid cooperative battle action value");
     }
     message = std::move(action);
@@ -906,15 +1137,24 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     state.y = in.get<std::int32_t>();
     state.z = in.get<std::int32_t>();
     state.yaw = in.get<std::uint16_t>();
-    const std::uint8_t motion = in.get<std::uint8_t>();
-    if (!in.ok() || !validGuest(state.player) || state.mapId.empty() ||
-        motion > static_cast<std::uint8_t>(Motion::Run) ||
-        !validCoordinate(state.x, MaxWorldCoordinate) ||
+    bool motionKnown = getMotion(in, state.motion, state.action);
+    if (in.get<bool>()) {
+      HeldPartner partner{.x = in.get<std::int32_t>(),
+                          .y = in.get<std::int32_t>(),
+                          .z = in.get<std::int32_t>(),
+                          .yaw = in.get<std::uint16_t>()};
+      motionKnown = getMotion(in, partner.motion, partner.action) && motionKnown &&
+                    validCoordinate(partner.x, MaxWorldCoordinate) &&
+                    validCoordinate(partner.y, MaxWorldCoordinate) &&
+                    validCoordinate(partner.z, MaxWorldCoordinate);
+      state.partner = partner;
+    }
+    if (!getFlag(in, state.away) || !in.ok() || !validGuest(state.player) || state.mapId.empty() ||
+        !motionKnown || !validCoordinate(state.x, MaxWorldCoordinate) ||
         !validCoordinate(state.y, MaxWorldCoordinate) ||
         !validCoordinate(state.z, MaxWorldCoordinate)) {
       return core::fail("invalid cooperative player state");
     }
-    state.motion = static_cast<Motion>(motion);
     message = std::move(state);
     break;
   }
@@ -967,7 +1207,10 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     break;
   }
   case WorldAskKind: {
-    WorldAsk ask{.ask = in.get<std::uint32_t>(), .mapId = in.text(), .edits = {}};
+    WorldAsk ask{.ask = in.get<std::uint32_t>(),
+                 .seen = in.get<std::uint32_t>(),
+                 .mapId = in.text(),
+                 .edits = {}};
     if (!getEdits(in, ask.edits) || ask.mapId.empty()) {
       return core::fail("invalid cooperative world ask");
     }
@@ -1066,6 +1309,51 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     ClaimAnswer answer{.claim = in.get<std::uint32_t>(), .granted = in.get<bool>()};
     if (!in.ok() || answer.claim == 0) {
       return core::fail("invalid cooperative claim answer");
+    }
+    message = answer;
+    break;
+  }
+  case PoopPilesKind: {
+    PoopPiles piles{.mapId = in.text(), .restart = in.get<bool>(), .piles = {}};
+    const std::uint8_t count = in.get<std::uint8_t>();
+    if (!in.ok() || piles.mapId.size() > MaxPileMapText || count > MaxMapPiles ||
+        (piles.mapId.empty() && (!piles.restart || count != 0))) {
+      return core::fail("invalid cooperative poop piles");
+    }
+    for (std::uint8_t i = 0; i < count && in.ok(); ++i) {
+      PileEntry pile{
+          .x = in.get<std::int16_t>(), .y = in.get<std::int16_t>(), .size = in.get<std::int32_t>()};
+      if (pile.size <= 0) {
+        return core::fail("invalid cooperative poop pile");
+      }
+      piles.piles.push_back(pile);
+    }
+    message = std::move(piles);
+    break;
+  }
+  case PileAskKind: {
+    PileAsk ask{.ask = in.get<std::uint32_t>(), .action = PileAction::Leave, .mapId = {}};
+    const std::uint8_t action = in.get<std::uint8_t>();
+    ask.mapId = in.text();
+    ask.x = in.get<std::int16_t>();
+    ask.y = in.get<std::int16_t>();
+    ask.size = in.get<std::int32_t>();
+    if (!in.ok() || ask.ask == 0 || action > static_cast<std::uint8_t>(PileAction::Eat) ||
+        ask.mapId.empty() || ask.mapId.size() > MaxPileMapText) {
+      return core::fail("invalid cooperative pile ask");
+    }
+    ask.action = static_cast<PileAction>(action);
+    if (ask.action == PileAction::Leave && ask.size <= 0) {
+      return core::fail("cooperative pile ask leaves no pile");
+    }
+    message = std::move(ask);
+    break;
+  }
+  case PileAnswerKind: {
+    PileAnswer answer{
+        .ask = in.get<std::uint32_t>(), .granted = in.get<bool>(), .size = in.get<std::int32_t>()};
+    if (!in.ok() || answer.ask == 0 || (answer.granted && answer.size <= 0)) {
+      return core::fail("invalid cooperative pile answer");
     }
     message = answer;
     break;
@@ -1270,12 +1558,31 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     message = clock;
     break;
   }
+  case PartnerFormKind: {
+    PartnerForm form{.player = in.get<PlayerId>(), .species = in.text()};
+    if (!in.ok() || !validGuest(form.player) || form.species.size() > MaxRosterText) {
+      return core::fail("invalid cooperative partner form");
+    }
+    message = std::move(form);
+    break;
+  }
   case TrainingStatusKind: {
     TrainingStatus status;
     status.player = in.get<PlayerId>();
     status.course = in.text();
     if (!in.ok() || !validPlayer(status.player) || status.course.size() > MaxCourseText) {
       return core::fail("invalid cooperative training status");
+    }
+    message = std::move(status);
+    break;
+  }
+  case EventStatusKind: {
+    EventStatus status;
+    status.player = in.get<PlayerId>();
+    status.mapId = in.text();
+    status.npc = in.get<std::uint16_t>();
+    if (!in.ok() || !validPlayer(status.player) || status.mapId.size() > MaxEventMapText) {
+      return core::fail("invalid cooperative event status");
     }
     message = std::move(status);
     break;

@@ -46,6 +46,7 @@ info.state: "Estado:"
 info.players: "Jugadores:"
 info.visibility: "Acceso:"
 info.difficulty: "Dificultad:"
+info.difficulty_own: "{host} · la tuya: {own} (no cuenta)"
 visibility.public: "Pública"
 visibility.private: "Privada"
 # El acceso, y si una partida en curso admite jugadores nuevos (#356).
@@ -197,6 +198,8 @@ coop.joined: "{name} entró en la partida."
 coop.item_gone: "¡Tarde! Otro jugador ya lo tomó."
 # Un invitado cuyo anfitrión está ocupado en una carga larga.
 coop.waiting_host: "Esperando a {name}..."
+coop.host_changed_zone: "{name} cambió de zona."
+coop.battle_waits_rebirth: "Un compañero está renaciendo: la batalla espera a que vuelva."
 # La partida del invitado es el mundo del anfitrión en memoria: solo su compañero y su bolsa vuelven a su propio
 # guardado (multiplayer.md, «Guardado en cooperativo»); {name} es el anfitrión.
 coop.guest_not_saved: "Estás en el mundo de {name}. Tu compañero y tu bolsa vuelven contigo; lo demás se queda aquí."
@@ -206,7 +209,10 @@ coop.came_home: "De vuelta del mundo de {name}: tu compañero y tu bolsa volvier
 # Un jugador que entrena en el gimnasio, bajo su etiqueta; y el primer curso de una partida
 # cooperativa (coop-training.md): el reloj del mundo no se detiene por él.
 coop.training: "Entrenando"
-coop.training_clock: "Entrenas en compañía: el tiempo del mundo sigue corriendo y cada sesión cuenta su propia hora para tu compañero."
+coop.training_clock: "Entrenas en compañía: el tiempo del mundo sigue corriendo y cada sesión dura una hora de ese tiempo; una sesión que saltas espera el resto de su hora."
+coop.sleep_wait: "Dormido hasta la mañana: en un mundo compartido tu compañero despierta cuando el reloj del mundo llega a su hora, o cuando el anfitrión también duerme."
+coop.sleep_left: "Amanece en {time}"
+coop.sleep_wake: "Despertar ya"
 # Un invitado que trajo una partida de la otra variante, y el aviso del anfitrión (game-variants.md, "Cooperativo").
 coop.guest_other_variant: "El mundo de {name} juega otra variante, con sus reglas. Tu compañero y tu bolsa vuelven igual."
 coop.guest_other_variant_kept: "El mundo de {name} juega otra variante: nada vuelve contigo, tu partida queda como estaba."

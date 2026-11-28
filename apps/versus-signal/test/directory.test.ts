@@ -1,7 +1,7 @@
 // node --test: the public room directory, its limits and expiry, and the rooms' side of it.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DirectoryObject, OPEN_MAX_AGE_MS, STATE_MAX_AGE_MS } from "../src/directory.ts";
+import { DirectoryObject, OPEN_MAX_AGE_MS, ROOM_REFRESH_MS, STATE_MAX_AGE_MS } from "../src/directory.ts";
 import { MAX_OPEN_ROOMS, validCompat, validName } from "../src/limits.ts";
 import { DONE_GRACE_MS, Room, type DirectoryEntry, type Role, type RoomState, type Socket } from "../src/room.ts";
 
@@ -128,17 +128,38 @@ test("entries expire by themselves: open ones with their room, the others withou
   const { object, clock } = directory();
   await register(object, "K7Q2", entry("K7Q2"));
   await register(object, "M4XP", entry("M4XP", { phase: "connected", players: 2 }));
-  clock.now += OPEN_MAX_AGE_MS;
-  assert.deepEqual((await listed(object)).map((room) => room.joinCode), ["M4XP"]);
-  clock.now += STATE_MAX_AGE_MS - OPEN_MAX_AGE_MS - 1;
-  assert.equal((await notice(object, "M4XP", "token-M4XP", "playing")).status, 204);
-  // The notice put its clock back.
   clock.now += STATE_MAX_AGE_MS - 1;
+  assert.equal((await notice(object, "M4XP", "token-M4XP", "playing")).status, 204);
+  clock.now += OPEN_MAX_AGE_MS - STATE_MAX_AGE_MS + 1;
+  assert.deepEqual((await listed(object)).map((room) => room.joinCode), []);
+  // The notice put its clock back.
+  clock.now += STATE_MAX_AGE_MS - (OPEN_MAX_AGE_MS - STATE_MAX_AGE_MS + 1) - 1;
   assert.equal((await notice(object, "M4XP", "token-M4XP", "closed")).status, 204);
   await register(object, "ZZ22", entry("ZZ22", { phase: "connected", players: 2, createdAt: clock.now }));
   assert.deepEqual((await listed(object)).map((room) => room.joinCode), ["ZZ22"]);
   clock.now += STATE_MAX_AGE_MS;
   assert.equal((await notice(object, "ZZ22", "token-ZZ22", "ready")).status, 404);
+});
+
+test("a host's repeated notices keep its room listed; a host that went quiet leaves the list (#416)", async () => {
+  const { object, clock } = directory();
+  assert.ok(ROOM_REFRESH_MS * 2 < STATE_MAX_AGE_MS);
+  await register(object, "K7Q2", entry("K7Q2", { phase: "connected", players: 2, state: "full" }));
+  for (let minute = 0; minute < 30; minute++) {
+    clock.now += ROOM_REFRESH_MS;
+    assert.equal((await notice(object, "K7Q2", "token-K7Q2", "connected")).status, 204);
+  }
+  assert.equal((await listed(object))[0].phase, "connected");
+  assert.equal((await notice(object, "K7Q2", "token-K7Q2", "ready")).status, 204);
+  assert.equal((await notice(object, "K7Q2", "token-K7Q2", "connected")).status, 204);
+  assert.equal((await listed(object))[0].phase, "connected");
+  assert.equal((await notice(object, "K7Q2", "token-K7Q2", "playing")).status, 204);
+  // A late notice of the lobby never takes a game under way back to it.
+  assert.equal((await notice(object, "K7Q2", "token-K7Q2", "ready")).status, 204);
+  assert.deepEqual(await listed(object), []);
+  // The host's game crashed: no more notices, and the room is gone a few minutes later.
+  clock.now += STATE_MAX_AGE_MS;
+  assert.equal((await notice(object, "K7Q2", "token-K7Q2", "playing")).status, 404);
 });
 
 test("nicknames and compatibility keys from a limited alphabet", () => {
@@ -241,6 +262,21 @@ test("a listed room that fails before connecting, or expires, leaves the list", 
   await waiting.host(new FakeSocket(), "M4XP", { listed: true, token: "t" });
   await waiting.alarm();
   assert.deepEqual(lonely.published.map(([, e]) => e?.phase ?? null), ["open", null]);
+});
+
+test("a seated room whose host left its lobby with guests in stays listed only as full (#416)", async () => {
+  const state = new FakeState();
+  const room = new Room(state, () => 5000);
+  const host = new FakeSocket();
+  await room.host(host, "K7Q2", { listed: true, token: "t", seats: 4 });
+  await room.message(host, JSON.stringify({ type: "seats", taken: 1 }));
+  assert.equal(state.published.at(-1)?.[1]?.state, "waiting");
+  await room.closed(host);
+  const last = state.published.at(-1)?.[1];
+  assert.equal(last?.state, "full");
+  assert.equal(last?.phase, "connected");
+  assert.equal(last?.players, 2);
+  assert.equal(state.storage.size, 0);
 });
 
 test("a room the directory refuses to list is not opened: the host hears the limit", async () => {

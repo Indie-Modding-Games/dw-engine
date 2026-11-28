@@ -19,13 +19,16 @@ using dwe::app::GraphicsChanger;
 using dwe::app::GraphicsKnob;
 using dwe::app::GraphicsKnobs;
 using dwe::app::GraphicsOptions;
+using dwe::app::GraphicsPreset;
 using dwe::app::HighestQuality;
 using dwe::app::knobIndex;
 using dwe::app::LowestQuality;
+using dwe::app::parseNoticeReason;
 using dwe::app::QualityDecision;
 using dwe::app::QualityTuner;
 using dwe::app::SceneryQuality;
 using dwe::app::ShadowMode;
+using dwe::app::SlowFrameWatch;
 using dwe::app::SoftwareMode;
 using dwe::app::TextureFilter;
 using dwe::app::test::MenuUi;
@@ -107,6 +110,16 @@ TEST_CASE("the quality goes down when the frames miss the budget and never back 
         QualityDecision{.level = 2, .ceiling = HighestQuality});
   CHECK(decideQuality(slow, Fps, LowestQuality, HighestQuality).level == LowestQuality);
   CHECK(decideQuality(fast, Fps, HighestQuality, HighestQuality).level == HighestQuality);
+}
+
+TEST_CASE("frames far over the budget drop two levels at once") {
+  constexpr double Fps = 30.0;
+  const auto crawling = frames(60, 0.070);
+  CHECK(decideQuality(crawling, Fps, 3, HighestQuality) ==
+        QualityDecision{.level = 1, .ceiling = 1});
+  CHECK(decideQuality(crawling, Fps, 1, HighestQuality) ==
+        QualityDecision{.level = LowestQuality, .ceiling = LowestQuality});
+  CHECK(decideQuality(frames(60, 0.050), Fps, 3, HighestQuality).level == 2);
 }
 
 TEST_CASE("between the two thresholds the quality stays") {
@@ -209,4 +222,56 @@ TEST_CASE("the options page shows the preset's values, and a choice stops being 
   CHECK(changer.options().renderScale != 50);
   CHECK(changer.options().shadows == ShadowMode::Round);
   CHECK_FALSE(settings.shadows.has_value());
+}
+
+TEST_CASE("the launcher's graphics reason is read with its values") {
+  const auto reason =
+      parseNoticeReason("driver-too-old|gpu=NVIDIA GeForce GTX 1060|minimum=511.65|odd");
+  REQUIRE(reason.has_value());
+  CHECK(reason->code == "driver-too-old");
+  CHECK(reason->param("gpu") == "NVIDIA GeForce GTX 1060");
+  CHECK(reason->param("minimum") == "511.65");
+  CHECK(reason->param("driver").empty());
+  CHECK(reason->params.size() == 2);
+  CHECK(parseNoticeReason("compatible-path")->params.empty());
+  CHECK_FALSE(parseNoticeReason("").has_value());
+  CHECK_FALSE(parseNoticeReason("Bad Code|gpu=x").has_value());
+}
+
+TEST_CASE("a weak card steps lighter only after a window of slow frames") {
+  const auto run = [](double frameSeconds) {
+    SlowFrameWatch watch;
+    bool stepped = false;
+    for (double played = 0.0; played < 9.0; played += frameSeconds) {
+      stepped = watch.frame(frameSeconds) || stepped;
+    }
+    return stepped;
+  };
+  CHECK_FALSE(run(1.0 / 60.0));
+  CHECK_FALSE(run(1.0 / 45.0));
+  CHECK(run(1.0 / 30.0));
+}
+
+TEST_CASE("the presets go from the default look down, and the options name theirs") {
+  const GraphicsOptions quality;
+  CHECK(dwe::app::presetOf(quality) == GraphicsPreset::Quality);
+  const GraphicsOptions balanced =
+      dwe::app::withPreset(quality, GraphicsPreset::Balanced, allKnobs());
+  CHECK(dwe::app::presetOf(balanced) == GraphicsPreset::Balanced);
+  CHECK(balanced.renderScale == 100);
+  CHECK(balanced.shadows == ShadowMode::Round);
+  const GraphicsOptions performance =
+      dwe::app::withPreset(quality, GraphicsPreset::Performance, allKnobs());
+  CHECK(dwe::app::presetOf(performance) == GraphicsPreset::Performance);
+  CHECK(performance.renderScale == 75);
+  CHECK(performance.frameLimit == quality.frameLimit);
+  GraphicsKnobs onlyShadows;
+  onlyShadows.set(dwe::app::knobIndex(dwe::app::GraphicsKnob::Shadows));
+  const GraphicsOptions mixed =
+      dwe::app::withPreset(quality, GraphicsPreset::Performance, onlyShadows);
+  CHECK(mixed.shadows == ShadowMode::Off);
+  CHECK(mixed.renderScale == 100);
+  CHECK_FALSE(dwe::app::presetOf(mixed).has_value());
+  CHECK(dwe::app::lighterPreset(GraphicsPreset::Quality) == GraphicsPreset::Balanced);
+  CHECK_FALSE(dwe::app::lighterPreset(GraphicsPreset::Performance).has_value());
 }

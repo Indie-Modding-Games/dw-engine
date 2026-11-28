@@ -276,6 +276,19 @@ Two exit codes get their own message. Exit 113 (from 0.1.0-beta.1133, or a build
 graphics card stopped responding: it asks to update the driver and, when they apply, suggests Vulkan 1.2 mode (off and
 known by that game) and the package's software driver (not used in that run). An older game's 113 gets the generic
 message, since it never returned it on purpose. Exit 0xCFFFFFFF means Windows closed the game because it hung.
+Exit 114 means no Vulkan path of the card could make the device ([rhi](../engine/rhi.md)). The dialog shows a plain
+explanation; the log's end sits under "Show technical details", closed by default, and "Copy details" copies it either
+way for a report. No Vulkan code is part of the message itself; every exit dialog with a log works this way.
+
+**Graphics steps.** In the automatic launch mode a start that fails on the graphics moves the next one down a step
+without asking (`graphics_step.rs`): the card as the game picks (1.4 or 1.3), the card on 1.3 (`--vulkan13`, only when
+the card offers 1.4 and the game knows the flag, from 0.1.0-beta.1136), the card in the 1.2 compatible mode
+(`--compatible`), then the package's software driver. A start fails on the graphics when it exits with 114, or with
+113 or a Windows hang in its first 90 s; a device lost after that is a crash during play and keeps the step. The
+dialog says which step the next start uses and where to go back. The step is saved in `settings.json`
+(`graphics_step`, with the card and driver it happened on, `graphics_step_gpu`); Settings › General › Computer
+requirements shows it with "Use the graphics card again", and a check that finds another card or driver (an update)
+puts it back on the card by itself. The manual launch modes ignore it.
 
 ## Computer requirements
 
@@ -287,8 +300,25 @@ Settings › General › Computer requirements.
 | What | How it is checked | What the player sees |
 |---|---|---|
 | Free space | That of the disk where `<data>` is (the nearest existing folder): `statvfs` on Linux and macOS, `GetDiskFreeSpaceExW` on Windows. Reading the disc needs about 3 GB (the partial copy, the unpacked archive and the game download); playing, about 200 MB. | If it is short, "Not enough disk space" on the home screen with how much is needed, where and how much there is, and the buttons "Check again" and "Pick another folder". Reading the disc and "Play" refuse with `no-space` instead of failing halfway. |
-| Graphics card | `dwe-game --check-system` of the installed game (below), first with the computer's drivers. | If it works, the card, its driver and the Vulkan version it reports (`api`); the game itself picks the 1.3 or 1.4 path when it starts. If no card works, the game starts anyway in **compatibility mode** (below): a notice that closes with "Got it", a "Compatibility mode" label at the top and the maker's driver button. |
+| Graphics card | `dwe-game --check-system` of the installed game (below), first with the computer's drivers. | If it works, the card, its driver and the Vulkan version it reports (`api`); the game itself picks the 1.3 or 1.4 path when it starts. If the card works only in the 1.2 compatible mode (an old driver), the game uses that mode on its own: a "Compatible graphics mode" notice that says nothing needs changing and offers the maker's driver page, and a "Compatible graphics" label at the top. If no card works, the game starts anyway **without a graphics card** (below): a notice that closes with "Got it", a "No graphics card" label at the top and the maker's driver button. |
 | Nothing can run the game | Neither the computer's cards nor the package's software driver (or the package does not carry it: macOS for now). | "Your graphics card cannot run the game": what to do, the button to the maker's driver page (NVIDIA, AMD or Intel, according to the card's `vendor`; all three if unknown), on Windows also "Open Windows Update", and "Check again". Pressing "Play" still tries to start: the game writes the reason to its log and the launcher shows the end. |
+
+**Why, in the player's words.** Every graphics notice, the requirements page and the dialog after a failed start
+show the [graphics diagnosis](../../architecture/graphics-diagnosis.md) instead of a general text: the exact reason
+with the real names (card, driver installed and required, the overlay in the way, the unused dedicated card of a
+laptop), whether a driver fixes it or the card cannot, numbered steps with buttons to the right page (the maker's
+drivers, Windows Update, Windows graphics settings), what the game does meanwhile, the other reasons found, and the
+technical details behind "Show technical details" with "Copy details" for a ready report. A card that works but is
+integrated, short of memory or not the laptop's dedicated one gets a "Your graphics card works, with a tip" notice
+once per card. The probe's line `diagnosis=<json>` and the game's log line `dwe-diagnosis 1 <json>` carry it;
+`DWE_GRAPHICS_REASON` passes the first reason to the game's own notice.
+
+**Weak or old cards.** With a graphics card the game needs Vulkan 1.3, or Vulkan 1.2 with dynamic rendering and
+synchronization2 (the compatible mode, most drivers from 2020 on). An integrated card or one in the compatible mode
+starts on the Balanced preset with automatic quality on, and steps down to Performance by itself when frames stay
+slow; Options › Graphics shows the mode, the card and why the level was picked
+([software mode](../../architecture/software-mode.md#weak-graphics-cards-and-presets)). A strong card starts as
+before. Without a card, the minimum is a 64-bit processor with 4 threads at 3 GHz and AVX2 and 4 GB of memory.
 
 **`dwe-game --check-system`** (`packages/engine/rhi/include/dwe/rhi/system_check.hpp`) creates a Vulkan instance and picks a
 GPU with the same version (1.3) and the same features as `Device::create` (`renderer_requirements.hpp`), with no window,
@@ -299,9 +329,12 @@ output `key=value` lines under the header `dwe-check-system 1`: `result` (`ok`, 
 those there are, to know which maker the driver is from. The branch that limits the options of the
 distribution builds has to let `--check-system` through. The launcher gives it 20 s; with no answer (a game older than the
 option, which says "bad argument") it plays as before. With `--compatible` it accepts Vulkan 1.2 when the driver has the
-dynamic rendering and synchronization2 extensions.
+dynamic rendering and synchronization2 extensions. Without it, a GPU that fails the 1.3 floor is checked again on that
+one, as the game itself falls back to it: `result=ok` with `floor=1.2` (and the 1.3 failure in `detail`) means the
+card works in the compatible mode. For a game older than that fallback the launcher probes `--compatible` itself and,
+when it passes, adds the flag to Play: the card in the 1.2 mode comes before the software driver.
 
-**Compatibility mode.** The package carries the Vulkan loader (on Linux, `lib/libvulkan.so.1`, which the game
+**Without a graphics card.** The package carries the Vulkan loader (on Linux, `lib/libvulkan.so.1`, which the game
 looks for first; on Windows, `bin/vulkan-1.dll`) and Mesa's software Vulkan driver, lavapipe, in
 `lib/lavapipe/` ([Linux beta guide](../../guides/beta-linux.md), [Windows and macOS
 guide](../../guides/beta-windows-macos.md)). If the first check finds no GPU that works, the launcher repeats
@@ -319,7 +352,7 @@ game flag to every start:
 
 | Switch | Flag | What it does |
 |---|---|---|
-| Vulkan 1.2 mode | `--compatible` | The game and its check accept Vulkan 1.2 with those two extensions, for older cards and drivers. When the computer's drivers fail the normal check but pass this one, the home notice offers "Turn on Vulkan 1.2 mode", both when nothing can run the game and when the software driver took over; turning it on checks again. |
+| Vulkan 1.2 mode | `--compatible` | Forces the 1.2 compatible mode on every start, even on a card that runs 1.3. It is no longer needed for an old card: the game and the launcher pick that mode on their own when only it works. |
 | Low-performance mode | `--low-performance` | Every start begins from the lightest graphics preset; the game's options can still change each one during the run. |
 
 A game older than a flag refuses the whole command line ("bad argument"), so the launcher only passes each flag to
@@ -342,17 +375,17 @@ looks for the computer's drivers; the launcher removes them from the environment
 (`outside_appimage`).
 
 **.deb.** It recommends `mesa-vulkan-drivers | vulkan-icd`, which apt installs by default: on a computer with an AMD or
-Intel card without Mesa's Vulkan driver, this way the game plays with the card and not in compatibility mode. The AppImage cannot
-install anything and relies on compatibility mode.
+Intel card without Mesa's Vulkan driver, this way the game plays with the card and not without it. The AppImage cannot
+install anything and relies on playing without a graphics card.
 
 **Windows.** The installer brings WebView2 and the game package `vulkan-1.dll`; card drivers cannot be installed
 safely from the launcher. The package carries lavapipe in `lib/lavapipe/`, so without a card that works the game
-plays in compatibility mode (slower) and the notice above is shown. Updating the card's driver (or Windows) brings
+plays without a graphics card (slower) and the notice above is shown. Updating the card's driver (or Windows) brings
 the performance back. `dzn` is not shipped: the available build does not offer `descriptorIndexing` or
 `bufferDeviceAddress`, which the game requires even in that mode.
 
 `DWE_LAUNCHER_FREE_BYTES=<bytes>` fakes the free space, to see the space screens without filling a disk; with
-`VK_DRIVER_FILES=/does/not/exist.json` in the launcher's environment the first check finds no GPU (compatibility mode
+`VK_DRIVER_FILES=/does/not/exist.json` in the launcher's environment the first check finds no GPU (no graphics card mode
 if the game carries `lib/lavapipe`; if not, notice and start attempt, or a direct start with the manual "Without
 checking" mode).
 

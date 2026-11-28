@@ -31,6 +31,7 @@ constexpr std::string_view StarterKey = "starter";
 constexpr std::string_view EnemiesKey = "enemies";
 constexpr std::string_view ItemsKey = "items";
 constexpr std::string_view DropsKey = "drops";
+constexpr std::string_view ModeBattleKey = "battle";
 constexpr std::string_view PendingFramesKey = "pending_frames";
 constexpr std::string_view LevelKey = "level";
 constexpr std::string_view RaisedKey = "raised";
@@ -330,24 +331,35 @@ core::Result<void> RandomSave::read(const YamlNode& state) {
 core::Result<YamlNode> ModeSave::write() const {
   YamlNode node = YamlNode::mapping();
   node.set(std::string{ModeIdKey}, YamlNode::scalar(state_->mode));
+  node.set(std::string{ModeBattleKey}, YamlNode::scalar(state_->battle));
   return node;
 }
 
 core::Result<void> ModeSave::read(const YamlNode& state) {
   YamlReader reader;
-  if (!reader.expectKeys(state, messages::ModeStateText, {ModeIdKey})) {
+  if (!reader.expectKeys(state, messages::ModeStateText, {ModeIdKey}, {ModeBattleKey})) {
     return std::unexpected{reader.error(messages::ModeStateText)};
   }
   std::string mode = reader.text(reader.field(state, ModeIdKey));
+  std::string battle{game::modes::DefaultBattle};
+  if (const YamlNode* saved = state.find(ModeBattleKey); saved != nullptr) {
+    battle = reader.text(*saved);
+    if (reader.ok() && battle != game::modes::ClassicBattle &&
+        battle != game::modes::FolderBattle) {
+      reader.fail(*saved, core::formatMessage(messages::UnknownBattleSystem, battle));
+    }
+  }
   if (auto done = reader.finish(true, messages::ModeStateText); !done) {
     return std::unexpected{done.error()};
   }
   state_->mode = std::string{game::modes::currentModeId(mode)};
+  state_->battle = std::move(battle);
   return {};
 }
 
 core::Result<void> ModeSave::readMissing() {
   state_->mode = std::string{game::modes::DefaultMode};
+  state_->battle = std::string{game::modes::DefaultBattle};
   return {};
 }
 

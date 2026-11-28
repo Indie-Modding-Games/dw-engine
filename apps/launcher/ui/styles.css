@@ -588,7 +588,7 @@ button.game-card:hover { background: rgba(27, 29, 33, 0.9); }
   background: transparent;
   color: var(--text-muted);
   text-align: left; line-height: 1.25;
-  overflow-wrap: anywhere; hyphens: auto;
+  overflow-wrap: break-word;
   transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 .settings-tab .icon { display: grid; place-items: center; flex: none; }
@@ -805,7 +805,7 @@ button.game-card:hover { background: rgba(27, 29, 33, 0.9); }
 .notice .row { display: flex; gap: var(--space-2); margin-top: var(--space-3); flex-wrap: wrap; }
 
 @media (max-width: 1100px) {
-  .settings-layout { grid-template-columns: 12.5rem 1fr; }
+  .settings-layout { grid-template-columns: 13.75rem 1fr; }
   .settings-panel { padding: var(--space-5); }
 }
 .message { width: min(40rem, 92vw); }
@@ -819,6 +819,26 @@ button.game-card:hover { background: rgba(27, 29, 33, 0.9); }
   background: #050a12; color: var(--danger);
   font-size: 0.8rem; white-space: pre-wrap;
 }
+.message-details { margin-top: var(--space-3); }
+
+/* Why the graphics card cannot run the game: what, why, the steps, what the game does meanwhile. */
+.advice { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-2); }
+.advice p { margin: 0; }
+.advice .advice-what { color: var(--text); font-weight: 600; font-size: 0.95rem; }
+.advice .advice-why, .advice .advice-meanwhile { color: var(--text-muted); font-size: 0.9rem; }
+.advice .advice-meanwhile { padding-left: var(--space-3); border-left: 2px solid var(--border-strong); }
+.advice .advice-label { color: var(--text-faint); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-top: var(--space-1); }
+.advice-steps { margin: 0; padding-left: 1.4rem; display: flex; flex-direction: column; gap: var(--space-1); color: var(--text); font-size: 0.9rem; }
+.advice-steps li::marker { color: var(--accent); font-weight: 700; }
+.advice-more { margin: 0; padding-left: 1.2rem; color: var(--text-muted); font-size: 0.86rem; display: flex; flex-direction: column; gap: var(--space-1); }
+.advice .row { margin-top: var(--space-1); display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.advice pre { margin: var(--space-2) 0 0; max-height: 30vh; overflow: auto; padding: var(--space-3); border-radius: var(--radius-s); background: #050a12; color: var(--text-muted); font-size: 0.78rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+#messageAdvice:empty { display: none; }
+.message-details > summary { cursor: pointer; color: var(--text-muted); font-size: 0.88rem; min-height: 32px; display: flex; align-items: center; gap: var(--space-2); list-style: none; }
+.message-details > summary::-webkit-details-marker { display: none; }
+.message-details > summary::before { content: ""; width: 0.4rem; height: 0.4rem; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform var(--fast) var(--ease); }
+.message-details[open] > summary::before { transform: rotate(45deg); }
+.message-details > summary:hover { color: var(--text); }
 .dialog-actions { display: flex; justify-content: flex-end; margin-top: var(--space-4); }
 
 

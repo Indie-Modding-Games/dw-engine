@@ -62,7 +62,8 @@ bool directionAllowed(Side receiver, const Message& message) {
     if (std::holds_alternative<Ready>(message) || std::holds_alternative<SyncReport>(message))
       return true;
     // What the guest's game changed of the shared world, and its takes, asked of the host (#357).
-    if (std::holds_alternative<WorldAsk>(message) || std::holds_alternative<ItemClaim>(message))
+    if (std::holds_alternative<WorldAsk>(message) || std::holds_alternative<ItemClaim>(message) ||
+        std::holds_alternative<PileAsk>(message))
       return true;
     // A battle the guest's partner fights, its part in any battle and whether its partner can join
     // the host's.
@@ -71,8 +72,12 @@ bool directionAllowed(Side receiver, const Message& message) {
         std::holds_alternative<BattleOffer>(message))
       return true;
     // A trade's asks, answers, offers and replies; the host referees them (trade.hpp).
-    // Whether the guest's own partner trains (#365); the host takes it as that guest's.
-    if (std::holds_alternative<TrainingStatus>(message))
+    // The guest's own training (TrainingStatus) and form; the host takes them as that guest's.
+    if (std::holds_alternative<TrainingStatus>(message) ||
+        std::holds_alternative<PartnerForm>(message))
+      return true;
+    // The guest's own event; the host takes it as that guest's.
+    if (std::holds_alternative<EventStatus>(message))
       return true;
     if (std::holds_alternative<TradeAsk>(message) || std::holds_alternative<TradeAnswer>(message) ||
         std::holds_alternative<TradeOffer>(message) ||
@@ -91,7 +96,9 @@ bool directionAllowed(Side receiver, const Message& message) {
       std::holds_alternative<SyncWatch>(message))
     return true;
   if (std::holds_alternative<WorldChange>(message) || std::holds_alternative<WorldSync>(message) ||
-      std::holds_alternative<GroundItems>(message) || std::holds_alternative<ClaimAnswer>(message))
+      std::holds_alternative<GroundItems>(message) ||
+      std::holds_alternative<ClaimAnswer>(message) || std::holds_alternative<PoopPiles>(message) ||
+      std::holds_alternative<PileAnswer>(message))
     return true;
   if (std::holds_alternative<BattleBegin>(message) ||
       std::holds_alternative<BattleRefused>(message) ||
@@ -104,7 +111,8 @@ bool directionAllowed(Side receiver, const Message& message) {
     return true;
   // The world's clock is the host's, and so is the word of who trains (#365).
   if (std::holds_alternative<WorldClock>(message) ||
-      std::holds_alternative<TrainingStatus>(message))
+      std::holds_alternative<TrainingStatus>(message) ||
+      std::holds_alternative<EventStatus>(message))
     return true;
   if (const auto* chunk = std::get_if<ProfileChunk>(&message))
     return chunk->kind == ProfilePayloadKind::HostSave;

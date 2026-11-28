@@ -56,7 +56,7 @@ their own.
 
 ### 1.4 Targeting
 
-- **Enemies target only the partner** (dwe: `selectTarget` in `ai_ticks.cpp`, default `PartnerId`). One exception: an
+- **Enemies target only the partner** (dwe: `selectTarget` in `targets.cpp`, default `PartnerId`). One exception: an
   enemy hit by another enemy's area move turns on it 71 % of the time.
 - **The partner** (`BTL_selectFighterTarget`, dwe `original_partner_ai.cpp` and `targeting.cpp`): with Brains ≥ 300 it
   prefers an enemy with a status; ≥ 150 the weakest (HP and a Def and type score) and keeps it; below, the nearest.
@@ -140,7 +140,9 @@ hit each other: their area moves skip allies (enemies keep the original's friend
   its discipline). Same keys as in solo ([controls](controls.md)).
 - Each partner has its own `CommandState`; the battle looks orders up by fighter (`commandsOf(id)`), as versus does.
 - Change target (command 7) cycles that partner's target among the enemies.
-- Nobody can give orders to another player's partner. A partner whose player dropped goes on Your Call.
+- Nobody can give orders to another player's partner. A partner whose player left (dropped or changed map) runs off
+  and counts as fled; in a story battle it stays and goes on Your Call.
+- A guest's order strip shows the commands in the host's order: the frame sends them as an ordered list.
 
 ### 4.5 Finisher and cheering
 
@@ -156,6 +158,11 @@ hit each other: their area moves skip allies (enemies keep the original's friend
 - Each player throws from **their own bag**, from their own tamer. Bags never merge.
 - Target: their own partner by default; left and right in the bag pick an ally partner (its card lights up). Revive items
   can target an ally in the death countdown.
+- A guest on the skin's battle screen picks with Q and E (`tab_previous`, `tab_next`; the shoulder buttons on a pad)
+  while its bag is open: its own partner, then each other partner in turn; the picked ally's card gets
+  `battle.ally.<n>.throw_target` and lights up in every skin, and the bag shows the Q/E hint (`bag.throw_pick`). The
+  card stays lit while the bag is open: closing the bag or throwing from it puts the card out, but an item chosen just
+  as the bag closes still flies to the ally that was picked.
 - The bag does not pause the battle in co-op (decision 5 of [multiplayer](multiplayer.md) §6).
 - One item in flight per player (`ThrownItemState` per player); any item in flight toward a partner pauses that
   partner's countdown, as in the original.
@@ -230,18 +237,25 @@ one only orders their own partner.
   model of [ADR 0024](../adr/0024-co-op-with-authoritative-host.md) and PR #363.
 - The host validates every action: a `Command` only for the sender's own partner, an item only from the sender's bag
   (the guest's bag copy that came with its profile; the guest removes the item when the host confirms the throw), a
-  cheer only during an ally's aura.
+  cheer only during an ally's aura. The confirmation is the throw showing in the host's `BattleFrame` under the
+  guest's id: until then the item stays in the guest's bag, so a throw the host refuses (another in flight) costs
+  nothing; one throw waits for the answer at a time, for at most 40 frames (2 s).
 
 ### 7.2 What replicates
 
 | Message | Change from PR #363 |
 |---|---|
-| `BattleBegin` | Roster: slot → side, owner `PlayerId`, species |
+| `BattleBegin` | Roster: slot → side, owner `PlayerId`, species; each fighter's four move ids (protocol 15) |
 | `BattleFrame` (every 3 ticks) | Every fighter (up to 7): HP, max HP, MP, status, current order, finisher meter and aura, countdown; figures as today (place, heading, clip and its start) |
 | `BattleAction` | `Command` (own partner implied by the sender), `ThrowItem` with target slot, `Cheer` with ally slot, `Run`, `Join` (with `join_running`), `CloseEnd` |
 | `BattleEnd` | One spoils block per player (their partner's `PartnerResult` and the drops they received) |
 
 Limits: `MaxBattleFighters` 4 → 7. `ProtocolVersion` goes up.
+
+Protocol 15 also gives each fighter of a `BattleFrame` its current order (a command, or in a Folder battle the active
+slot and stance) and the status its row names, and the frame for one guest carries that guest's finisher progress and goal and, in a Folder battle,
+its partner's plate: active order and phase, the queue with targets, the target, stance, defense bar, break countdown,
+commit lock and the last order's notice. A plate costs at most 23 bytes.
 
 ```mermaid
 sequenceDiagram
@@ -273,8 +287,9 @@ sequenceDiagram
 
 ### 7.4 Disconnection
 
-- **A guest drops:** its partner keeps fighting on Your Call until the end; its spoils are dropped (the guest's own save
-  is untouched, as in PR #363). It still counts for the scaling.
+- **A guest drops or leaves the map:** the host closes its bag and its partner runs off, counted as fled; the battle
+  goes on without it. In a story battle the partner stays on Your Call until the end. The guest that changed map drops
+  its battle HUD at once and gets the result when the battle ends.
 - **The host drops:** the session ends (ADR 0024); each guest's battle ends with no result and the guest returns to its
   own game.
 
@@ -283,7 +298,14 @@ sequenceDiagram
 - One battle per host world (PR #363). Players on other maps keep playing; their own wild touches wait as today
   ("busy", then helper). Several battles at once on different maps is task 12.
 - When a battle starts, the field actors of its partners and enemies leave the field on every client; when it ends,
-  the enemies removed by the battle leave every field (PR #363 already sends them).
+  the enemies removed by the battle leave every field (PR #363 already sends them). A snapshot says when it carries
+  every NPC of the map (`npcsWhole`), so an empty map also removes the last enemies on the guests.
+- A battle starting in the shared world closes the game menu and the partner pages of every player in it. A player with
+  a menu, a partner page or a dialog open does not offer its partner as an ally.
+- A player in its own scene on another map (death, rebirth) or on another map is hidden in the others' worlds, with its
+  partner, until it is back.
+- A guest takes the world's time of day at once, with no fade, when its clock jumps to the world's (joining, going back,
+  skipped hours) and when it is held for a battle.
 
 ## 8. Cooperative mechanics (optional improvements)
 
@@ -367,6 +389,8 @@ play on.
   button; `BattleAction.value` carries the target), and an item a guest throws leaves that player's body on the host's
   screen with the throw's clip. Each ally sounds as its own species (allies' sound banks in slots 16–18; a visitor's
   partner keeps its own species in the partner slots).
+- Task 10, rows: each ally's card shows its current order next to its name (`battle.ally.<n>.order`: its command,
+  its Folder move or its stance); with three allies the cards drop the MP bar to stay compact.
 - Task 11: co-op difficulty, see [co-op difficulty](coop-difficulty.md) §9.
 - Task 10, the guest's screen (protocol version 12): the host's `BattleFrame` carries the items thrown (`throws`: who
   threw it, the item, in the hand, on its way with its point, or landed on a fighter), and a guest's screen draws them
@@ -382,6 +406,17 @@ play on.
   - Lost frames do not stall the glows: the guest moves them on by the frames that went by.
   - Sound slots: this game's partner keeps slot 4 and the enemies take 5 on, as in the original; each other partner
     takes the next ally slot. Past the three ally slots, a body plays from this game's partner's slot.
+- Task 10, the guest's HUD (protocol 15): a guest's skin battle screen reads the same settings as the host's. The
+  ally cards name each partner's order and status, the finisher gauge fills, the Folder plate shows the guest's own
+  partner and the foes it targets or has queued (with the twins' letters), and the bag picks the ally an item flies to.
+  Each foe's HP bar shows only when the host's does (`Battle::hpBarShown`: a while after a hit in a Classic wild
+  fight), so a guest sees no bar before the first hit either.
+  Not sent yet: the finisher's charge gauge corner, and the menu entries' MP cost and problem.
+- The guest's HUD shows from the host's intro on, without the banner. Its bag opens as the host's does: the HUD learns
+  the bag is open before the bag shows, so the battle document never takes the focus back (the guest's own partner
+  menu republishes the bag in that tick), and its Use always throws, even once the bag has closed. When the host's
+  battle takes a guest's screen, a field bag left open closes and a field notice (a sickness, a medal) waits until the
+  battle is over.
 - Not yet: task 12 (one battle per map: a second battle on another map is still refused while one runs), the optional
   mechanics of §8 and a per-player shout.
 

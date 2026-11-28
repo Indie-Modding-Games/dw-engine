@@ -106,3 +106,7 @@ body {
 .color-8, .color-8 .key { color: #000008; }
 .color-9, .color-9 .key { color: #808080; }
 .color-10, .color-10 .key { color: #e08858; }
+
+#box.under-naming {
+	visibility: hidden;
+}

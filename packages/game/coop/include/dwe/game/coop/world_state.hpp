@@ -9,6 +9,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace dwe::game::coop {
@@ -29,6 +30,8 @@ enum class AskVerdict : std::uint8_t {
   WrongMap,
   // Nothing in it is the shared world's, or nothing it changes is new.
   Nothing,
+  // Overtaken by a newer change of the same facts or a new map load (a room reset in flight).
+  Overtaken,
 };
 
 [[nodiscard]] std::string_view askVerdictName(AskVerdict verdict);
@@ -57,20 +60,38 @@ public:
     std::optional<WorldChange> change;
     // The edits left out as a player's own (its game keeps them; the world never takes them).
     std::vector<WorldEdit> refused;
+    // Facts a newer change overtook; the host tells the guest the world's values again.
+    std::vector<WorldEdit> overtaken;
   };
   // Guest `from`'s ask on a session whose map is `worldMap`. `known`: the guest is in the session.
   // `changes(edit)`: whether the host's world would change by it (the app's values); edits that
-  // change nothing are dropped. The ask's map edits count only on the session's map.
+  // change nothing are dropped. The ask's map edits count only on the session's map. Overtaken: a
+  // fact changed after the revision the guest saw, or asked on a load since replaced (a reset).
   [[nodiscard]] Taken accept(PlayerId from, const WorldAsk& ask, std::string_view worldMap,
                              bool known, const std::function<bool(const WorldEdit&)>& changes);
 
   // A guest left: a new one with its id starts its asks from scratch.
   void leave(PlayerId id) { asks_.erase(id); }
 
+  // A new map load (a script's warp reset included): what a guest did there before seeing it is
+  // the old load's.
+  void newMapLoad() { mapLoad_ = ++revision_; }
+
 private:
+  struct Changed {
+    std::uint32_t revision = 0;
+    PlayerId by = HostPlayerId;
+  };
+  void changed(const WorldEdit& edit, Changed at);
+  [[nodiscard]] bool overtaken(const WorldEdit& edit, PlayerId from, std::uint32_t seen) const;
+
   WorldScope shared_;
   std::uint32_t revision_ = 0;
+  std::uint32_t mapLoad_ = 0;
   std::map<PlayerId, std::uint32_t> asks_;
+  // The revision that last changed each fact (trigger or variable) and whose it was, by kind and
+  // number: a player's own changes never overtake its later asks.
+  std::map<std::pair<WorldEditKind, std::int32_t>, Changed> changedAt_;
 };
 
 // A guest's side of the shared world: which of the host's changes are new, and its own asks'
@@ -84,7 +105,7 @@ public:
   // Whether to apply this sync part: any part of a sync at or past the newest revision taken.
   // Its last part makes its revision the newest.
   [[nodiscard]] bool take(const WorldSync& sync);
-  // The next ask, with this guest's edits, split so each message stays under MaxWorldEdits.
+  // Split so each message stays under MaxWorldEdits; each says the newest revision taken.
   [[nodiscard]] std::vector<WorldAsk> ask(std::string_view mapId, std::span<const WorldEdit> edits);
 
 private:

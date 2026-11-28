@@ -906,6 +906,7 @@ no añaden reglas; son atajos para las rutas y la depuración:
 | `clock_speed("<multiplicador>")` | Acelera el reloj: 1 es un minuto de juego por segundo real, 600 son diez horas |
 | `hd_scenery("on"\|"off")` | Enciende o apaga los escenarios en alta definición, como su fila de opciones (y lo guarda igual) |
 | `battle_speed("normal"\|"key"\|"fast")` | Cambia la velocidad de los combates, como su fila de opciones «Combates rápidos» (y la guarda igual) |
+| `battle_system("classic"\|"folder")` | Cambia el sistema de batalla de la partida para las próximas batallas, como su fila de opciones «Sistema de batalla»; solo si el modo de la partida ofrece ambos ([batalla Folder](../architecture/folder-battle.md)) |
 | `shop_job_mode("improved"\|"original")` | Cambia el trabajo en la tienda de Monochromon, como su fila de opciones (y la guarda igual); la ruta de la etapa 4 juega el original |
 | `model_characters("on"\|"off")` | Enciende o apaga los personajes en 3D para la partida (no lo guarda) |
 | `save("slot_NN")` | Guarda la partida en ese hueco manual (`save("slot_01")`); los autoguardados antiguos (`autosave_NN`) no se escriben nunca. Un autotest solo guarda con `--saves` |

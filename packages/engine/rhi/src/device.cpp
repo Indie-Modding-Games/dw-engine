@@ -1,6 +1,7 @@
 #include <dwe/core/assert.hpp>
 #include <dwe/core/log.hpp>
 #include <dwe/rhi/device.hpp>
+#include <dwe/rhi/gpu_diagnosis.hpp>
 #include <dwe/rhi/gpu_report.hpp>
 
 #include <SDL3/SDL_vulkan.h>
@@ -11,9 +12,13 @@
 #include <array>
 #include <atomic>
 #include <cstdint>
+#include <cstring>
 #include <deque>
+#include <filesystem>
 #include <format>
+#include <fstream>
 #include <functional>
+#include <iterator>
 #include <optional>
 #include <string>
 #include <utility>
@@ -21,6 +26,7 @@
 
 #include "renderer_requirements.hpp"
 #include "transition.hpp"
+#include "vulkan_calls.hpp"
 
 namespace dwe::rhi {
 namespace {
@@ -110,7 +116,7 @@ void logVulkanPath(const VulkanChoice& choice, const VulkanSupport& support,
                    const DeviceDesc& desc) {
   std::string why;
   if (desc.compatibleMode) {
-    why = "compatible mode";
+    why = "compatible mode, the extensions of 1.3";
   } else if (desc.forceVulkan13) {
     why = "1.4 turned off by --vulkan13";
   } else if (choice.path == VulkanPath::Core14) {
@@ -163,7 +169,7 @@ void transitionImage(VkCommandBuffer commands, VkImage image, VkImageLayout from
   dependency.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
   dependency.imageMemoryBarrierCount = 1;
   dependency.pImageMemoryBarriers = &barrier;
-  vkCmdPipelineBarrier2(commands, &dependency);
+  sync2().pipelineBarrier2(commands, &dependency);
 }
 
 struct Device::Impl {
@@ -200,6 +206,15 @@ struct Device::Impl {
   std::uint64_t submittedFrames = 0;
   // Ordered by lastFrame, which never decreases.
   std::deque<Retired> retired;
+  // The device uses the extension entry points of synchronization2 and dynamic rendering
+  // (vulkan_calls.hpp), put back to the core ones when it is destroyed.
+  bool extensionCalls = false;
+  VkPipelineCache pipelineCache = VK_NULL_HANDLE;
+  std::filesystem::path pipelineCacheFile;
+  std::size_t pipelineCacheSaved = 0;
+
+  void createPipelineCache();
+  void savePipelineCache();
 
   core::Result<void> createSwapchain();
   void destroySwapchainViews();
@@ -325,12 +340,83 @@ void Device::Impl::destroyRetired(std::uint64_t completedFrame) {
   }
 }
 
+void Device::Impl::createPipelineCache() {
+  std::vector<char> data;
+  if (!pipelineCacheFile.empty()) {
+    std::ifstream file{pipelineCacheFile, std::ios::binary};
+    data.assign(std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{});
+  }
+  VkPhysicalDeviceProperties properties{};
+  vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+  VkPipelineCacheHeaderVersionOne header{};
+  if (data.size() > sizeof(header)) {
+    std::memcpy(&header, data.data(), sizeof(header));
+  }
+  const bool matches = data.size() > sizeof(header) && header.headerSize >= sizeof(header) &&
+                       header.headerVersion == VK_PIPELINE_CACHE_HEADER_VERSION_ONE &&
+                       header.vendorID == properties.vendorID &&
+                       header.deviceID == properties.deviceID &&
+                       std::ranges::equal(header.pipelineCacheUUID, properties.pipelineCacheUUID);
+  if (!data.empty() && !matches) {
+    core::logInfo("pipeline cache: {} is from another GPU or driver; starting a new one",
+                  pipelineCacheFile.string());
+    data.clear();
+  }
+  const VkPipelineCacheCreateInfo info{.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
+                                       .pNext = nullptr,
+                                       .flags = 0,
+                                       .initialDataSize = data.size(),
+                                       .pInitialData = data.empty() ? nullptr : data.data()};
+  if (vkCreatePipelineCache(device, &info, nullptr, &pipelineCache) != VK_SUCCESS) {
+    pipelineCache = VK_NULL_HANDLE;
+    return;
+  }
+  pipelineCacheSaved = data.size();
+  if (!data.empty()) {
+    core::logInfo("pipeline cache: {} KiB from {}", data.size() / 1024, pipelineCacheFile.string());
+  }
+}
+
+void Device::Impl::savePipelineCache() {
+  if (pipelineCache == VK_NULL_HANDLE || pipelineCacheFile.empty() || gpuDeviceLost()) {
+    return;
+  }
+  std::size_t size = 0;
+  if (vkGetPipelineCacheData(device, pipelineCache, &size, nullptr) != VK_SUCCESS ||
+      size <= pipelineCacheSaved) {
+    return;
+  }
+  std::vector<char> data(size);
+  if (vkGetPipelineCacheData(device, pipelineCache, &size, data.data()) != VK_SUCCESS) {
+    return;
+  }
+  std::error_code error;
+  std::filesystem::create_directories(pipelineCacheFile.parent_path(), error);
+  std::filesystem::path partial = pipelineCacheFile;
+  partial += ".partial";
+  {
+    std::ofstream file{partial, std::ios::binary | std::ios::trunc};
+    file.write(data.data(), static_cast<std::streamsize>(size));
+    if (!file) {
+      return;
+    }
+  }
+  std::filesystem::rename(partial, pipelineCacheFile, error);
+  if (!error) {
+    pipelineCacheSaved = size;
+  }
+}
+
 Device::Impl::~Impl() {
   if (device.device != VK_NULL_HANDLE) {
     if (!gpuDeviceLost()) {
       vkDeviceWaitIdle(device);
     }
     destroyRetired(submittedFrames + 1);
+    savePipelineCache();
+    if (pipelineCache != VK_NULL_HANDLE) {
+      vkDestroyPipelineCache(device, pipelineCache, nullptr);
+    }
     gpuForgetDevice(device);
     vmaDestroyAllocator(allocator);
     for (FrameSlot& frame : frames) {
@@ -345,6 +431,9 @@ Device::Impl::~Impl() {
     vkb::destroy_swapchain(swapchain);
     vkb::destroy_device(device);
   }
+  if (extensionCalls) {
+    useCoreSync2();
+  }
   if (surface != VK_NULL_HANDLE) {
     vkb::destroy_surface(instance, surface);
   }
@@ -355,6 +444,30 @@ Device::Impl::~Impl() {
 
 core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& window,
                                                      const DeviceDesc& desc) {
+  VulkanAttempt attempt{.compatibleMode = desc.compatibleMode, .forceVulkan13 = desc.forceVulkan13};
+  while (true) {
+    DeviceDesc tried = desc;
+    tried.compatibleMode = attempt.compatibleMode;
+    tried.forceVulkan13 = attempt.forceVulkan13;
+    std::optional<VulkanPath> reached;
+    auto created = createOnce(window, tried, reached);
+    if (created) {
+      return created;
+    }
+    const std::optional<VulkanAttempt> next = nextVulkanAttempt(attempt, reached);
+    if (!next) {
+      return created;
+    }
+    core::logWarning("vulkan: {}; trying {}", created.error().message,
+                     next->compatibleMode ? "the Vulkan 1.2 compatible mode"
+                                          : "the Vulkan 1.3 path");
+    attempt = *next;
+  }
+}
+
+core::Result<std::unique_ptr<Device>> Device::createOnce(const platform::Window& window,
+                                                         const DeviceDesc& desc,
+                                                         std::optional<VulkanPath>& reached) {
   auto impl = std::make_unique<Impl>();
   impl->window = &window;
   impl->vsync = desc.vsync;
@@ -362,6 +475,7 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
   Uint32 extensionCount = 0;
   const char* const* extensions = SDL_Vulkan_GetInstanceExtensions(&extensionCount);
   if (extensions == nullptr) {
+    noteStartFailure({.stage = StartStage::Instance, .result = 0, .message = SDL_GetError()});
     return core::fail(std::format("Vulkan is not available: {}", SDL_GetError()));
   }
 
@@ -370,7 +484,7 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
   const bool instance14 = wantsVulkan14(loaderVersion, desc.compatibleMode, desc.forceVulkan13);
   vkb::InstanceBuilder instanceBuilder{vulkanEntry()};
   instanceBuilder.set_app_name("dwe").set_engine_name("dwe").require_api_version(
-      instance14 ? VK_API_VERSION_1_4 : VK_API_VERSION_1_3);
+      instanceVersionFor(desc.compatibleMode, instance14));
   for (Uint32 i = 0; i < extensionCount; ++i) {
     instanceBuilder.enable_extension(extensions[i]);
   }
@@ -386,12 +500,16 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
   }
   auto instance = instanceBuilder.build();
   if (!instance) {
+    noteStartFailure({.stage = StartStage::Instance,
+                      .result = static_cast<std::int32_t>(instance.vk_result()),
+                      .message = instance.error().message()});
     return core::fail(
         std::format("could not create the Vulkan instance: {}", instance.error().message()));
   }
   impl->instance = instance.value();
 
   if (!SDL_Vulkan_CreateSurface(window.sdlWindow(), impl->instance, nullptr, &impl->surface)) {
+    noteStartFailure({.stage = StartStage::Surface, .result = 0, .message = SDL_GetError()});
     return core::fail(std::format("could not create the window surface: {}", SDL_GetError()));
   }
 
@@ -399,6 +517,9 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
   requireRendererFeatures(selector, desc.compatibleMode);
   auto physicalDevice = selector.set_surface(impl->surface).select();
   if (!physicalDevice) {
+    noteStartFailure({.stage = StartStage::SelectGpu,
+                      .result = static_cast<std::int32_t>(physicalDevice.vk_result()),
+                      .message = physicalDevice.error().message()});
     return core::fail(std::format("no GPU supports the renderer's Vulkan floor ({}) with this "
                                   "window: {}",
                                   desc.compatibleMode ? "Vulkan 1.2 + extensions" : "Vulkan 1.3",
@@ -421,6 +542,7 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
 
   const VulkanSupport support = querySupport(impl->physicalDevice, loaderVersion, instance14);
   impl->vulkan = chooseVulkanPath(support, desc.compatibleMode, desc.forceVulkan13);
+  reached = impl->vulkan.path;
   VkPhysicalDeviceVulkan14Features features14{};
   features14.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES;
   features14.hostImageCopy = impl->vulkan.hostImageCopy ? VK_TRUE : VK_FALSE;
@@ -430,6 +552,9 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
   }
   auto device = deviceBuilder.build();
   if (!device) {
+    noteStartFailure({.stage = StartStage::Device,
+                      .result = static_cast<std::int32_t>(device.vk_result()),
+                      .message = device.error().message()});
     return core::fail(
         std::format("could not create the Vulkan device: {}", device.error().message()));
   }
@@ -442,6 +567,13 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
   }
   impl->queue = queue.value();
   impl->queueFamily = queueFamily.value();
+  if (impl->vulkan.path == VulkanPath::Compatible12) {
+    impl->extensionCalls = true;
+    if (!useExtensionSync2(impl->device)) {
+      return core::fail("the GPU lists dynamic rendering and synchronization2 but has no entry "
+                        "points for them");
+    }
+  }
   if (impl->vulkan.hostImageCopy) {
     impl->hostCopy = {.transitionLayout = reinterpret_cast<PFN_vkTransitionImageLayout>(
                           vkGetDeviceProcAddr(impl->device, "vkTransitionImageLayout")),
@@ -475,6 +607,8 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
   if (auto created = impl->createFrames(); !created) {
     return std::unexpected{created.error()};
   }
+  impl->pipelineCacheFile = desc.pipelineCacheFile;
+  impl->createPipelineCache();
   auto newDevice = std::unique_ptr<Device>{new Device{std::move(impl)}};
   gpuReportDevice(*newDevice, diagnostics);
   return newDevice;
@@ -483,6 +617,14 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
 Device::Device(std::unique_ptr<Impl> impl) : impl_{std::move(impl)} {}
 
 Device::~Device() = default;
+
+VkPipelineCache Device::pipelineCache() const {
+  return impl_->pipelineCache;
+}
+
+void Device::savePipelineCache() {
+  impl_->savePipelineCache();
+}
 
 std::optional<Frame> Device::beginFrame() {
   Impl& impl = *impl_;
@@ -568,12 +710,12 @@ void Device::beginRendering(const Frame& frame, ClearColor clear) {
   rendering.layerCount = 1;
   rendering.colorAttachmentCount = 1;
   rendering.pColorAttachments = &color;
-  vkCmdBeginRendering(frame.commands, &rendering);
+  sync2().beginRendering(frame.commands, &rendering);
 }
 
 void Device::endRendering(const Frame& frame) {
   DWE_ASSERT(frame.commands == impl_->frames[impl_->frameIndex].commands);
-  vkCmdEndRendering(frame.commands);
+  sync2().endRendering(frame.commands);
 }
 
 void Device::endFrame(const Frame& frame) {
@@ -613,7 +755,7 @@ void Device::endFrame(const Frame& frame) {
   submit.pCommandBufferInfos = &commands;
   submit.signalSemaphoreInfoCount = 1;
   submit.pSignalSemaphoreInfos = &signal;
-  gpuCheck("vkQueueSubmit2 (frame)", vkQueueSubmit2(impl.queue, 1, &submit, slot.finished));
+  gpuCheck("vkQueueSubmit2 (frame)", sync2().queueSubmit2(impl.queue, 1, &submit, slot.finished));
   slot.submittedFrame = ++impl.submittedFrames;
 
   VkSwapchainKHR swapchain = impl.swapchain;

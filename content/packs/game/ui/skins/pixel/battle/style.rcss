@@ -99,14 +99,14 @@
 
 .partner .bar-label {
 	left: -2dp;
-	top: -2dp;
-	width: 24dp;
-	height: 24dp;
+	top: -4dp;
+	width: 40dp;
+	height: 28dp;
 	border: 2dp #7cb6e2;
 	background-color: #050c1a;
 	font-family: "Pixel Small";
-	font-size: 13dp;
-	line-height: 24dp;
+	font-size: 26dp;
+	line-height: 28dp;
 	text-align: center;
 	white-space: nowrap;
 	color: #f2f0e1;
@@ -117,10 +117,19 @@
 	decorator: none;
 }
 
+/* Each label in its bar's colour: in the small font the M reads close to an H. */
+#fighter-0-hp-label {
+	color: #8fe08a;
+}
+
+#fighter-0-mp-label {
+	color: #7cc4ff;
+}
+
 .partner .bar {
-	left: 30dp;
+	left: 46dp;
 	top: 3dp;
-	width: 196dp;
+	width: 180dp;
 	height: 10dp;
 	padding: 2dp;
 	border: 2dp #557ea8;
@@ -188,6 +197,11 @@
 	line-height: 36dp;
 	color: #ffe58a;
 	font-effect: shadow(3dp 3dp #a33a12);
+}
+
+#finisher-word-dim {
+	color: #ffe58a40;
+	font-effect: none;
 }
 
 #finisher-ready {
@@ -416,14 +430,141 @@
 
 .ally .fighter-name {
 	font-family: "Pixel Small";
-	font-size: 22dp;
+	font-size: 26dp;
 	color: #f2f0e1;
 	font-effect: shadow(2dp 2dp #050c1a);
 }
 
 .ally-revive {
 	font-family: "Pixel Small";
-	font-size: 22dp;
+	font-size: 26dp;
 	color: #ffe64a;
 	font-effect: shadow(2dp 2dp #050c1a);
+}
+
+.ally-order {
+	font-family: "Pixel Small";
+	font-size: 24dp;
+	color: #9cc2ff;
+	font-effect: shadow(2dp 2dp #050c1a);
+}
+
+/* ------------------------------------------------------------------------------------------------------------------
+   The Folder battle (not in the concept): the half window with brackets at the stage's bottom left, 40 and 24 from its
+   edges as the menu button; the bars are the line gauge's (fishing_hud). */
+#folder-panel {
+	left: 40dp;
+	bottom: 24dp;
+	width: 580dp;
+	padding: 18dp 24dp;
+	background-color: transparent;
+	decorator: image(nb-brk-tl scale-none left top) border-box, image(nb-brk-br scale-none right bottom) border-box,
+		ninepatch(nb-half-outer, nb-half-inner, 1) border-box;
+	font-family: "Pixel Small";
+	font-size: 26dp;
+	line-height: 30dp;
+	color: #f2f0e1;
+}
+
+.folder-row {
+	margin-bottom: 4dp;
+}
+
+.folder-label {
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 36dp;
+	color: #efc63c;
+}
+
+.folder-track {
+	height: 8dp;
+	border: 2dp #4a79a8;
+	background-color: #0b1424;
+}
+
+#folder-bar-fill,
+#folder-bar-fill.broken {
+	background-color: transparent;
+}
+
+#folder-bar-fill { decorator: image(nb-fill-gd); }
+#folder-bar-fill.broken { decorator: image(nb-fill-rd); }
+
+#folder-phase {
+	height: 4dp;
+	margin: 4dp 0 8dp 0;
+}
+
+#folder-active {
+	font-family: "Pixel Body";
+	font-size: 30dp;
+	line-height: 36dp;
+}
+
+#command-problem {
+	margin-left: 16dp;
+	font-family: "Pixel Small";
+	font-size: 24dp;
+	color: #e2483d;
+}
+
+#command-reach {
+	display: block;
+	font-family: "Pixel Small";
+	font-size: 24dp;
+	color: #93a6bc;
+}
+
+#folder-panel {
+	left: 30dp;
+	bottom: 30dp;
+	padding: 12dp 24dp;
+	height: 168dp;
+	box-sizing: border-box;
+	overflow: hidden;
+}
+
+#folder-message,
+#folder-active,
+#folder-queue {
+	height: 30dp;
+	line-height: 30dp;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+#folder-message.status { color: #93a6bc; }
+#folder-message.notice { color: #efc63c; }
+#folder-message.broken { color: #e2483d; }
+#folder-queue { color: #93a6bc; }
+
+#folder-active {
+	flex: 0 0 auto;
+	max-width: 60%;
+	margin-right: 10dp;
+}
+
+#folder-phase {
+	flex: 1;
+	margin: 0;
+}
+
+#folder-phase {
+	height: 8dp;
+}
+
+.folder-step { background-color: #0b1424; }
+.folder-step.done { background-color: #2a4d78; }
+.folder-step.now { background-color: #4fa3ff; }
+.folder-chip { border-color: #4a79a8; }
+.command-frame.kind-stance { image-color: #9cc2ff; }
+
+/* A co-op guest's next item flies to this ally. */
+.ally.throw-target {
+	border: 2dp #ffe64a;
+}
+
+.ally.throw-target .fighter-name {
+	color: #ffe64a;
 }

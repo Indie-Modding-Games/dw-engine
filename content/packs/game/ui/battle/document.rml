@@ -3,13 +3,14 @@
 	<title>Battle</title>
 	<link type="text/rcss" href="../common/base.rcss"/>
 	<script src="../common/hud_digits.lua"></script>
+	<script src="../common/fit_text.lua"></script>
 	<script src="logic.lua"></script>
 </head>
 <body>
 	<div id="hp-bars">
-		<div id="hb-3" class="hb hidden"><div id="hb-3-frame" class="hb-frame"></div><div id="hb-3-value" class="hb-value"><div id="hd-3-0" class="dd hidden"></div><div id="hd-3-1" class="dd hidden"></div><div id="hd-3-2" class="dd hidden"></div><div id="hd-3-3" class="dd hidden"></div></div><div id="hb-3-fill" class="hb-fill"><div id="hb-3-s0" class="hb-segment hidden"></div><div id="hb-3-s1" class="hb-segment hidden"></div><div id="hb-3-s2" class="hb-segment hidden"></div></div><div id="hb-3-line" class="hb-line"></div></div>
-		<div id="hb-2" class="hb hidden"><div id="hb-2-frame" class="hb-frame"></div><div id="hb-2-value" class="hb-value"><div id="hd-2-0" class="dd hidden"></div><div id="hd-2-1" class="dd hidden"></div><div id="hd-2-2" class="dd hidden"></div><div id="hd-2-3" class="dd hidden"></div></div><div id="hb-2-fill" class="hb-fill"><div id="hb-2-s0" class="hb-segment hidden"></div><div id="hb-2-s1" class="hb-segment hidden"></div><div id="hb-2-s2" class="hb-segment hidden"></div></div><div id="hb-2-line" class="hb-line"></div></div>
-		<div id="hb-1" class="hb hidden"><div id="hb-1-frame" class="hb-frame"></div><div id="hb-1-value" class="hb-value"><div id="hd-1-0" class="dd hidden"></div><div id="hd-1-1" class="dd hidden"></div><div id="hd-1-2" class="dd hidden"></div><div id="hd-1-3" class="dd hidden"></div></div><div id="hb-1-fill" class="hb-fill"><div id="hb-1-s0" class="hb-segment hidden"></div><div id="hb-1-s1" class="hb-segment hidden"></div><div id="hb-1-s2" class="hb-segment hidden"></div></div><div id="hb-1-line" class="hb-line"></div></div>
+		<div id="hb-3" class="hb hidden"><div id="hb-3-frame" class="hb-frame"></div><div id="hb-3-value" class="hb-value"><div id="hd-3-0" class="dd hidden"></div><div id="hd-3-1" class="dd hidden"></div><div id="hd-3-2" class="dd hidden"></div><div id="hd-3-3" class="dd hidden"></div></div><div id="hb-3-fill" class="hb-fill"><div id="hb-3-s0" class="hb-segment hidden"></div><div id="hb-3-s1" class="hb-segment hidden"></div><div id="hb-3-s2" class="hb-segment hidden"></div></div><div id="hb-3-line" class="hb-line"></div><span id="hb-3-tag" class="hb-tag hidden"></span></div>
+		<div id="hb-2" class="hb hidden"><div id="hb-2-frame" class="hb-frame"></div><div id="hb-2-value" class="hb-value"><div id="hd-2-0" class="dd hidden"></div><div id="hd-2-1" class="dd hidden"></div><div id="hd-2-2" class="dd hidden"></div><div id="hd-2-3" class="dd hidden"></div></div><div id="hb-2-fill" class="hb-fill"><div id="hb-2-s0" class="hb-segment hidden"></div><div id="hb-2-s1" class="hb-segment hidden"></div><div id="hb-2-s2" class="hb-segment hidden"></div></div><div id="hb-2-line" class="hb-line"></div><span id="hb-2-tag" class="hb-tag hidden"></span></div>
+		<div id="hb-1" class="hb hidden"><div id="hb-1-frame" class="hb-frame"></div><div id="hb-1-value" class="hb-value"><div id="hd-1-0" class="dd hidden"></div><div id="hd-1-1" class="dd hidden"></div><div id="hd-1-2" class="dd hidden"></div><div id="hd-1-3" class="dd hidden"></div></div><div id="hb-1-fill" class="hb-fill"><div id="hb-1-s0" class="hb-segment hidden"></div><div id="hb-1-s1" class="hb-segment hidden"></div><div id="hb-1-s2" class="hb-segment hidden"></div></div><div id="hb-1-line" class="hb-line"></div><span id="hb-1-tag" class="hb-tag hidden"></span></div>
 	</div>
 
 	<div id="death-countdown" class="hidden"><div id="dc-badge"></div><div id="dc-digit"></div></div>
@@ -86,20 +87,20 @@
 				<button id="open-bag" class="command bag-button" onclick="open_bag()" text-key="battle.bag.open"></button>
 			</div>
 			<div id="command-cursor" class="hidden"></div>
-			<p id="command-name" class="original-look"><span id="command-label"></span><span id="command-cost" class="hidden"></span></p>
+			<p id="command-name" class="original-look"><span id="command-label"></span><span id="command-cost" class="hidden"></span><span id="command-reach" class="hidden"></span><span id="command-problem" class="hidden"></span></p>
 		</div>
 
 		<div id="enemies">
 			<div id="fighter-1" class="fighter enemy hidden">
-				<div class="fighter-head"><span class="original-look fighter-name" id="fighter-1-name"></span><span class="fighter-status" id="fighter-1-status"></span></div>
+				<div class="fighter-head"><span class="fighter-tag hidden" id="fighter-1-tag"></span><span class="original-look fighter-name" id="fighter-1-name"></span><span class="fighter-status" id="fighter-1-status"></span></div>
 				<div class="bar-row" id="fighter-1-hp-row"><span class="bar-label original-look" id="fighter-1-hp-label"></span><div class="bar hp"><div class="fill" id="fighter-1-hp-fill"></div></div><span class="bar-value original-look" id="fighter-1-hp"></span></div>
 			</div>
 			<div id="fighter-2" class="fighter enemy hidden">
-				<div class="fighter-head"><span class="original-look fighter-name" id="fighter-2-name"></span><span class="fighter-status" id="fighter-2-status"></span></div>
+				<div class="fighter-head"><span class="fighter-tag hidden" id="fighter-2-tag"></span><span class="original-look fighter-name" id="fighter-2-name"></span><span class="fighter-status" id="fighter-2-status"></span></div>
 				<div class="bar-row" id="fighter-2-hp-row"><span class="bar-label original-look" id="fighter-2-hp-label"></span><div class="bar hp"><div class="fill" id="fighter-2-hp-fill"></div></div><span class="bar-value original-look" id="fighter-2-hp"></span></div>
 			</div>
 			<div id="fighter-3" class="fighter enemy hidden">
-				<div class="fighter-head"><span class="original-look fighter-name" id="fighter-3-name"></span><span class="fighter-status" id="fighter-3-status"></span></div>
+				<div class="fighter-head"><span class="fighter-tag hidden" id="fighter-3-tag"></span><span class="original-look fighter-name" id="fighter-3-name"></span><span class="fighter-status" id="fighter-3-status"></span></div>
 				<div class="bar-row" id="fighter-3-hp-row"><span class="bar-label original-look" id="fighter-3-hp-label"></span><div class="bar hp"><div class="fill" id="fighter-3-hp-fill"></div></div><span class="bar-value original-look" id="fighter-3-hp"></span></div>
 			</div>
 		</div>
@@ -112,8 +113,9 @@
 			</div>
 			<div id="finisher">
 				<span class="original-look" id="finisher-label" text-key="battle.finisher"></span>
-				<span class="original-look" id="finisher-word"></span>
+				<span class="original-look" id="finisher-word"><span id="finisher-word-lit"></span><span id="finisher-word-dim"></span></span>
 				<div id="finisher-segments"><div class="segment" id="finisher-0"></div><div class="segment" id="finisher-1"></div><div class="segment" id="finisher-2"></div><div class="segment" id="finisher-3"></div><div class="segment" id="finisher-4"></div><div class="segment" id="finisher-5"></div><div class="segment extra" id="finisher-6"></div><div class="segment extra" id="finisher-7"></div></div>
+				<span id="finisher-percent"></span>
 				<div id="finisher-ready"><span class="key" id="prompt-finisher"></span><div id="finisher-push" text-key="battle.finisher_push"></div></div>
 			</div>
 		</div>
@@ -121,19 +123,19 @@
 		<!-- Co-op: the other players' partners fighting beside this one (battle.allies). -->
 		<div id="allies">
 			<div id="ally-0" class="fighter partner ally hidden">
-				<div class="fighter-head"><span class="original-look fighter-name" id="ally-0-name"></span><span class="fighter-status" id="ally-0-status"></span><span class="ally-revive hidden" id="ally-0-revive"></span></div>
+				<div class="fighter-head"><span class="original-look fighter-name" id="ally-0-name"></span><span class="fighter-status" id="ally-0-status"></span><span class="ally-revive hidden" id="ally-0-revive"></span><span class="ally-order" id="ally-0-order"></span></div>
 				<div class="bar-row" id="ally-0-hp-row"><span class="bar-label hp-label original-look" id="ally-0-hp-label"></span><div class="bar hp"><div class="fill" id="ally-0-hp-fill"></div></div><span class="bar-value original-look" id="ally-0-hp"></span><div class="bar-digits"><div id="ally-0-hp-d-0" class="hud-digit place-0 hidden"></div><div id="ally-0-hp-d-1" class="hud-digit place-1 hidden"></div><div id="ally-0-hp-d-2" class="hud-digit place-2 hidden"></div><div id="ally-0-hp-d-3" class="hud-digit place-3 hidden"></div></div></div>
-				<div class="bar-row" id="ally-0-mp-row"><span class="bar-label mp-label original-look" id="ally-0-mp-label"></span><div class="bar mp"><div class="fill" id="ally-0-mp-fill"></div></div><span class="bar-value original-look" id="ally-0-mp"></span><div class="bar-digits"><div id="ally-0-mp-d-0" class="hud-digit place-0 hidden"></div><div id="ally-0-mp-d-1" class="hud-digit place-1 hidden"></div><div id="ally-0-mp-d-2" class="hud-digit place-2 hidden"></div><div id="ally-0-mp-d-3" class="hud-digit place-3 hidden"></div></div></div>
+				<div class="bar-row ally-mp" id="ally-0-mp-row"><span class="bar-label mp-label original-look" id="ally-0-mp-label"></span><div class="bar mp"><div class="fill" id="ally-0-mp-fill"></div></div><span class="bar-value original-look" id="ally-0-mp"></span><div class="bar-digits"><div id="ally-0-mp-d-0" class="hud-digit place-0 hidden"></div><div id="ally-0-mp-d-1" class="hud-digit place-1 hidden"></div><div id="ally-0-mp-d-2" class="hud-digit place-2 hidden"></div><div id="ally-0-mp-d-3" class="hud-digit place-3 hidden"></div></div></div>
 			</div>
 			<div id="ally-1" class="fighter partner ally hidden">
-				<div class="fighter-head"><span class="original-look fighter-name" id="ally-1-name"></span><span class="fighter-status" id="ally-1-status"></span><span class="ally-revive hidden" id="ally-1-revive"></span></div>
+				<div class="fighter-head"><span class="original-look fighter-name" id="ally-1-name"></span><span class="fighter-status" id="ally-1-status"></span><span class="ally-revive hidden" id="ally-1-revive"></span><span class="ally-order" id="ally-1-order"></span></div>
 				<div class="bar-row" id="ally-1-hp-row"><span class="bar-label hp-label original-look" id="ally-1-hp-label"></span><div class="bar hp"><div class="fill" id="ally-1-hp-fill"></div></div><span class="bar-value original-look" id="ally-1-hp"></span><div class="bar-digits"><div id="ally-1-hp-d-0" class="hud-digit place-0 hidden"></div><div id="ally-1-hp-d-1" class="hud-digit place-1 hidden"></div><div id="ally-1-hp-d-2" class="hud-digit place-2 hidden"></div><div id="ally-1-hp-d-3" class="hud-digit place-3 hidden"></div></div></div>
-				<div class="bar-row" id="ally-1-mp-row"><span class="bar-label mp-label original-look" id="ally-1-mp-label"></span><div class="bar mp"><div class="fill" id="ally-1-mp-fill"></div></div><span class="bar-value original-look" id="ally-1-mp"></span><div class="bar-digits"><div id="ally-1-mp-d-0" class="hud-digit place-0 hidden"></div><div id="ally-1-mp-d-1" class="hud-digit place-1 hidden"></div><div id="ally-1-mp-d-2" class="hud-digit place-2 hidden"></div><div id="ally-1-mp-d-3" class="hud-digit place-3 hidden"></div></div></div>
+				<div class="bar-row ally-mp" id="ally-1-mp-row"><span class="bar-label mp-label original-look" id="ally-1-mp-label"></span><div class="bar mp"><div class="fill" id="ally-1-mp-fill"></div></div><span class="bar-value original-look" id="ally-1-mp"></span><div class="bar-digits"><div id="ally-1-mp-d-0" class="hud-digit place-0 hidden"></div><div id="ally-1-mp-d-1" class="hud-digit place-1 hidden"></div><div id="ally-1-mp-d-2" class="hud-digit place-2 hidden"></div><div id="ally-1-mp-d-3" class="hud-digit place-3 hidden"></div></div></div>
 			</div>
 			<div id="ally-2" class="fighter partner ally hidden">
-				<div class="fighter-head"><span class="original-look fighter-name" id="ally-2-name"></span><span class="fighter-status" id="ally-2-status"></span><span class="ally-revive hidden" id="ally-2-revive"></span></div>
+				<div class="fighter-head"><span class="original-look fighter-name" id="ally-2-name"></span><span class="fighter-status" id="ally-2-status"></span><span class="ally-revive hidden" id="ally-2-revive"></span><span class="ally-order" id="ally-2-order"></span></div>
 				<div class="bar-row" id="ally-2-hp-row"><span class="bar-label hp-label original-look" id="ally-2-hp-label"></span><div class="bar hp"><div class="fill" id="ally-2-hp-fill"></div></div><span class="bar-value original-look" id="ally-2-hp"></span><div class="bar-digits"><div id="ally-2-hp-d-0" class="hud-digit place-0 hidden"></div><div id="ally-2-hp-d-1" class="hud-digit place-1 hidden"></div><div id="ally-2-hp-d-2" class="hud-digit place-2 hidden"></div><div id="ally-2-hp-d-3" class="hud-digit place-3 hidden"></div></div></div>
-				<div class="bar-row" id="ally-2-mp-row"><span class="bar-label mp-label original-look" id="ally-2-mp-label"></span><div class="bar mp"><div class="fill" id="ally-2-mp-fill"></div></div><span class="bar-value original-look" id="ally-2-mp"></span><div class="bar-digits"><div id="ally-2-mp-d-0" class="hud-digit place-0 hidden"></div><div id="ally-2-mp-d-1" class="hud-digit place-1 hidden"></div><div id="ally-2-mp-d-2" class="hud-digit place-2 hidden"></div><div id="ally-2-mp-d-3" class="hud-digit place-3 hidden"></div></div></div>
+				<div class="bar-row ally-mp" id="ally-2-mp-row"><span class="bar-label mp-label original-look" id="ally-2-mp-label"></span><div class="bar mp"><div class="fill" id="ally-2-mp-fill"></div></div><span class="bar-value original-look" id="ally-2-mp"></span><div class="bar-digits"><div id="ally-2-mp-d-0" class="hud-digit place-0 hidden"></div><div id="ally-2-mp-d-1" class="hud-digit place-1 hidden"></div><div id="ally-2-mp-d-2" class="hud-digit place-2 hidden"></div><div id="ally-2-mp-d-3" class="hud-digit place-3 hidden"></div></div></div>
 			</div>
 		</div>
 
@@ -150,11 +152,20 @@
 		<div id="match-clock" class="hidden"><div id="mc-side-1" class="mc-side"></div><div id="mc-side-2" class="mc-side"></div><div id="mc-d-0" class="mc-digit hidden"></div><div id="mc-d-1" class="mc-digit hidden"></div></div>
 
 
+		<!-- The Folder battle (battle.folder): four rows of a fixed height. -->
+		<div id="folder-panel" class="hidden">
+			<div class="folder-row"><span class="folder-label" text-key="battle.folder.guard"></span><div class="folder-track"><div class="folder-fill" id="folder-bar-fill"></div></div><span id="folder-stance"></span></div>
+			<p id="folder-message"></p>
+			<div class="folder-row" id="folder-order"><p id="folder-active"><span id="folder-active-text"></span></p><div id="folder-phase"><div class="folder-step" id="folder-step-0"></div><div class="folder-step" id="folder-step-1"></div><div class="folder-step" id="folder-step-2"></div><div class="folder-step" id="folder-step-3"><div id="folder-lock"></div></div><div class="folder-step" id="folder-step-4"></div></div></div>
+			<div id="folder-queue"><span class="folder-chip hidden" id="folder-chip-0"></span><span class="folder-chip hidden" id="folder-chip-1"></span></div>
+		</div>
+
 		<div id="speed-plate" class="hidden"><span text-key="battle.fast"></span></div>
 
 		<div id="prompts">
-			<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="battle.prompt.command"></span></span>
+			<span class="prompt" id="prompt-command"><span class="key" id="prompt-confirm"></span><span text-key="battle.prompt.command"></span></span>
 			<span class="prompt" id="prompt-bag"><span class="key" id="prompt-menu"></span><span text-key="battle.prompt.bag"></span></span>
+			<span class="prompt hidden" id="prompt-cheer"><span class="key" id="prompt-cheer-key"></span><span text-key="battle.prompt.cheer"></span></span>
 		</div>
 	</div>
 
@@ -596,6 +607,7 @@
 				<div id="end-text">
 					<p class="end-row original-look" id="end-row-0"><span class="end-plain" id="end-row-0-0"></span><span class="end-name" id="end-row-0-1"></span><span class="end-plain" id="end-row-0-2"></span><span class="end-name" id="end-row-0-3"></span><span class="end-plain" id="end-row-0-4"></span></p>
 					<p class="end-row original-look" id="end-row-1"><span class="end-plain" id="end-row-1-0"></span><span class="end-name" id="end-row-1-1"></span><span class="end-plain" id="end-row-1-2"></span><span class="end-name" id="end-row-1-3"></span><span class="end-plain" id="end-row-1-4"></span></p>
+					<span class="key hidden" id="end-more"></span>
 				</div>
 			</div>
 		</div>

@@ -802,7 +802,7 @@ fallan con un error claro hasta que alguien rellene sus direcciones desde `confi
 | `packages/engine/ruleset/include/dwe/ruleset/game_clock.hpp: ClockRules` | 20 fps, 20 fotogramas por minuto, 30 días, 100 años, 8:00 | a | Repite `clock.yaml` como valores por defecto. |
 | `packages/game/field/include/dwe/game/field/rules.hpp:27-29` | radio y velocidades de andar y correr por defecto | **b** | D11. «Decidido por el coordinador (2026-10-21)»: valores de una especie; la cabecera entra en el paso de D11 de la migración. |
 | `packages/game/field/include/dwe/game/field/rules.hpp` (el resto) | distancias en radios, fundidos, horas del día, luces por defecto | a | Repite la parte (a) de `field/rules.yaml`. |
-| `packages/game/battle` (`combatant.hpp`, `state.hpp`, `moves.hpp`, `rules.hpp`, `battle.hpp`, `movement.cpp`, `targeting.cpp`, `original_partner_ai.cpp`, `fighter_actions.cpp`, `ai_ticks.cpp`) | 3 + 1 ranuras, 16 técnicas por especie, animación 0x2E, numeración de órdenes, bits de técnica, 7 especialidades, centinelas | a | Estructura y mecánica. |
+| `packages/game/battle` (`combatant.hpp`, `state.hpp`, `moves.hpp`, `rules.hpp`, `battle.hpp`, `movement.cpp`, `targeting.cpp`, `original_partner_ai.cpp`, `fighter_actions.cpp`, `enemy_decisions.cpp`, `move_plans.cpp`) | 3 + 1 ranuras, 16 técnicas por especie, animación 0x2E, numeración de órdenes, bits de técnica, 7 especialidades, centinelas | a | Estructura y mecánica. |
 | `packages/game/partner/src/poop_piles.cpp`, `packages/game/field/src/field.cpp` | bandas de orientación | a | Mecánica. |
 | `packages/game/evolution/include/dwe/game/evolution/tables.hpp` | centinela de requisito y bits 0x01/0x10 | a | Formato. |
 | `packages/screens/src/partner_status_view.cpp`, `bag_view.cpp`; `apps/game/src/field_scene.cpp` | topes de barra 999 y 9999, color 255, luz ambiente 0,5 | a | Mecánica de presentación. |
@@ -827,9 +827,9 @@ fallan con un error claro hasta que alguien rellene sus direcciones desde `confi
 | `packages/game/evolution/tests/rules_tests.cpp:41, 54-55, 60, 65` | tamaños de las listas | a | Solo tamaños. |
 | `packages/game/evolution/tests/specials_tests.cpp:53-142` | destinos y orígenes de las evoluciones especiales | **b** | Repite valores (b) (D1). |
 | `packages/game/evolution/tests/effects_tests.cpp:141` | las cuatro especies del renacer | **b** | Repite valores (b). |
-| `packages/game/battle/tests/rules_tests.cpp:17` | una celda de `TYPE_FACTORS` | **b** | Repite valores (b) (D3). |
-| `packages/game/battle/tests/rules_tests.cpp:99-100` | que una técnica tiene subida y otra una pareja | a | Solo existencia y tamaño. |
-| `packages/game/battle/tests/battle_tests.cpp:413` | una pareja de técnicas que se aprenden juntas | **b** | Repite valores (b). |
+| `packages/game/battle/tests/rules/rules_tests.cpp:17` | una celda de `TYPE_FACTORS` | **b** | Repite valores (b) (D3). |
+| `packages/game/battle/tests/rules/rules_tests.cpp:99-100` | que una técnica tiene subida y otra una pareja | a | Solo existencia y tamaño. |
+| `packages/game/battle/tests/core/battle_tests.cpp:419` | una pareja de técnicas que se aprenden juntas | **b** | Repite valores (b). |
 | `packages/game/inventory/tests/rules_tests.cpp:55` | tamaño de `sortOrders` | a | Solo tamaño. |
 | `packages/game/inventory/tests/effects_tests.cpp:32-33, 42, 44, 48, 54, 84` | disquete doble, curas, revivir, disco y sección de guion | **b** | Repite valores (b) (D6 y efectos por objeto). |
 | `packages/game/partner/tests/sleep_tests.cpp:20-21, 31` | `SleepyHour` y `WakeHour` (un horario de `SLEEP_PATTERN`) y sus horas despierto; se comprueban en :29-30, :59, :85, :88 y :91, y el resto del fichero juega hasta `SleepyHour` | **b** | Repite valores (b) (D3). |
@@ -850,10 +850,10 @@ fallan con un error claro hasta que alguien rellene sus direcciones desde `confi
 | `packages/game/inventory/tests/bag_tests.cpp:114-129` | dos órdenes de `ITEM_SORT_ORDER`, en comentarios y en el orden esperado | **b** | Repite valores (b) (D3). |
 | `packages/session/tests/inventory_adapter_tests.cpp:162-171` | un objeto de `refusal.never_taken` | **b** | Repite valores (b) (D5). |
 | `packages/session/tests/inventory_adapter_tests.cpp:173-190` | el nivel de aceptación de un objeto de evolución fija (`refusal.fixed_level_evolutions`) | **b** | Repite valores (b). |
-| `packages/game/battle/tests/battle_tests.cpp:239-245, 349-354` | una técnica de `moves.buffs` y su porcentaje de subida | **b** | Repite valores (b). |
-| `packages/game/battle/tests/battle_tests.cpp:433-436` | el mapa de `rewards.no_drop_maps` | **b** | Repite valores (b). |
-| `packages/game/battle/tests/battle_tests.cpp:250-260` | el rango de daño esperado, que sale de una celda de la diagonal de `TYPE_FACTORS` | **b** | Repite valores (b) (D3). |
-| `packages/game/battle/tests/battle_tests.cpp:448-457` | cuántos enemigos se unen, que sale de dos celdas de `FLEE_CHANCES` | **b** | Repite valores (b) (D3). |
+| `packages/game/battle/tests/core/battle_tests.cpp:245-251, 355-360` | una técnica de `moves.buffs` y su porcentaje de subida | **b** | Repite valores (b). |
+| `packages/game/battle/tests/core/battle_tests.cpp:439-442` | el mapa de `rewards.no_drop_maps` | **b** | Repite valores (b). |
+| `packages/game/battle/tests/core/battle_tests.cpp:256-266` | el rango de daño esperado, que sale de una celda de la diagonal de `TYPE_FACTORS` | **b** | Repite valores (b) (D3). |
+| `packages/game/battle/tests/core/battle_tests.cpp:454-463` | cuántos enemigos se unen, que sale de dos celdas de `FLEE_CHANCES` | **b** | Repite valores (b) (D3). |
 | `packages/game/field/tests/rules_tests.cpp:150-152` | el warp de guion: cuántos hay, su trigger y su salida | **b** | Repite valores (b) (D10). |
 
 ---

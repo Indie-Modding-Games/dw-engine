@@ -36,7 +36,10 @@ The first line is the header: `{"src":"dwe","meta":true,"hz":60}`. Each followin
 Each fighter in `fighters` is `{x, z, yaw, hp, mp, max_hp, max_mp, off, def, spd, brain, pose, pending, move}`.
 `pending` is the damage received that has not yet been subtracted from `hp` (the original's `hpDamageBuffer`: a hit
 lowers `hp - pending` at once) and `move`, the original's number of the technique it is using, or −1. The partner
-comes first and then the enemies, in their order.
+comes first and then the enemies, in their order. In a Folder battle each fighter also carries `orders`:
+`{phase, frames, queued, stance, last_end, last_problem, bar}`, the numbers of the order's phase (0 idle to 5
+recovering), the frames of that phase, the orders waiting, the stance, how and why the last order ended, and the
+defense bar ([Folder battle](../architecture/folder-battle.md)). A Classic battle has no `orders`.
 
 Positions and turns are in the original's axes and units, the same ones its memory keeps:
 

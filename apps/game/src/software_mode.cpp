@@ -5,6 +5,7 @@
 #include <charconv>
 #include <cmath>
 #include <numeric>
+#include <ranges>
 
 namespace dwe::app {
 
@@ -141,8 +142,9 @@ QualityDecision decideQuality(std::span<const double> busySeconds, double target
                       static_cast<double>(busySeconds.size());
   if (mean > budget * DownMargin) {
     if (level > LowestQuality) {
-      decision.level = level - 1;
-      decision.ceiling = std::min(ceiling, level - 1);
+      const int steps = mean > budget * FarDownMargin ? 2 : 1;
+      decision.level = std::max(LowestQuality, level - steps);
+      decision.ceiling = std::min(ceiling, decision.level);
     }
     return decision;
   }
@@ -204,6 +206,56 @@ double FrameLimiter::wait(double now, int framesPerSecond) {
   const double waiting = std::max(0.0, *next_ - now);
   *next_ += period;
   return waiting;
+}
+
+bool SlowFrameWatch::frame(double frameSeconds) {
+  if (settleLeft_ > 0.0) {
+    settleLeft_ -= frameSeconds;
+    return false;
+  }
+  frames_.push_back(frameSeconds);
+  windowSeconds_ += frameSeconds;
+  if (windowSeconds_ < WindowSeconds) {
+    return false;
+  }
+  const auto middle = frames_.begin() + static_cast<std::ptrdiff_t>(frames_.size() / 2);
+  std::ranges::nth_element(frames_, middle);
+  const bool slow = *middle > SlowFrameSeconds;
+  frames_.clear();
+  windowSeconds_ = 0.0;
+  if (slow) {
+    settleLeft_ = SettleSeconds;
+  }
+  return slow;
+}
+
+void SlowFrameWatch::pause() {
+  frames_.clear();
+  windowSeconds_ = 0.0;
+  settleLeft_ = SettleSeconds;
+}
+
+std::string_view NoticeReason::param(std::string_view key) const {
+  const auto found = std::ranges::find(params, key, &std::pair<std::string, std::string>::first);
+  return found == params.end() ? std::string_view{} : std::string_view{found->second};
+}
+
+std::optional<NoticeReason> parseNoticeReason(std::string_view text) {
+  NoticeReason reason;
+  for (const auto part : std::views::split(text, '|')) {
+    const std::string_view field{part.begin(), part.end()};
+    if (reason.code.empty()) {
+      reason.code = field;
+      continue;
+    }
+    if (const auto equals = field.find('='); equals != std::string_view::npos && equals > 0) {
+      reason.params.emplace_back(field.substr(0, equals), field.substr(equals + 1));
+    }
+  }
+  const bool valid = !reason.code.empty() && std::ranges::all_of(reason.code, [](char c) {
+    return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-';
+  });
+  return valid ? std::optional{std::move(reason)} : std::nullopt;
 }
 
 } // namespace dwe::app

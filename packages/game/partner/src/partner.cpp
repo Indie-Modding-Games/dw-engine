@@ -220,6 +220,14 @@ void Partner::loseLife() {
   }
 }
 
+bool Partner::surviveLostLife() {
+  if (alive() || state_.life.lives <= 0 || state_.life.remainingLifetime <= 0) {
+    return false;
+  }
+  state_.life.phase = LifePhase::Alive;
+  return true;
+}
+
 void Partner::die(LifePhase phase) {
   state_.life.phase = phase;
   emit(EventKind::Died, phase == LifePhase::DiedNaturally ? 1 : 0);

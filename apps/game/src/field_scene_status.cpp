@@ -552,4 +552,24 @@ void FieldScene::submitStatusModels() {
   }
 }
 
+std::vector<glm::vec2> FieldScene::stunSignsOnWindow() const {
+  std::vector<glm::vec2> signs;
+  if (!statusVisuals_) {
+    return signs;
+  }
+  for (const auto& slot : statusVisuals_->stuns()) {
+    const std::optional<StatusAnchor> anchor = slot ? statusAnchor(slot->fighter) : std::nullopt;
+    if (!anchor) {
+      continue;
+    }
+    const glm::vec3 centre{anchor->feet.x,
+                           static_cast<float>(anchor->body.height) * SignLift / Percent,
+                           anchor->feet.z};
+    if (const std::optional<glm::vec2> point = worldToWindowFraction(centre)) {
+      signs.push_back(*point);
+    }
+  }
+  return signs;
+}
+
 } // namespace dwe::app
