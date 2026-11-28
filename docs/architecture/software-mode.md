@@ -47,7 +47,7 @@ is on screen (no movie, no load), and only on the automatic options:
 - A **window** lasts 3 s and at least 20 frames. It measures each frame's busy time: the frame time without the
   frame limit's wait. A frame of more than 1 s (a load) starts the window again.
 - **Down** one level when the window's mean busy time is over the budget (1 / frame limit, or 1/30 without a limit)
-  by 8 %.
+  by 8 %, and **two** levels when it is 75 % over (a slow machine reaches a playable level in one window).
 - **Up** one level when the 90th percentile leaves 40 % of the budget unused.
 - **Hysteresis.** After a change the first 2 s are not counted, and a level the tuner had to leave becomes the
   ceiling for the rest of the run, so it never swings between two levels. Between the two thresholds nothing
