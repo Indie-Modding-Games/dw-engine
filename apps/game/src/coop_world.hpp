@@ -88,9 +88,10 @@ private:
   struct OwnerHeld;
   // A guest's player and partner as its own game shows them (#420, #411): the clip its scripts
   // play, and its partner where its game has it, smoothed as the body (`partner`, the sample of its
-  // track; back to following the body without).
-  void showHeld(game::field::Field& field, game::coop::PlayerId id, const OwnerHeld& held,
-                std::optional<game::field::CharacterState> partner = std::nullopt);
+  // track; back to following the body without). How far the partner was moved beside another on
+  // its machine, for the body to go along.
+  glm::vec3 showHeld(game::field::Field& field, game::coop::PlayerId id, const OwnerHeld& held,
+                     std::optional<game::field::CharacterState> partner = std::nullopt);
   [[nodiscard]] std::optional<game::field::CharacterState>
   partnerAt(game::coop::PlayerId id, std::string_view mapId, net::Millis now) const;
   void forgetTracks(game::coop::PlayerId id);

@@ -208,8 +208,9 @@ Las mismas reglas valen para cualquier tamaño de sala; nada escala con el núme
   misma máquina a la vez. En cada pantalla, un segundo compañero en un curso en una máquina usada se dibuja un paso (300
   unidades) al lado del primero, a uno u otro lado, hasta cuatro (`machineSpotBeside`, T8): el anfitrión lo hace con los
   compañeros de los invitados en su campo, así que sus instantáneas lo llevan, y cada invitado con los compañeros que
-  dibuja junto al suyo. Solo se aparta un compañero que reproduce un clip de curso; fuera del curso está donde su partida
-  lo tiene. Solo la pantalla de cada jugador mueve los objetos de la máquina (la roca, el tronco).
+  dibuja junto al suyo. Solo se aparta un compañero que reproduce un clip de curso, y su jugador se aparta con él, así que
+  dos jugadores en una máquina tampoco quedan en el mismo sitio (`machinePairBeside`); fuera del curso los dos están
+  donde su partida los tiene. Solo la pantalla de cada jugador mueve los objetos de la máquina (la roca, el tronco).
 - **Entrenar y explorar.** Un jugador en un curso está ocupado: sin intercambios, sin ofertas de aliado, no se le mete
   en un combate. Los demás siguen explorando, luchando e intercambiando; el mundo nunca se retiene por quien entrena.
 

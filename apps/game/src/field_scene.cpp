@@ -331,7 +331,7 @@ void FieldScene::moveCoopSelf(const std::string& mapId, std::optional<std::int32
                               assets::SpawnPoint at, bool reload) {
   if (field_->mapId() == mapId && !field_->mapChangePending() && !reload) {
     coopArrival_.reset();
-    field_->placeAt(field_->playerEntity(), at.position, at.yaw);
+    field_->placePlayerWithPartner(at);
     return;
   }
   coopArrival_ = CoopArrival{.map = mapId, .at = at};

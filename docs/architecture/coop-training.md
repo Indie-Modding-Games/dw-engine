@@ -196,7 +196,8 @@ The same rules hold for every size of room; nothing scales with the number of pl
   once. On each screen a second partner on a course at a used machine is drawn one step (300 units) beside the first, to
   either side, up to four (`machineSpotBeside`, T8): the host does it for the guests' partners on its field, so its
   snapshots carry it, and each guest for the partners it draws next to its own. Only a partner playing a course's clip
-  moves aside; off the course it stands where its game has it. Only each player's own screen moves the machine's objects
+  moves aside, and its player moves aside with it, so two players at one machine do not stand on one spot either
+  (`machinePairBeside`); off the course both stand where their game has them. Only each player's own screen moves the machine's objects
   (the boulder, the log).
 - **Training and exploring.** A player on a course is busy: no trades, no battle ally offers, not pulled into a battle.
   The others keep exploring, fighting and trading; the world is never held for a trainer.

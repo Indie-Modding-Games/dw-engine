@@ -231,7 +231,8 @@ void VersusFlow::fail(std::string key, std::string detail) {
 }
 
 void VersusFlow::startHosting() {
-  room_.emplace(net::RoomSessionDesc{.hosting = true, .code = {}, .server = {}, .open = {}});
+  room_.emplace(
+      net::RoomSessionDesc{.hosting = true, .listed = false, .code = {}, .server = {}, .open = {}});
   link_ = desc_.host();
   room_->observe(*link_);
   const game::versus::SeriesSetup setup{.battles = battles(),
@@ -251,7 +252,8 @@ void VersusFlow::startJoining() {
     badEntry_ = true;
     return;
   }
-  room_.emplace(net::RoomSessionDesc{.hosting = false, .code = *code, .server = {}, .open = {}});
+  room_.emplace(net::RoomSessionDesc{
+      .hosting = false, .listed = false, .code = *code, .server = {}, .open = {}});
   link_ = desc_.join(*code);
   room_->observe(*link_);
   series_.emplace(*desc_.battles, game::versus::VersusLink::guest(*link_, desc_.identity),

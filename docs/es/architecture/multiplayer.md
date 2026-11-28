@@ -497,8 +497,10 @@ salto del lado del invitado (un `place` de un script) es uno de esos rechazos: s
 
 **Mapas (decisión 2 de §6).** El grupo va adonde va el anfitrión. Las salidas propias del invitado quedan retenidas
 (`Field::holdExits`); cuando el anfitrión cambia de mapa, cada invitado recibe una corrección con el mapa nuevo, la
-salida y el punto de aparición del anfitrión, y llega justo allí. Los estados del mapa o la época anteriores se
-rechazan, y el invitado no informa nada mientras viaja. Cada jugador sigue teniendo su propio mapa actual: un jugador
+salida y el punto de aparición del anfitrión, y llega justo allí. Su compañero llega a su lado, como en cualquier
+entrada a un mapa, y una corrección en el mapa en el que ya está (al unirse, un reinicio) también lo trae
+(`Field::placePlayerWithPartner`). Los estados del mapa o la época anteriores se rechazan, y el invitado no informa nada
+mientras viaja. Cada jugador sigue teniendo su propio mapa actual: un jugador
 remoto en otro mapa no se dibuja ni se mueve, y vuelve a mostrarse cuando llega.
 
 **El aviso de zona (#356).** Antes de seguir al anfitrión a otro mapa, el juego del invitado espera
@@ -599,6 +601,7 @@ el resultado.
 | El trabajo de la tienda del cañón: los clientes atendidos, la cuenta y su medidor, el resultado de cada turno, la frase de la mitad (#423) | variables de historia y un trigger (`player_own_variables`, `player_own_triggers`), la cuenta y el regateo | local: cada jugador hace su propio trabajo; que un jugador abra la tienda nunca mueve el medidor del otro | nunca se envían |
 | Lo que un script pasa a las rutinas del motor justo antes de llamarlas: un objeto del mapa y su animación, el personaje y la cara de una burbuja de humor, el mapa y la entrada del pájaro (variables 247 y 248); la tirada de trabajo en 110 (las puertas de la Mansión de juguetes la tiran al entrar al mapa, scripts 142 a 144) | variables de historia (`player_own_variables`) | local: ningún script las vuelve a leer, así que la llamada de otro jugador nunca las cambia bajo un script en marcha | nunca se envían |
 | La bolsa, los bits, el compañero y sus cuidados, los menús, los diálogos en pantalla, la cámara | sistemas de la sesión | local | nunca se envían (batallas: §6.1) |
+| Las cacas que los compañeros dejan en el campo | el `poop_piles` de cada partida | local por ahora: la partida de un invitado empieza con las cacas del anfitrión del momento en que se unió; después cada partida muestra solo las que deja (y se come) su propio compañero, y las de un invitado terminan con la sesión (su guardado solo conserva su compañero y su bolsa). Deberían compartirse como objetos del mundo, como los objetos del suelo; hace falta un mensaje de cacas del anfitrión (pendiente) | nunca se envían |
 
 Los hechos locales salen de las reglas de la historia (`StoryAdapter::playerOwnTrigger` y `playerOwnVariable`): un
 ruleset que mueve la congelación o el encarar a otro número los mueve también.

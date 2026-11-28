@@ -31,10 +31,13 @@ enum class RoomPhase : std::uint8_t { Connecting, Open, Connected, Ready, Playin
 
 struct RoomSessionDesc {
   bool hosting = false;
+  // The room is in the public list. A private room sends no notices, though a room of more than two
+  // seats gets a token for its next seats.
+  bool listed = false;
   // The code the guest joins with (the host gets its own from the server).
   std::string code;
   // The signaling server and how to open sockets to it, for a public room host's notices (empty:
-  // none are sent; a private room sends none either).
+  // none are sent).
   std::string server;
   SocketOpener open;
 };
@@ -69,7 +72,7 @@ public:
   [[nodiscard]] bool hosting() const { return desc_.hosting; }
   [[nodiscard]] const std::string& code() const { return code_; }
   // A public room: its host has a token for the directory.
-  [[nodiscard]] bool listed() const { return !token_.empty(); }
+  [[nodiscard]] bool listed() const { return desc_.listed && !token_.empty(); }
   // Why it closed (the link's failure, if that was it), and the reason given to close().
   [[nodiscard]] PeerFailure failure() const { return failure_; }
   [[nodiscard]] const std::string& closeReason() const { return reason_; }

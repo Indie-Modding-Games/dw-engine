@@ -240,10 +240,14 @@ std::vector<CoopOutgoing> CoopHostWorld::tick(game::field::Field& field, std::ui
       continue;
     }
     const auto held = held_.find(id);
-    showHeld(field, id, held != held_.end() ? held->second : OwnerHeld{},
-             partnerAt(id, mapId, now));
+    const glm::vec3 aside = showHeld(field, id, held != held_.end() ? held->second : OwnerHeld{},
+                                     partnerAt(id, mapId, now));
     if (const auto pose = track->second.sample(now)) {
       game::field::CharacterState driven = fieldStateOf(*pose);
+      if (const glm::vec3 beside = driven.position + aside;
+          game::field::fitsOnGrid(field.collision(), beside, radius)) {
+        driven.position = beside;
+      }
       // The host's map is the judge of where a body can stand: a pose in a wall is not taken.
       if (game::field::fitsOnGrid(field.collision(), driven.position, radius)) {
         (void)field.drivePlayer(id, driven);
@@ -262,14 +266,15 @@ std::vector<CoopOutgoing> CoopHostWorld::tick(game::field::Field& field, std::ui
   return out;
 }
 
-void CoopHostWorld::showHeld(game::field::Field& field, coop::PlayerId id, const OwnerHeld& held,
-                             std::optional<game::field::CharacterState> partnerPose) {
+glm::vec3 CoopHostWorld::showHeld(game::field::Field& field, coop::PlayerId id,
+                                  const OwnerHeld& held,
+                                  std::optional<game::field::CharacterState> partnerPose) {
   if (const auto player = field.playerEntity(id)) {
     field.showOwnerClip(*player, playedClipOf(held.action));
   }
   const auto partner = field.partnerEntity(id);
   if (!partner) {
-    return;
+    return {};
   }
   std::optional<game::field::CharacterState> at;
   if (held.partner && partnerPose) {
@@ -278,12 +283,16 @@ void CoopHostWorld::showHeld(game::field::Field& field, coop::PlayerId id, const
       at = partnerPose;
     }
   }
+  glm::vec3 aside{};
   if (at && held.partner->action) {
-    at->position = machineSpotBeside(at->position, at->yaw, takenSpots_);
+    const glm::vec3 beside = machineSpotBeside(at->position, at->yaw, takenSpots_);
+    aside = beside - at->position;
+    at->position = beside;
     takenSpots_.push_back(at->position);
   }
   (void)field.drivePartner(id, at);
   field.showOwnerClip(*partner, at ? playedClipOf(held.partner->action) : std::nullopt);
+  return aside;
 }
 
 void CoopGuestWorld::receive(const coop::Message& message) {

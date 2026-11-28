@@ -242,6 +242,56 @@ TEST_CASE("co-op training: a second partner on the same machine is drawn beside 
   CHECK(glm::distance(following->position, equipment) < 1.0F);
 }
 
+TEST_CASE("co-op training: a player at a used machine stands beside the other with its partner") {
+  HostSession session;
+  const glm::vec3 equipment{600.0F, 0.0F, 300.0F};
+  session.field.holdForScript(true);
+  session.field.placeByScript(session.field.partnerEntity(), equipment);
+  session.field.animateByScript(session.field.partnerEntity(), 41);
+  const glm::vec3 placed{static_cast<float>(session.placed.x), 0.0F,
+                         static_cast<float>(session.placed.z)};
+  coop::PlayerState state{
+      .player = coop::GuestPlayerId,
+      .sequence = 3,
+      .epoch = session.placed.epoch,
+      .mapId = "room",
+      .x = session.placed.x,
+      .y = 0,
+      .z = session.placed.z,
+      .partner = coop::HeldPartner{.x = 600, .z = 300, .action = coop::ActionClip{.clip = 41}}};
+  session.host.receive(coop::GuestPlayerId, state, Millis{50});
+  (void)session.host.tick(session.field, 1, std::nullopt, Millis{200});
+  session.field.tick(1.0F / 60.0F);
+  const auto partner = session.field.partner(coop::GuestPlayerId);
+  const auto body = session.field.player(coop::GuestPlayerId);
+  REQUIRE(partner);
+  REQUIRE(body);
+  CHECK(glm::distance(partner->position, equipment) >= MachineSpotStep - 1.0F);
+  CHECK(glm::distance(body->position, placed + (partner->position - equipment)) < 1.0F);
+
+  // Off its clip, the body stands where its game has it.
+  state.sequence = 4;
+  state.partner->action.reset();
+  session.host.receive(coop::GuestPlayerId, state, Millis{100});
+  (void)session.host.tick(session.field, 1, std::nullopt, Millis{400});
+  session.field.tick(1.0F / 60.0F);
+  CHECK(glm::distance(session.field.player(coop::GuestPlayerId)->position, placed) < 1.0F);
+}
+
+TEST_CASE("co-op training: a pair at a used machine moves together beside the first") {
+  const glm::vec3 machine{0.0F, 0.0F, 0.0F};
+  const glm::vec3 owner{0.0F, 0.0F, -400.0F};
+  const std::vector<glm::vec3> none;
+  const MachinePair alone = machinePairBeside(owner, machine, 0.0F, none);
+  CHECK(alone.player == owner);
+  CHECK(alone.partner == machine);
+  const std::vector<glm::vec3> one{machine};
+  const MachinePair second = machinePairBeside(owner, machine, 0.0F, one);
+  CHECK(std::abs(second.partner.x - MachineSpotStep) < 0.01F);
+  CHECK(std::abs(second.player.x - MachineSpotStep) < 0.01F);
+  CHECK(std::abs(second.player.z - owner.z) < 0.01F);
+}
+
 TEST_CASE("co-op training: the spot beside a used machine is free, to either side") {
   const glm::vec3 machine{0.0F, 0.0F, 0.0F};
   const std::vector<glm::vec3> none;

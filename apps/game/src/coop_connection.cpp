@@ -424,7 +424,11 @@ bool CoopConnection::host(bool listed) {
                               .compat = desc_.compat,
                               .mode = "campaign"};
   }
-  beginRoom({.hosting = true, .code = {}, .server = desc_.signalServer, .open = desc_.open});
+  beginRoom({.hosting = true,
+             .listed = listed,
+             .code = {},
+             .server = desc_.signalServer,
+             .open = desc_.open});
   auto peer = desc_.host(listing);
   if (!peer) {
     view_ = View::Error;
@@ -481,7 +485,7 @@ bool CoopConnection::join(std::string_view code) {
   hosting_ = false;
   seats_.clear();
   returning_ = false;
-  beginRoom({.hosting = false, .code = *normalized, .server = {}, .open = {}});
+  beginRoom({.hosting = false, .listed = false, .code = *normalized, .server = {}, .open = {}});
   peer_ = desc_.join(*normalized);
   if (!peer_) {
     view_ = View::Error;

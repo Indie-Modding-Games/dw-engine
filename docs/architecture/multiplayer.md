@@ -407,8 +407,9 @@ agree again. A guest-side jump (a script's `place`) is one of those refusals: it
 
 **Maps (decision 2 of §6).** The group goes where the host goes. The guest's own exits are held
 (`Field::holdExits`); when the host changes map, every guest gets a correction with the new map, the exit and the
-host's spawn spot, and arrives there exactly. States from the old map or epoch are refused, and the guest reports
-nothing while it travels. Each player still has its own current map: a remote player on another map is neither drawn
+host's spawn spot, and arrives there exactly. Its partner arrives next to it, as on any map entry, and a correction on
+the map it already stands on (a join, a reset) brings the partner along too (`Field::placePlayerWithPartner`). States
+from the old map or epoch are refused, and the guest reports nothing while it travels. Each player still has its own current map: a remote player on another map is neither drawn
 nor driven, and is shown again when it arrives.
 
 **The zone notice (#356).** Before a guest follows the host to another map, its game waits
@@ -501,6 +502,7 @@ applies a shared interaction to the world; the others' games ask, and are told t
 | The canyon shop's job: customers served, the tally and its meter, each turn's result, the halfway line (#423) | story variables and a trigger (`player_own_variables`, `player_own_triggers`), the tally and the haggle | local: each player runs its own job; one player opening the shop never moves the other's meter | never sent |
 | What a script hands to the engine's routines right before the call: a map object and its animation, a mood bubble's character and face, the bird's map and entrance (variables 247 and 248); the scratch roll in 110 (the Toy Mansion's doors roll it on map entry, scripts 142 to 144) | story variables (`player_own_variables`) | local: no script reads them back, so another player's call never changes them under a running script | never sent |
 | The bag, bits, the partner and its care, menus, dialogs on screen, the camera | session systems | local | never sent (battles: §6.1) |
+| Poop piles the partners leave on the field | each game's `poop_piles` | local for now: a guest's game starts with the host's piles of the moment it joined; after that each game shows only the piles its own partner leaves (and eats), and a guest's piles end with the session (its save keeps only its partner and bag). They should be shared as world objects, like the ground items; that needs a pile message from the host (open) | never sent |
 
 The local facts come from the story rules (`StoryAdapter::playerOwnTrigger` and `playerOwnVariable`): a ruleset that
 moves the freeze or the talk facing to another number moves them too.
