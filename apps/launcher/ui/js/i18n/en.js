@@ -110,7 +110,7 @@ export default {
     compatBody: "Your graphics card{gpu} cannot run the game with its current driver, so the game will use compatibility mode: it plays the same, only slower. Update your card's driver (or the system) for better performance.",
     compatSoftwareBody: "This computer only has a software Vulkan driver{gpu}: the game works, but slower. If it has a graphics card, update its driver for better performance.",
     vulkan12Title: "Vulkan 1.2 mode",
-    vulkan12Hint: "For older graphics cards and drivers: accepts Vulkan 1.2 with the dynamic rendering and synchronization2 extensions instead of requiring Vulkan 1.3.",
+    vulkan12Hint: "Always starts the graphics card in the Vulkan 1.2 compatible mode, even when it can do more. Older cards do not need it: the game picks that mode on its own when it is the only one that works.",
     vulkan12Rescue: "Your graphics card can run the game in Vulkan 1.2 mode.",
     vulkan12Enable: "Turn on Vulkan 1.2 mode",
     lowPerfTitle: "Low-performance mode",

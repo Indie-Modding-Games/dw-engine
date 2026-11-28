@@ -110,7 +110,7 @@ export default {
     compatBody: "Deine Grafikkarte{gpu} kann das Spiel mit ihrem aktuellen Treiber nicht ausführen, also nutzt das Spiel den Kompatibilitätsmodus: Es spielt sich gleich, nur langsamer. Aktualisiere den Treiber deiner Karte (oder das System) für mehr Leistung.",
     compatSoftwareBody: "Dieser Computer hat nur einen Vulkan-Software-Treiber{gpu}: Das Spiel läuft, aber langsamer. Wenn er eine Grafikkarte hat, aktualisiere ihren Treiber für mehr Leistung.",
     vulkan12Title: "Vulkan-1.2-Modus",
-    vulkan12Hint: "Für ältere Grafikkarten und Treiber: akzeptiert Vulkan 1.2 mit den Erweiterungen für dynamisches Rendern und synchronization2, statt Vulkan 1.3 zu verlangen.",
+    vulkan12Hint: "Startet die Grafikkarte immer im kompatiblen Vulkan-1.2-Modus, auch wenn sie mehr kann. Ältere Karten brauchen das nicht: Das Spiel wählt diesen Modus von selbst, wenn nur er funktioniert.",
     vulkan12Rescue: "Deine Grafikkarte kann das Spiel im Vulkan-1.2-Modus ausführen.",
     vulkan12Enable: "Vulkan-1.2-Modus einschalten",
     lowPerfTitle: "Niedrigleistungsmodus",

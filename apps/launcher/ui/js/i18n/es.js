@@ -110,7 +110,7 @@ export default {
     compatBody: "Tu tarjeta gráfica{gpu} no puede mover el juego con el controlador que tiene ahora, así que el juego usará el modo de compatibilidad: funciona igual, pero más lento. Actualiza el controlador de tu tarjeta (o el sistema) para más rendimiento.",
     compatSoftwareBody: "Este equipo solo tiene un controlador de Vulkan por software{gpu}: el juego funciona, pero más lento. Si tiene tarjeta gráfica, actualiza su controlador para más rendimiento.",
     vulkan12Title: "Modo Vulkan 1.2",
-    vulkan12Hint: "Para tarjetas gráficas y controladores antiguos: acepta Vulkan 1.2 con las extensiones de renderizado dinámico y synchronization2 en vez de exigir Vulkan 1.3.",
+    vulkan12Hint: "Arranca siempre la tarjeta gráfica en el modo compatible Vulkan 1.2, aunque pueda más. Las tarjetas antiguas no lo necesitan: el juego elige ese modo por su cuenta cuando es el único que funciona.",
     vulkan12Rescue: "Tu tarjeta gráfica puede mover el juego en modo Vulkan 1.2.",
     vulkan12Enable: "Activar el modo Vulkan 1.2",
     lowPerfTitle: "Modo de bajo rendimiento",

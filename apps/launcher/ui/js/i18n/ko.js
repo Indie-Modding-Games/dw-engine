@@ -111,7 +111,7 @@ export default {
     compatBody: "그래픽 카드{gpu}가 현재 드라이버로는 게임을 실행할 수 없어서 호환 모드를 사용해요. 플레이는 똑같고 속도만 느려요. 더 나은 성능을 원하면 그래픽 카드 드라이버(또는 시스템)를 업데이트하세요.",
     compatSoftwareBody: "이 컴퓨터에는 소프트웨어 Vulkan 드라이버{gpu}만 있어요. 게임은 되지만 느려요. 그래픽 카드가 있다면 드라이버를 업데이트해서 성능을 높여 보세요.",
     vulkan12Title: "Vulkan 1.2 모드",
-    vulkan12Hint: "오래된 그래픽 카드와 드라이버용이에요. Vulkan 1.3을 요구하는 대신 동적 렌더링과 synchronization2 확장이 있는 Vulkan 1.2를 받아들여요.",
+    vulkan12Hint: "그래픽 카드가 더 높은 버전을 지원해도 항상 Vulkan 1.2 호환 모드로 시작합니다. 오래된 카드에는 필요 없습니다. 이 모드만 작동할 때는 게임이 알아서 선택합니다.",
     vulkan12Rescue: "그래픽 카드가 Vulkan 1.2 모드로 게임을 실행할 수 있어요.",
     vulkan12Enable: "Vulkan 1.2 모드 켜기",
     lowPerfTitle: "저성능 모드",

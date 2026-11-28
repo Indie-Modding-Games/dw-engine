@@ -110,7 +110,7 @@ export default {
     compatBody: "你的显卡{gpu}无法用当前的驱动运行游戏，所以游戏将使用兼容模式：玩起来一样，只是比较慢。更新显卡驱动（或系统）可以获得更好的性能。",
     compatSoftwareBody: "这台电脑只有软件Vulkan驱动{gpu}：游戏可以运行，但会比较慢。如果有显卡，更新它的驱动可以获得更好的性能。",
     vulkan12Title: "Vulkan 1.2 模式",
-    vulkan12Hint: "适用于较旧的显卡和驱动：接受带有动态渲染和 synchronization2 扩展的 Vulkan 1.2，而不要求 Vulkan 1.3。",
+    vulkan12Hint: "始终以 Vulkan 1.2 兼容模式启动显卡，即使它支持更高版本。旧显卡无需开启：当只有这个模式可用时，游戏会自动选择它。",
     vulkan12Rescue: "你的显卡可以在 Vulkan 1.2 模式下运行游戏。",
     vulkan12Enable: "开启 Vulkan 1.2 模式",
     lowPerfTitle: "低性能模式",
