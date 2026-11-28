@@ -71,12 +71,25 @@ constexpr std::array<std::string_view, 34> GameRows{"walk-control",
                                                     "coop-open-to-join",
                                                     "name-spacing",
                                                     "free-exploration"};
-constexpr std::array<std::string_view, 18> GraphicsRows{
-    "display-mode",      "vsync",          "auto-quality",     "render-scale",
-    "frame-limit",       "smooth-motion",  "hd-scenery",       "scenery-quality",
-    "antialiasing",      "texture-filter", "model-characters", "widescreen-pictures",
-    "enhanced-lighting", "vivid-colors",   "shadows",          "chibi-style",
-    "weather",           "seasons"};
+constexpr std::array<std::string_view, 19> GraphicsRows{"display-mode",
+                                                        "vsync",
+                                                        "graphics-preset",
+                                                        "auto-quality",
+                                                        "render-scale",
+                                                        "frame-limit",
+                                                        "smooth-motion",
+                                                        "hd-scenery",
+                                                        "scenery-quality",
+                                                        "antialiasing",
+                                                        "texture-filter",
+                                                        "model-characters",
+                                                        "widescreen-pictures",
+                                                        "enhanced-lighting",
+                                                        "vivid-colors",
+                                                        "shadows",
+                                                        "chibi-style",
+                                                        "weather",
+                                                        "seasons"};
 constexpr std::array<std::string_view, 4> SoundRows{"music-volume", "effects-volume",
                                                     "continuous-music", "reverb"};
 constexpr std::array<std::string_view, 17> InterfaceRows{
