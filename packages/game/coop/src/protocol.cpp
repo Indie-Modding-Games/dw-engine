@@ -803,9 +803,9 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
       begin.allies.push_back(in.get<PlayerId>());
     }
     if (!getFlag(in, begin.folder) || !in.ok() || allies >= MaxPlayers || begin.battle == 0 ||
-        begin.starter > GuestPlayerId || begin.mapId.empty() || begin.enemyNpcs.empty() ||
+        !validPlayer(begin.starter) || begin.mapId.empty() || begin.enemyNpcs.empty() ||
         begin.species.size() != begin.enemyNpcs.size() + 1 + begin.allies.size() ||
-        (begin.starter == GuestPlayerId) != (begin.ask != 0) ||
+        (begin.starter != HostPlayerId) != (begin.ask != 0) ||
         !std::ranges::all_of(begin.allies, [&](PlayerId ally) {
           return validPlayer(ally) && ally != begin.starter;
         })) {

@@ -2253,7 +2253,8 @@ void PlaySession::mirrorCoopNpcs(const PresentedCoopWorld* world, net::Millis no
   (void)coopNpcMirror_.show(scene_->npcs(),
                             {.world = sameMap ? world : nullptr,
                              .mapSerial = scene_->mapSerial(),
-                             .ready = story == nullptr || !story->scriptRunning()},
+                             .ready = story == nullptr || !story->scriptRunning(),
+                             .battling = battleScreen_.active()},
                             now);
 }
 

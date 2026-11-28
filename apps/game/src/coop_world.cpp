@@ -96,8 +96,7 @@ void CoopHostWorld::leave(coop::PlayerId id) {
   if (authority_.leave(id)) {
     core::logInfo("coop: player {} left the session ({} players)", id, authority_.size());
   }
-  tracks_.erase(id);
-  held_.erase(id);
+  forgetTracks(id);
   placed_.erase(id);
   verdicts_.erase(id);
   ledger_.leave(id);
@@ -148,7 +147,36 @@ void CoopHostWorld::receive(coop::PlayerId from, const coop::Message& message, n
   }
   const net::Millis sentAt{static_cast<std::int64_t>(state->sequence) * 1000 / GuestTicksPerSecond};
   (void)tracks_[from].push(state->sequence, sentAt, *authority_.find(from)->pose, now);
+  if (state->partner) {
+    const coop::HeldPartner& partner = *state->partner;
+    (void)partnerTracks_[from].push(state->sequence, sentAt,
+                                    {.mapId = state->mapId,
+                                     .x = partner.x,
+                                     .y = partner.y,
+                                     .z = partner.z,
+                                     .yaw = partner.yaw,
+                                     .motion = partner.motion},
+                                    now);
+  }
   held_[from] = {.action = state->action, .partner = state->partner};
+}
+
+std::optional<game::field::CharacterState>
+CoopHostWorld::partnerAt(coop::PlayerId id, std::string_view mapId, net::Millis now) const {
+  const auto held = held_.find(id);
+  const auto track = partnerTracks_.find(id);
+  if (held == held_.end() || !held->second.partner || track == partnerTracks_.end() ||
+      track->second.mapId() != mapId) {
+    return std::nullopt;
+  }
+  const auto pose = track->second.sample(now);
+  return pose ? std::optional{fieldStateOf(*pose)} : std::nullopt;
+}
+
+void CoopHostWorld::forgetTracks(coop::PlayerId id) {
+  tracks_.erase(id);
+  partnerTracks_.erase(id);
+  held_.erase(id);
 }
 
 std::vector<CoopOutgoing> CoopHostWorld::tick(game::field::Field& field, std::uint32_t mapSerial,
@@ -182,8 +210,7 @@ std::vector<CoopOutgoing> CoopHostWorld::tick(game::field::Field& field, std::ui
       if (auto correction = authority_.relocate(id, coopPoseOf(mapId, *body), arrivalExit)) {
         out.push_back({.to = id, .message = std::move(*correction)});
       }
-      tracks_.erase(id);
-      held_.erase(id);
+      forgetTracks(id);
       showHeld(field, id, {});
       (void)field.drivePlayer(id, std::nullopt);
       placed_.insert(id);
@@ -197,8 +224,7 @@ std::vector<CoopOutgoing> CoopHostWorld::tick(game::field::Field& field, std::ui
       back.position = {static_cast<float>(correction->x), static_cast<float>(correction->y),
                        static_cast<float>(correction->z)};
       back.motion = scene::Motion::Idle;
-      tracks_.erase(id);
-      held_.erase(id);
+      forgetTracks(id);
       showHeld(field, id, {});
       (void)field.drivePlayer(id, back);
       out.push_back({.to = id, .message = std::move(*correction)});
@@ -209,7 +235,8 @@ std::vector<CoopOutgoing> CoopHostWorld::tick(game::field::Field& field, std::ui
       continue;
     }
     const auto held = held_.find(id);
-    showHeld(field, id, held != held_.end() ? held->second : OwnerHeld{});
+    showHeld(field, id, held != held_.end() ? held->second : OwnerHeld{},
+             partnerAt(id, mapId, now));
     if (const auto pose = track->second.sample(now)) {
       game::field::CharacterState driven = fieldStateOf(*pose);
       // The host's map is the judge of where a body can stand: a pose in a wall is not taken.
@@ -230,7 +257,8 @@ std::vector<CoopOutgoing> CoopHostWorld::tick(game::field::Field& field, std::ui
   return out;
 }
 
-void CoopHostWorld::showHeld(game::field::Field& field, coop::PlayerId id, const OwnerHeld& held) {
+void CoopHostWorld::showHeld(game::field::Field& field, coop::PlayerId id, const OwnerHeld& held,
+                             std::optional<game::field::CharacterState> partnerPose) {
   if (const auto player = field.playerEntity(id)) {
     field.showOwnerClip(*player, playedClipOf(held.action));
   }
@@ -239,16 +267,10 @@ void CoopHostWorld::showHeld(game::field::Field& field, coop::PlayerId id, const
     return;
   }
   std::optional<game::field::CharacterState> at;
-  if (held.partner) {
-    const coop::HeldPartner& pose = *held.partner;
-    const game::field::CharacterState state{
-        .position = {static_cast<float>(pose.x), static_cast<float>(pose.y),
-                     static_cast<float>(pose.z)},
-        .yaw = static_cast<float>(pose.yaw) * (std::numbers::pi_v<float> * 2.0F) / 65536.0F,
-        .motion = sceneMotionOf(pose.motion)};
+  if (held.partner && partnerPose) {
     const auto body = field.player(id);
-    if (body && glm::distance(body->position, state.position) <= HeldPartnerReach) {
-      at = state;
+    if (body && glm::distance(body->position, partnerPose->position) <= HeldPartnerReach) {
+      at = partnerPose;
     }
   }
   (void)field.drivePartner(id, at);
@@ -294,6 +316,7 @@ std::optional<CoopGuestWorld::Move> CoopGuestWorld::apply(const game::field::Fie
       field.mapId() == correction.mapId) {
     core::logInfo("coop: the host loaded {} again: this game loads it again too", correction.mapId);
     asked_ = true;
+    zoneLead_.reset();
     move.reload = true;
     return move;
   }
@@ -306,13 +329,26 @@ std::optional<CoopGuestWorld::Move> CoopGuestWorld::apply(const game::field::Fie
     placedOn_ = correction.mapId;
     pending_.reset();
     asked_ = false;
+    zoneLead_.reset();
     if (field.mapId() == move.map &&
         glm::distance(field.player().position, move.at.position) > 1.0F) {
       return move;
     }
     return std::nullopt;
   }
+  if (!asked_ && epoch_ != 0 && placedOn_ != correction.mapId &&
+      field.mapId() != correction.mapId) {
+    if (!zoneLead_) {
+      zoneLead_ = ZoneLeadTicks;
+      zoneChange_ = ZoneChange{.map = correction.mapId, .epoch = correction.epoch};
+    }
+    if (*zoneLead_ > 0) {
+      --*zoneLead_;
+      return std::nullopt;
+    }
+  }
   // Not there yet: ask for it (again, when a story warp of the guest's own took it elsewhere).
+  zoneLead_.reset();
   asked_ = true;
   if (field.mapId() != correction.mapId) {
     core::logInfo("coop: the host leads to {}", correction.mapId);
@@ -327,20 +363,16 @@ std::optional<coop::PlayerState> CoopGuestWorld::report(const game::field::Field
     return std::nullopt;
   }
   const coop::PlayerPose pose = coopPoseOf(field.mapId(), field.player());
-  // The partner goes along while this game holds it (a gym course, a script): the host does not
-  // know where its course or scene put it.
-  std::optional<coop::HeldPartner> partner;
-  const std::optional<game::field::PlayedClip> partnerClip =
-      field.scriptedClipOf(field.partnerEntity());
-  if (field.heldByScript() || partnerClip) {
-    const coop::PlayerPose at = coopPoseOf(field.mapId(), field.partner());
-    partner = coop::HeldPartner{.x = at.x,
-                                .y = at.y,
-                                .z = at.z,
-                                .yaw = at.yaw,
-                                .motion = at.motion,
-                                .action = coopActionOf(partnerClip)};
-  }
+  // The partner goes along on every report, with what a gym course or a script plays on it: the
+  // host draws it where this game has it, not on a follow of its own that drifts away (#411).
+  const coop::PlayerPose at = coopPoseOf(field.mapId(), field.partner());
+  const coop::HeldPartner partner{.x = at.x,
+                                  .y = at.y,
+                                  .z = at.z,
+                                  .yaw = at.yaw,
+                                  .motion = at.motion,
+                                  .action =
+                                      coopActionOf(field.scriptedClipOf(field.partnerEntity()))};
   return coop::PlayerState{.player = self_,
                            .sequence = static_cast<std::uint32_t>(tick),
                            .epoch = epoch_,

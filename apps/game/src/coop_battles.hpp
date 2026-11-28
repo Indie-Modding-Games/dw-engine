@@ -97,6 +97,8 @@ public:
   void hostLeft(PlaySession* play);
   // No game is played any more: everything goes.
   void reset();
+  // The guest: the players whose partners fight in the host's battle it follows.
+  [[nodiscard]] std::vector<game::coop::PlayerId> fighting() const { return mirror_.fighting(); }
 
 private:
   void hostTick(PlaySession& play);
@@ -114,6 +116,7 @@ private:
   [[nodiscard]] game::coop::BattleFrame frameOf(const PlaySession& play, game::coop::PlayerId to);
   void guestTick(PlaySession& play, CoopGameplayBridge& bridge);
   void sendOffer(PlaySession& play, CoopGameplayBridge& bridge);
+  void followPurse(PlaySession& play);
   void startShowing(PlaySession& play, const game::coop::BattleBegin& begin);
   void applySpoils(PlaySession& play, const game::coop::BattleEnd& end);
   void showFrame(PlaySession& play);
@@ -158,6 +161,7 @@ private:
   std::optional<std::size_t> target_;
   CoopBattleSounds sounds_;
   CoopThrowFollower throws_;
+  CoopThrowPurse purse_;
   std::vector<game::coop::PlayerId> throwing_;
   std::optional<game::battle::StatusVisuals> glows_;
   std::vector<FieldScene::StatusBody> glowBodies_;

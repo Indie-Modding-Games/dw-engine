@@ -23,7 +23,11 @@ show_name_never: 2
 # give the meat and set it to 0). The canyon shop's job runs on each player's own counter: the customers served
 # (123), the tally's bytes (243, 244), what each turn tells the scripts (110 result, 117 level, 248 face) and its
 # halfway line (trigger 101), so one player's job never moves the other's bar (story_scenes.yaml, shop_job).
-player_own_variables: [31, 110, 117, 123, 243, 244, 248]
+# 247 and 248 are what a script hands to the engine's routines right before the call (a map object and its
+# animation, a mood bubble's character and face, the bird's map and entrance): no script reads them back, so
+# they stay in the game that runs the script. 110 is a scratch roll: read in the section that rolls it, except
+# the Toy Mansion's doors (scripts 142 to 144), whose map entry rolls the right door for that game's own walk.
+player_own_variables: [31, 110, 117, 123, 243, 244, 247, 248]
 player_own_triggers: [101]
 # What the ruleset adds to the original's 800 triggers and 256 variables, for mods with more story or more
 # species (docs/modding/story.md, «Capacity»). The extra variables are integers from 0 to extra_variable_max and

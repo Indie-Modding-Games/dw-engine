@@ -197,6 +197,7 @@ coop.joined: "{name}이(가) 게임에 참가했어요."
 coop.item_gone: "늦었어요! 다른 사람이 가져갔어요."
 # A guest whose host is busy with a long load.
 coop.waiting_host: "{name}을(를) 기다리는 중..."
+coop.host_changed_zone: "{name}이(가) 다른 지역으로 이동했어요."
 # A guest's game is the host's world in memory: only its partner and bag go home to its own save (multiplayer.md,
 # "Saves in co-op"); {name} is the host.
 coop.guest_not_saved: "지금은 {name}의 세계에 있어요. 파트너와 가방은 함께 돌아가고, 나머지는 여기에 남아요."

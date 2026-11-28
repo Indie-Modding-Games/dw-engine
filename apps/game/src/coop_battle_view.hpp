@@ -38,4 +38,23 @@ private:
   std::set<std::uint16_t> landed_;
 };
 
+// The items this player throws in the host's battle are paid from its own bag once the host's
+// frames show the throw (docs/architecture/coop-combat.md §7.1): one the host refused costs
+// nothing. One throw at a time waits for the host's answer, at most WaitFrames.
+class CoopThrowPurse {
+public:
+  static constexpr std::uint32_t WaitFrames = 40;
+
+  [[nodiscard]] bool canAsk() const { return !asked_; }
+  void asked(std::uint32_t frame) { asked_ = frame; }
+  // The items `self`'s throws in this frame that were not paid yet cost.
+  [[nodiscard]] std::vector<std::string> due(std::span<const game::coop::BattleThrow> throws,
+                                             game::coop::PlayerId self, std::uint32_t frame);
+  void reset();
+
+private:
+  std::optional<std::uint32_t> asked_;
+  std::set<std::uint16_t> paid_;
+};
+
 } // namespace dwe::app

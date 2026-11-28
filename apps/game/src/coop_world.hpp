@@ -5,6 +5,7 @@
 #include <dwe/game/field/field.hpp>
 #include <dwe/net/peer_link.hpp>
 
+#include <algorithm>
 #include <cstdint>
 #include <map>
 #include <optional>
@@ -12,6 +13,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "coop_world_state.hpp"
@@ -82,9 +84,14 @@ public:
 
 private:
   struct OwnerHeld;
-  // A guest's player and partner as its own game shows them (#420): the clip its scripts play,
-  // and its partner where its game holds it (back to following it without).
-  void showHeld(game::field::Field& field, game::coop::PlayerId id, const OwnerHeld& held);
+  // A guest's player and partner as its own game shows them (#420, #411): the clip its scripts
+  // play, and its partner where its game has it, smoothed as the body (`partner`, the sample of its
+  // track; back to following the body without).
+  void showHeld(game::field::Field& field, game::coop::PlayerId id, const OwnerHeld& held,
+                std::optional<game::field::CharacterState> partner = std::nullopt);
+  [[nodiscard]] std::optional<game::field::CharacterState>
+  partnerAt(game::coop::PlayerId id, std::string_view mapId, net::Millis now) const;
+  void forgetTracks(game::coop::PlayerId id);
   // Whether a claim's item is still there; taking it off the world (and telling the guests) if so.
   bool grant(CoopWorldView& view, const game::coop::ItemClaim& claim, CoopWorldShare& share,
              bool& chestsMayChange);
@@ -101,8 +108,9 @@ private:
   std::set<game::coop::PlayerId> synced_;
   std::optional<std::uint32_t> syncSerial_;
   std::map<game::coop::PlayerId, game::coop::PoseTrack> tracks_;
+  std::map<game::coop::PlayerId, game::coop::PoseTrack> partnerTracks_;
   // What each guest's newest taken state says its own scripts play on its player and where its
-  // game holds its partner (#420): the host's field shows them so.
+  // game has its partner (#420, #411): the host's field shows them so.
   struct OwnerHeld {
     std::optional<game::coop::ActionClip> action;
     std::optional<game::coop::HeldPartner> partner;
@@ -137,7 +145,20 @@ public:
   // Before the guest's field tick, with the field and whether it still goes to the map the last
   // move asked for: the move to make now, if any. Once the player stands where the host said, the
   // reports carry that correction's epoch.
+  // A move to another map the host led to waits ZoneLeadTicks first, so the zone notice shows
+  // before this game's fade (#356).
   [[nodiscard]] std::optional<Move> apply(const game::field::Field& field, bool moving);
+  static constexpr std::uint32_t ZoneLeadTicks = 45;
+  // The host led the group to another map: once per change, when its lead starts.
+  struct ZoneChange {
+    std::string map;
+    std::uint16_t epoch = 0;
+  };
+  [[nodiscard]] std::optional<ZoneChange> takeZoneChange() {
+    return std::exchange(zoneChange_, {});
+  }
+  // Whether this game waits out the lead before following the host to another map.
+  [[nodiscard]] bool leadingToZone() const { return zoneLead_.has_value(); }
   // After the field tick `tick` (it counts the guest's ticks): the state to report, every few
   // ticks, while the player stands on the map the host put it on.
   [[nodiscard]] std::optional<game::coop::PlayerState>
@@ -149,6 +170,13 @@ public:
   // The session's players as the host last listed them (none before its first roster).
   [[nodiscard]] const std::optional<game::coop::Roster>& roster() const { return roster_; }
   [[nodiscard]] bool inSession(game::coop::PlayerId id) const;
+  // Whether player `id`'s bodies stay on this game's scene: while it is in the session, and after
+  // it left while the battle shown still fights with its partner (`fighting`, BattleMirror), as the
+  // host keeps them until that battle ends.
+  [[nodiscard]] bool keepsBodies(game::coop::PlayerId id,
+                                 std::span<const game::coop::PlayerId> fighting) const {
+    return inSession(id) || std::ranges::contains(fighting, id);
+  }
   // The partner species the roster gives player `id` (empty when none).
   [[nodiscard]] std::string partnerOf(game::coop::PlayerId id) const;
   // After the tick, the world's interactions (#357): what this game changed of the shared world
@@ -177,6 +205,8 @@ private:
   bool asked_ = false;
   // The map the newest correction placed this player on.
   std::string placedOn_;
+  std::optional<std::uint32_t> zoneLead_;
+  std::optional<ZoneChange> zoneChange_;
   // The host's map edits that came while this game was loading their map, for once it stands there.
   std::vector<game::coop::WorldEdit> heldEdits_;
   std::string heldMap_;
@@ -204,6 +234,7 @@ void applyCoopMapEdits(FieldScene& scene, std::span<const game::coop::WorldEdit>
 // the guest is not on that map, and gone once the roster no longer lists the player.
 // `hostPartner` is the host's partner species for a roster that does not give it.
 void presentCoopPlayers(FieldScene& scene, const PresentedCoopWorld* world,
-                        const CoopGuestWorld& guest, std::string_view hostPartner);
+                        const CoopGuestWorld& guest, std::string_view hostPartner,
+                        std::span<const game::coop::PlayerId> fighting);
 
 } // namespace dwe::app

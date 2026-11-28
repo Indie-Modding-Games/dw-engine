@@ -411,6 +411,13 @@ host's spawn spot, and arrives there exactly. States from the old map or epoch a
 nothing while it travels. Each player still has its own current map: a remote player on another map is neither drawn
 nor driven, and is shown again when it arrives.
 
+**The zone notice (#356).** Before a guest follows the host to another map, its game waits
+`CoopGuestWorld::ZoneLeadTicks` (45 ticks, 0.75 s) with the notice `online.coop.host_changed_zone` ("{name} went to
+another area", the host's name) up, then fades. The lead starts once per change (`CoopGuestWorld::takeZoneChange`
+gives the map and the correction's epoch for a skin that wants its own look) and waits while the guest's own map
+change runs. Joining, a room reset on the same map and being brought back after a guest's own story warp show no
+notice and do not wait. The guest reports nothing during the lead, as during the trip.
+
 **Interpolation.** Remote players are drawn from a short buffer of timed states (`PoseTrack`): 100 ms behind the
 newest one, blending between the two around that moment. Late states never move a track back, a short gap
 extrapolates for at most 100 ms and then holds, a step longer than 800 units (a warp or a correction) is drawn as a
@@ -428,11 +435,13 @@ a battle takes them from there when it starts (§6.1).
 
 **What a script plays (#420).** A gym course, a scene or a talk plays clips on the player and the partner instead of
 their motion's. Snapshots and guest states carry that clip (the original's animation id and how many times a script
-started it, so a push started again plays again) with protocol 14. While a guest's game holds its partner (a script
-holds its field, or a script plays a clip on it), its states also carry the partner's place and clip: the host draws
-the guest's partner there instead of following, and lets it follow again from that spot once the state stops
-carrying it. A held partner reported more than 2000 units from its player is not drawn there. A clip a script no
-longer plays leaves nothing behind: the body goes back to its motion's clip on every machine.
+started it, so a push started again plays again) with protocol 14. A guest's states also carry its partner's place and
+the clip a script plays on it, on every report (#411: before, only while its game held the partner): the host draws the
+guest's partner there, smoothed on a track of its own as the body is, instead of running a follow of its own that
+drifted away from the guest's. A battle that starts places that partner where its player sees it, and other guests see
+it there in the host's snapshots. A guest that sends no partner gets the follow as before. A partner reported more than
+2000 units from its player is not drawn there. A clip a script no longer plays leaves nothing behind: the body goes
+back to its motion's clip on every machine.
 
 **The map's NPCs (#419).** Each game used to walk its map NPCs on its own, so a wild one stood, chased and left
 differently on each screen. With protocol 14 the host's snapshots also list its map's NPCs, id `0x100` plus the slot,
@@ -440,7 +449,8 @@ after the players (none when they do not fit in one datagram). On a guest standi
 snapshot lists stands where the host's does and moves its way, as smoothly as the players; a script of the guest's own
 game holding or animating one still comes first. One the host no longer has (a battle took it off, a story change made
 it leave) leaves the guest's map once it has been missing for a second while no script runs there, so nothing stays
-behind. On another map, during a map change or a co-op battle, or with no link, the guest's NPCs walk on their own.
+behind. On another map, during a map change or a co-op battle, or with no link, the guest's NPCs walk on their own;
+during a battle of the guest's own game they are its fighters and stand where that battle puts them.
 They react to the host's player, as the host's game sees them; an NPC only the host has is not added on the guest.
 
 **Lifecycle.** A guest joins when its handshake completes: it gets the lowest free id, a body and partner in the
@@ -483,6 +493,7 @@ applies a shared interaction to the world; the others' games ask, and are told t
 | A script's freeze, the talk facing trigger, the next map's name | story variables and a trigger | local: they follow that player's own scripts | never sent |
 | Rewards a script gives once per player: the meat farm's days since its last meat (Palmon's and the farm's daily meat, #421) | story variables (`player_own_variables` in the story rules) | local: each player gets its own meat once a day | never sent |
 | The canyon shop's job: customers served, the tally and its meter, each turn's result, the halfway line (#423) | story variables and a trigger (`player_own_variables`, `player_own_triggers`), the tally and the haggle | local: each player runs its own job; one player opening the shop never moves the other's meter | never sent |
+| What a script hands to the engine's routines right before the call: a map object and its animation, a mood bubble's character and face, the bird's map and entrance (variables 247 and 248); the scratch roll in 110 (the Toy Mansion's doors roll it on map entry, scripts 142 to 144) | story variables (`player_own_variables`) | local: no script reads them back, so another player's call never changes them under a running script | never sent |
 | The bag, bits, the partner and its care, menus, dialogs on screen, the camera | session systems | local | never sent (battles: §6.1) |
 
 The local facts come from the story rules (`StoryAdapter::playerOwnTrigger` and `playerOwnVariable`): a ruleset that
@@ -615,6 +626,13 @@ player (`coop_hud.tag.<n>.*`). Every guest's link carries its own battle message
 every free player on that map fights in it ([co-op combat](coop-combat.md) §12). A bridge drops the messages no part of
 the play reads (a lobby's ready, a save's chunks) instead of queueing them, so a peer that keeps sending them grows
 nothing on the other side.
+
+**A player leaving while the others play.** Its link alone ends; the other guests keep theirs (`room_tests.cpp`). The
+host takes it out of the roster at once, but a battle it fights in keeps its bodies until that battle ends, on the host
+and on every guest (`CoopGuestWorld::keepsBodies` with `BattleMirror::fighting`): a guest no longer drops them the
+moment the roster loses them, so their partner never borrows this guest's own partner's body. A battle's `BattleBegin`
+takes any player as its starter; before, the check stopped a battle that the third or fourth player started from going
+out. Audit: [#352](audits/352-audit.md).
 
 **Sync diagnostics.** A developer tool behind the console (F1), which only opens with the developer tools on, so it
 never runs in release builds. `coop_sync("on")` on the host tells every guest to report; `coop_sync("report")` prints

@@ -245,7 +245,10 @@ jugador puede acaparar las decisiones porque cada uno solo da órdenes a su prop
   #363.
 - El anfitrión valida cada acción: un `Command` solo para el compañero propio del remitente, un objeto solo de la bolsa
   del remitente (la copia de la bolsa del invitado que llegó con su perfil; el invitado quita el objeto cuando el
-  anfitrión confirma el lanzamiento), un ánimo solo durante el aura de un aliado.
+  anfitrión confirma el lanzamiento), un ánimo solo durante el aura de un aliado. La confirmación es el lanzamiento que
+  aparece en el `BattleFrame` del anfitrión con el id del invitado: hasta entonces el objeto sigue en su bolsa, así que
+  un lanzamiento que el anfitrión rechaza (otro en vuelo) no cuesta nada; un lanzamiento espera la respuesta cada vez,
+  como mucho 40 cuadros (2 s).
 
 ### 7.2 Qué se replica
 

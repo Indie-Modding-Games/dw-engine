@@ -22,7 +22,8 @@ void applyCoopMove(FieldScene& scene, CoopGuestWorld& guest) {
 }
 
 void presentCoopPlayers(FieldScene& scene, const PresentedCoopWorld* world,
-                        const CoopGuestWorld& guest, std::string_view hostPartner) {
+                        const CoopGuestWorld& guest, std::string_view hostPartner,
+                        std::span<const coop::PlayerId> fighting) {
   const game::field::Field& field = scene.field();
   // Positions of another map are never drawn on this one (#356).
   const bool sameMap = world != nullptr && world->mapId == field.mapId() &&
@@ -76,7 +77,7 @@ void presentCoopPlayers(FieldScene& scene, const PresentedCoopWorld* world,
     }
     if (guest.inSession(id)) {
       (void)scene.presentCoopPlayer(id, std::nullopt);
-    } else {
+    } else if (!guest.keepsBodies(id, fighting)) {
       scene.removeCoopPlayer(id);
     }
   }
