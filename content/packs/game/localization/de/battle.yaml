@@ -64,6 +64,7 @@ charge: "Lade die Spezialtechnik!"
 charge_hint: "Immer wieder drücken"
 prompt.command: "Gib den Befehl"
 prompt.bag: "Items"
+prompt.cheer: "Anfeuern"
 # The bag in battle: the button that opens it.
 bag.open: "Items"
 # The marks over the fighters of a cup match between two of the same species (STD_renderPlayerMarker).

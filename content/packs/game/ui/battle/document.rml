@@ -163,8 +163,9 @@
 		<div id="speed-plate" class="hidden"><span text-key="battle.fast"></span></div>
 
 		<div id="prompts">
-			<span class="prompt"><span class="key" id="prompt-confirm"></span><span text-key="battle.prompt.command"></span></span>
+			<span class="prompt" id="prompt-command"><span class="key" id="prompt-confirm"></span><span text-key="battle.prompt.command"></span></span>
 			<span class="prompt" id="prompt-bag"><span class="key" id="prompt-menu"></span><span text-key="battle.prompt.bag"></span></span>
+			<span class="prompt hidden" id="prompt-cheer"><span class="key" id="prompt-cheer-key"></span><span text-key="battle.prompt.cheer"></span></span>
 		</div>
 	</div>
 

@@ -64,6 +64,7 @@ charge: "필살기를 모아!"
 charge_hint: "버튼을 연타하세요"
 prompt.command: "명령하기"
 prompt.bag: "아이템"
+prompt.cheer: "응원"
 # The bag in battle: the button that opens it.
 bag.open: "아이템"
 # The marks over the fighters of a cup match between two of the same species (STD_renderPlayerMarker).

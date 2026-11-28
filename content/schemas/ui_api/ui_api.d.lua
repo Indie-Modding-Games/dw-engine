@@ -1,5 +1,5 @@
 ---@meta
--- The UI API 0.36.0 (docs/modding/ui-api.md) for the Lua language server. The game
+-- The UI API 0.37.0 (docs/modding/ui-api.md) for the Lua language server. The game
 -- tests write it with DWE_WRITE_API_DOC=1: do not edit it by hand.
 
 ui = {}
@@ -471,7 +471,7 @@ function options.locked(name) end
 
 battle = {}
 
---- The battle: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds and match_seconds (or nil) and cup (a cup battle).
+--- The battle: phase, active, fast, frame_seconds, bag (available, open, item_in_flight), revive_seconds and match_seconds (or nil), cup (a cup battle) and helper (a co-op guest whose partner is not in the fight: no orders, its finisher key cheers).
 ---@return table
 function battle.state() end
 

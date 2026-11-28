@@ -478,6 +478,11 @@
 	display: block;
 }
 
+/* The finisher gauge goes with the fight: only the bars stay for the end. */
+#fight.after #finisher {
+	display: none;
+}
+
 /* A tournament match's clock stays through the winner's pose too (std_main.c: STD_deinitializeCombat removes it after
    STD_removeCommandMenu). */
 #fight.after > #match-clock {
@@ -1282,6 +1287,23 @@
 #fight.with-allies #command-label {
 	padding: 0 10dp;
 	background-color: #0b1218c8;
+}
+
+/* Kept tight so three allies stay at the edge, clear of the arena's middle. */
+.partner.ally .fighter-head {
+	padding: 0 8dp 2dp 8dp;
+	margin-bottom: 2dp;
+}
+
+.ally .fighter-name,
+.ally-order,
+.ally-revive {
+	font-size: 20dp;
+	line-height: 22dp;
+}
+
+.ally {
+	margin: 0 0 4dp 0;
 }
 
 /* ------------------------------------------------------------------------------------------------------------------

@@ -63,6 +63,7 @@ charge: "¡Carga el golpe final!"
 charge_hint: "Pulsa una y otra vez"
 prompt.command: "Dar la orden"
 prompt.bag: "Objetos"
+prompt.cheer: "Animar"
 # The tamer's bag in battle: the button that opens it.
 bag.open: "Objetos"
 # The marks over the fighters of a cup match between two of the same species (STD_renderPlayerMarker).
