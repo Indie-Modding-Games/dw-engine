@@ -91,6 +91,22 @@ BattleFrame frame(std::uint32_t battle, std::uint32_t number) {
           .throws = {}};
 }
 
+// A Folder plate with everything on it: an active order, a full queue, a target and a notice.
+BattleFolderPlate fullPlate() {
+  return {.active = BattleOrderShown{.slot = 3, .target = 2},
+          .phase = LastOrderPhase,
+          .phasePercent = 100,
+          .committed = true,
+          .queue = {{.slot = 0, .target = 1}, {.slot = 2, .target = std::nullopt}},
+          .target = 6,
+          .stance = static_cast<std::uint8_t>(LastStance),
+          .bar = 0xFFFF,
+          .barMax = 0xFFFF,
+          .brokenSeconds = 255,
+          .notice = BattleOrderNotice{
+              .slot = 1, .end = LastOrderEnd, .problem = LastOrderProblem, .by = 3}};
+}
+
 BattleAction act(std::uint32_t battle, BattleActionKind kind, std::int32_t value = 0,
                  std::string item = {}) {
   return {.battle = battle, .kind = kind, .value = value, .item = std::move(item)};
@@ -232,6 +248,7 @@ TEST_CASE("a full battle frame fits one unreliable datagram") {
   BattleFrame full = frame(1, 1);
   full.fighters.assign(MaxBattleFighters, {.hp = 1, .mp = 1, .maxHp = 1, .maxMp = 1});
   full.figures.assign(MaxBattleFigures, {.slot = 300, .x = -999'999, .z = 999'999});
+  full.folder = fullPlate();
   const auto bytes = encode(Message{full});
   CHECK(bytes.size() + 1 <= net::MaxDatagram);
   roundTrip(full);
@@ -748,6 +765,74 @@ TEST_CASE("a battle frame carries each partner's revive countdown and an item's 
               "meat"));
 }
 
+TEST_CASE("a battle's begin and frames carry the guests' HUD: moves, orders, gauge and plate") {
+  BattleBegin begin{.battle = 4,
+                    .starter = GuestPlayerId,
+                    .ask = 2,
+                    .mapId = "native_forest",
+                    .enemyNpcs = {4},
+                    .species = {"agumon", "kunemon", "gabumon"},
+                    .fixedFight = false,
+                    .allies = {HostPlayerId},
+                    .folder = true,
+                    .moves = {{"spit_fire", "", "sticky_net", "pepper_breath"},
+                              {},
+                              {"blue_blaster", "", "", ""}}};
+  roundTrip(begin);
+  BattleFrame hud = frame(4, 8);
+  hud.fighters.front().order = 4;
+  hud.fighters.front().stance = 2;
+  hud.finisherProgress = 150;
+  hud.finisherGoal = 200;
+  hud.folder = fullPlate();
+  roundTrip(hud);
+  hud.folder = BattleFolderPlate{};
+  roundTrip(hud);
+
+  const auto rejects = [](const Message& message) {
+    const auto decoded = decode(encode(message));
+    CHECK_FALSE(decoded);
+  };
+  BattleBegin badBegin = begin;
+  badBegin.moves.pop_back();
+  rejects(badBegin);
+  badBegin = begin;
+  badBegin.moves.front().front() = std::string(65, 'm');
+  rejects(badBegin);
+  const auto withFighter = [&](auto change) {
+    BattleFrame bad = frame(4, 8);
+    change(bad.fighters.front());
+    return Message{bad};
+  };
+  rejects(withFighter([](BattleFighterState& fighter) { fighter.order = 12; }));
+  rejects(withFighter([](BattleFighterState& fighter) { fighter.stance = LastStance + 1; }));
+  const auto withPlate = [](auto change) {
+    BattleFrame bad = frame(4, 8);
+    bad.folder = fullPlate();
+    change(*bad.folder);
+    return Message{bad};
+  };
+  rejects(withPlate([](BattleFolderPlate& plate) { plate.phase = LastOrderPhase + 1; }));
+  rejects(withPlate([](BattleFolderPlate& plate) { plate.phasePercent = 101; }));
+  rejects(withPlate([](BattleFolderPlate& plate) { plate.stance = LastStance + 1; }));
+  rejects(withPlate([](BattleFolderPlate& plate) { plate.active->slot = OrderSlots; }));
+  rejects(withPlate([](BattleFolderPlate& plate) { plate.target = MaxBattleFighters; }));
+  rejects(withPlate([](BattleFolderPlate& plate) { plate.queue.push_back({.slot = 1}); }));
+  rejects(withPlate([](BattleFolderPlate& plate) { plate.queue.back().target = 9; }));
+  rejects(withPlate([](BattleFolderPlate& plate) { plate.notice->end = LastOrderEnd + 1; }));
+  rejects(
+      withPlate([](BattleFolderPlate& plate) { plate.notice->problem = LastOrderProblem + 1; }));
+  rejects(withPlate([](BattleFolderPlate& plate) { plate.notice->by = OrderSlots; }));
+  // A frame cut inside its plate, and a plate flag that is no flag.
+  hud.folder = fullPlate();
+  auto bytes = encode(Message{hud});
+  bytes.pop_back();
+  CHECK_FALSE(decode(bytes));
+  bytes = encode(Message{frame(4, 8)});
+  bytes.back() = 2;
+  CHECK_FALSE(decode(bytes));
+}
+
 TEST_CASE("a guest takes a battle's spoils only when a battle could leave them") {
   BattleSpoils spoils;
   spoils.hp = 640;
@@ -819,6 +904,9 @@ TEST_CASE("a battle frame carries the items thrown, and the guest gets them over
   BattleFrame full = frame(1, 1);
   full.fighters.assign(MaxBattleFighters, {.hp = 1, .mp = 1, .maxHp = 1, .maxMp = 1});
   full.figures.assign(MaxBattleFigures, {.slot = 300, .x = -999'999, .z = 999'999});
+  full.folder = fullPlate();
+  full.finisherProgress = 0xFFFF;
+  full.finisherGoal = 0xFFFF;
   full.throws.assign(MaxBattleThrows, {.serial = 0xFFFF,
                                        .thrower = 3,
                                        .item = std::string(64, 'i'),

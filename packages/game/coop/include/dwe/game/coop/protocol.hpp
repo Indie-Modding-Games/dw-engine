@@ -36,7 +36,8 @@ inline constexpr std::size_t MaxPlayers = 4;
 // says the host revision it had seen (#422), scripted clips, held partners, partner forms and the
 // host's map NPCs ride the snapshots (#412, #420, #419), and NPC events are held per player (#417).
 // 15: the partners' poop piles are the host's world: its lists of each map's piles, a guest's pile
-// left or eaten asked of the host, and its answer to an eat.
+// left or eaten asked of the host, and its answer to an eat; the guests' battle HUD: each partner's
+// moves and current order, the own partner's finisher gauge and Folder plate.
 inline constexpr std::uint32_t ProtocolVersion = 15;
 
 [[nodiscard]] constexpr bool validPlayer(PlayerId id) {
@@ -274,7 +275,10 @@ struct BattleOffer {
 // A battle began on the host: who started it (that player's partner fights), the guest's ask it
 // answers (0 when the host started it), the map, the NPC slot of each enemy, each fighter's
 // species (the partner's first, then the enemies', then the allies'), the player of each ally and
-// whether it plays the Folder battle system, whose strip the guests label with stances.
+// whether it plays the Folder battle system, whose strip the guests label with stances. `moves`
+// holds each fighter's equipped move ids in the same order ("" for an empty place, all empty for
+// an enemy), which name the partners' orders on the guests' HUD; none from an older host.
+using BattleMoveIds = std::array<std::string, 4>;
 struct BattleBegin {
   std::uint32_t battle = 0;
   PlayerId starter = HostPlayerId;
@@ -285,6 +289,7 @@ struct BattleBegin {
   bool fixedFight = false;
   std::vector<PlayerId> allies;
   bool folder = false;
+  std::vector<BattleMoveIds> moves{};
 
   friend bool operator==(const BattleBegin&, const BattleBegin&) = default;
 };
@@ -312,7 +317,10 @@ struct BattleRefused {
 enum class BattlePhase : std::uint8_t { Intro, Fight, Victory, End, Closing };
 
 // A fighter's bars: HP and MP, their maxima, whether it is down and, for a partner down, the
-// whole seconds its revive countdown shows (0: none shown).
+// whole seconds its revive countdown shows (0: none shown). A partner's current order, as its ally
+// row names it: in the Classic battle `order` is its command's number (0: none); in a Folder
+// battle its active order's move place plus one (0: none, the row names `stance`, the
+// game::battle::Stance it moves by).
 struct BattleFighterState {
   std::int32_t hp = 0;
   std::int32_t mp = 0;
@@ -320,6 +328,8 @@ struct BattleFighterState {
   std::int32_t maxMp = 0;
   bool down = false;
   std::uint8_t reviveSeconds = 0;
+  std::uint8_t order = 0;
+  std::uint8_t stance = 0;
 
   friend bool operator==(const BattleFighterState&, const BattleFighterState&) = default;
 };
@@ -356,10 +366,57 @@ struct BattleThrow {
 };
 inline constexpr std::size_t MaxBattleThrows = MaxPlayers;
 
+// The Folder battle's orders and plate (docs/architecture/folder-battle.md, game::battle's
+// folder/state.hpp): an order's move place among the four and the fighter it aims at (none: its
+// move needs none).
+inline constexpr std::size_t MaxBattleQueue = 2;
+inline constexpr std::uint8_t LastOrderPhase = 5;
+inline constexpr std::uint8_t LastOrderEnd = 4;
+inline constexpr std::uint8_t LastOrderProblem = 7;
+struct BattleOrderShown {
+  std::uint8_t slot = 0;
+  std::optional<std::uint8_t> target{};
+
+  friend bool operator==(const BattleOrderShown&, const BattleOrderShown&) = default;
+};
+
+// An order that ended other than done (game::battle::OrderNotice): its move place, how and why it
+// ended (OrderEnd, OrderProblem) and the move place of the order that replaced it.
+struct BattleOrderNotice {
+  std::uint8_t slot = 0;
+  std::uint8_t end = 0;
+  std::uint8_t problem = 0;
+  std::optional<std::uint8_t> by{};
+
+  friend bool operator==(const BattleOrderNotice&, const BattleOrderNotice&) = default;
+};
+
+// The Folder plate of a frame's partner (game::battle::FolderFighter as the HUD reads it): its
+// active order, that order's phase (OrderPhase) with the phase's progress in percent and whether
+// its technique committed, the waiting orders, the fighter the next ones aim at, the stance it
+// moves by now, its defense bar and the bar's capacity, the seconds its break lasts (0: not
+// broken) and the notice of an order that ended.
+struct BattleFolderPlate {
+  std::optional<BattleOrderShown> active{};
+  std::uint8_t phase = 0;
+  std::uint8_t phasePercent = 0;
+  bool committed = false;
+  std::vector<BattleOrderShown> queue{};
+  std::optional<std::uint8_t> target{};
+  std::uint8_t stance = 0;
+  std::uint16_t bar = 0;
+  std::uint16_t barMax = 0;
+  std::uint8_t brokenSeconds = 0;
+  std::optional<BattleOrderNotice> notice{};
+
+  friend bool operator==(const BattleFolderPlate&, const BattleFolderPlate&) = default;
+};
+
 // One battle frame as the host shows it (20 a second, unreliable: a lost one is followed by the
 // next). `command` is the current command of the partner the guest commands (the fighting one when
 // it has none in the battle) and `menu` a bit per command the strip offers it now (bit n: battle
-// command n); `bagAvailable` and `finisherCharging` are that partner's too.
+// command n); `bagAvailable`, the finisher gauge's progress and goal (0 without a finisher) and
+// the Folder plate (in a Folder battle) are that partner's too; `finisherCharging` is the battle's.
 struct BattleFrame {
   std::uint32_t battle = 0;
   std::uint32_t frame = 0;
@@ -371,6 +428,9 @@ struct BattleFrame {
   std::vector<BattleFighterState> fighters;
   std::vector<BattleFigure> figures;
   std::vector<BattleThrow> throws;
+  std::uint16_t finisherProgress = 0;
+  std::uint16_t finisherGoal = 0;
+  std::optional<BattleFolderPlate> folder{};
 
   friend bool operator==(const BattleFrame&, const BattleFrame&) = default;
 };

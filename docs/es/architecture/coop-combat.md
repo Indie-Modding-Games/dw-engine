@@ -166,6 +166,9 @@ sus técnicas de área ignoran a los aliados (los enemigos conservan el fuego am
 - Cada jugador lanza desde **su propia bolsa**, desde su propio domador. Las bolsas nunca se juntan.
 - Objetivo: su propio compañero por defecto; izquierda y derecha en la bolsa eligen un compañero aliado (su tarjeta se
   ilumina). Los objetos de revivir pueden apuntar a un aliado en la cuenta atrás de la derrota.
+- Un invitado en la pantalla de combate de la skin elige con Q y E (`tab_previous`, `tab_next`; los gatillos en un
+  mando) con la bolsa abierta: su propio compañero y luego cada otro compañero por turno; la tarjeta del aliado elegido
+  lleva `battle.ally.<n>.throw_target`.
 - La bolsa no pausa el combate en cooperativo (decisión 5 de [multijugador](multiplayer.md) §6).
 - Un objeto en vuelo por jugador (`ThrownItemState` por jugador); cualquier objeto en vuelo hacia un compañero pausa la
   cuenta atrás de ese compañero, como en el original.
@@ -254,12 +257,18 @@ jugador puede acaparar las decisiones porque cada uno solo da órdenes a su prop
 
 | Mensaje | Cambio respecto al PR #363 |
 |---|---|
-| `BattleBegin` | Plantilla: ranura → lado, `PlayerId` del dueño, especie |
+| `BattleBegin` | Plantilla: ranura → lado, `PlayerId` del dueño, especie; los cuatro ids de técnica de cada luchador (protocolo 15) |
 | `BattleFrame` (cada 3 ticks) | Cada luchador (hasta 7): HP, HP máximo, MP, estado, orden actual, barra y aura del remate, cuenta atrás; las figuras como hoy (posición, orientación, clip y su inicio) |
 | `BattleAction` | `Command` (el compañero propio va implícito en el remitente), `ThrowItem` con la ranura objetivo, `Cheer` con la ranura del aliado, `Run`, `Join` (con `join_running`), `CloseEnd` |
 | `BattleEnd` | Un bloque de botín por jugador (el `PartnerResult` de su compañero y los objetos soltados que recibió) |
 
 Límites: `MaxBattleFighters` 4 → 7. `ProtocolVersion` sube.
+
+El protocolo 15 da además a cada luchador de un `BattleFrame` su orden actual (un comando, o en un combate Folder la
+ranura activa y la postura), y el fotograma de cada invitado lleva el progreso y la meta de su remate y, en un combate
+Folder, la placa de su compañero: orden activa y su fase, la cola con objetivos, el objetivo, la postura, la barra de
+defensa, la cuenta atrás de la ruptura, el compromiso y el aviso de la última orden. Una placa ocupa como mucho 23
+bytes.
 
 ```mermaid
 sequenceDiagram
@@ -413,6 +422,11 @@ siguen jugando.
   - Ranuras de sonido: el compañero de este juego conserva la ranura 4 y los enemigos toman de la 5 en adelante, como
     en el original; cada otro compañero toma la siguiente ranura de aliado. Pasadas las tres de aliados, un cuerpo suena
     desde la del compañero de este juego.
+- Tarea 10, el HUD del invitado (protocolo 15): la pantalla de combate de la skin de un invitado lee los mismos ajustes
+  que la del anfitrión. Las tarjetas de los aliados nombran la orden de cada compañero, el indicador del remate se
+  llena, la placa Folder enseña al compañero propio del invitado y los enemigos a los que apunta o que tiene en cola, y
+  la bolsa elige el aliado al que vuela un objeto. Aún no se envía: la esquina del indicador de carga del remate, el
+  coste de PM y el problema de las entradas del menú, y el estado de un aliado.
 - Falta: la tarea 12 (un combate por mapa: mientras uno sigue, otro en otro mapa se rechaza), las mecánicas opcionales
   de §8 y un grito por domador.
 

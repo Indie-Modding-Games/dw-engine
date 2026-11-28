@@ -67,7 +67,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
-| 0.33.0 | El panel de órdenes del combate Folder: `battle.folder()` y sus ajustes `battle.folder.*` (la orden activa, su fase, las órdenes en espera, el objetivo, el enemigo de cada orden en espera, la barra de defensa y la ruptura, la postura, el punto de compromiso, las letras de los enemigos y a qué enemigos apuntan las órdenes, la técnica que reemplazó una orden), la opción `battle_system` y la opción de layout `strip` de las skins ([Combate Folder](../architecture/folder-battle.md)); la orden en curso de cada aliado en cooperativo (`order_key` en `battle.allies()`) |
+| 0.33.0 | El panel de órdenes del combate Folder: `battle.folder()` y sus ajustes `battle.folder.*` (la orden activa, su fase, las órdenes en espera, el objetivo, el enemigo de cada orden en espera, la barra de defensa y la ruptura, la postura, el punto de compromiso, las letras de los enemigos y a qué enemigos apuntan las órdenes, la técnica que reemplazó una orden), la opción `battle_system` y la opción de layout `strip` de las skins ([Combate Folder](../architecture/folder-battle.md)); la orden en curso de cada aliado en cooperativo (`order_key` en `battle.allies()`) y el aliado al que vuela el próximo objeto de un invitado (`throw_target`) |
 | 0.32.0 | Modo software ([modo software](../architecture/software-mode.md)): las opciones `auto_quality`, `render_scale` y `frame_limit`, y el aviso `software_notice` con el ajuste `software_mode` |
 | 0.31.0 | El menú del compañero marca su técnica potenciada (`partner.technique.<n>.boosted`, `partner.technique.choice.<n>.boosted`: su poder y su MP ya son los potenciados), y llega la opción `boosted_techniques` ([combate](../modules/game/battle.md#tecnicas-potenciadas)) |
 | 0.30.0 | Los medidores de necesidades y el aviso de peligro del campo: `partner.gauges()` (el hambre, el baño y el cansancio según se acumulan: `hud.gauge.<n>.label`, `need`, `value`, `max` y `fill`), `field.dangers()` y su evento `field.danger` (las marcas sobre los monstruos salvajes que aplastarían al compañero: `hud.danger.<n>.visible`, `x`, `y` y `hud.danger.revision`), y las opciones `need_meters` y `danger_alert` |
@@ -767,6 +767,8 @@ Versión de la API de la interfaz: **0.32.0**.
 | `battle.ally.<n>.fainted` | ajuste | sí/no | Si un aliado se ha desmayado. |
 | `battle.ally.<n>.hp_bar` | ajuste | sí/no | Siempre activo para un aliado. |
 | `battle.ally.<n>.revive_seconds` | ajuste | número | La cuenta atrás para que se levante un aliado caído; -1 sin ella. |
+| `battle.ally.<n>.order` | ajuste | texto | La clave de texto de la orden en curso de un aliado: su comando, su técnica Folder o su postura. |
+| `battle.ally.<n>.throw_target` | ajuste | sí/no | En el combate de un invitado en cooperativo, si su próximo objeto lanzado vuela a este aliado (tab_previous y tab_next lo eligen con la bolsa abierta). |
 | `battle.finisher.progress` | ajuste | número | Lo que lleva cargado el indicador del golpe final. |
 | `battle.finisher.goal` | ajuste | número | Lo que tiene que cargar para estar lleno. |
 | `battle.finisher.ready` | ajuste | sí/no | Si el golpe final está listo. |

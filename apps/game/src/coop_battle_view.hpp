@@ -37,8 +37,24 @@ struct CoopBattleSounds {
 [[nodiscard]] std::size_t coopOwnFighterOf(const game::coop::BattleBegin& begin,
                                            game::coop::BattleRole role, game::coop::PlayerId self);
 
+// The host's side of a guest's HUD: each fighter's equipped move ids for the battle's begin (the
+// enemies' left empty), and a frame's battle part for the guest whose partner is `own` (the
+// fighting one for a helper): every fighter's bars and current order, and that partner's strip,
+// bag, finisher gauge and Folder plate.
+[[nodiscard]] std::vector<game::coop::BattleMoveIds>
+coopBattleMovesOf(const game::battle::Battle& battle);
+[[nodiscard]] game::coop::BattleFrame coopBattleFrameOf(const game::battle::Battle& battle,
+                                                        game::battle::FighterId own);
+
+// The partner a guest's next item flies to after a step through its picks (-1 back, 1 on): its
+// own (none picked), then each other partner in the ally rows' order, around.
+[[nodiscard]] std::optional<std::size_t>
+coopNextThrowTarget(const game::coop::BattleBegin& begin, game::coop::BattleRole role,
+                    game::coop::PlayerId self, std::optional<std::size_t> current, int step);
+
 // The host's battle as a guest's battle document draws it (the host's own HUD): its partner in
-// zone B, the other partners as ally rows, the enemies, and the commands its frame offers.
+// zone B, the other partners as ally rows with their current orders, the enemies, the commands its
+// frame offers, its finisher gauge and its Folder plate.
 struct CoopBattleViewSource {
   const game::coop::BattleBegin* begin = nullptr;
   const game::coop::BattleFrame* frame = nullptr;
@@ -49,6 +65,8 @@ struct CoopBattleViewSource {
   const game::battle::Fighter* partner = nullptr;
   const game::battle::MoveCatalog* moves = nullptr;
   bool bagOpen = false;
+  // The partner this player's next item flies to (none: its own, or the fighting one).
+  std::optional<std::size_t> throwTarget{};
 };
 [[nodiscard]] screens::BattleView coopBattleViewOf(const CoopBattleViewSource& source,
                                                    const screens::NameKeys& names);

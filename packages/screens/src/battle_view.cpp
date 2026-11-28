@@ -42,6 +42,7 @@ constexpr std::string_view TagField = "tag";
 constexpr std::string_view TargetedField = "targeted";
 constexpr std::string_view QueuedField = "queued";
 constexpr std::string_view OrderField = "order";
+constexpr std::string_view ThrowTargetField = "throw_target";
 constexpr std::string_view CommandField = "command";
 constexpr std::string_view LabelField = "label";
 constexpr std::string_view AvailableField = "available";
@@ -90,7 +91,8 @@ FighterView fighterViewOf(const battle::Fighter& fighter, bool hpBarShown, const
           .tag = {},
           .targeted = false,
           .queued = false,
-          .orderKey = {}};
+          .orderKey = {},
+          .throwTarget = false};
 }
 
 bool gaugeFull(const battle::Fighter& fighter) {
@@ -115,6 +117,7 @@ void addFighter(ScreenSettings& settings, std::size_t index, const FighterView& 
     add(ReviveSecondsField,
         fighter.reviveSeconds ? static_cast<double>(*fighter.reviveSeconds) : NoValue);
     add(OrderField, fighter.orderKey);
+    add(ThrowTargetField, fighter.throwTarget);
     return;
   }
   add(IdField, static_cast<double>(fighter.id));
@@ -190,20 +193,6 @@ std::string commandIconOf(battle::Command command, const battle::Fighter& partne
   return std::format("special-{}", std::clamp(moves.at(*move).special, 0, IconsPerRow - 1));
 }
 
-namespace {
-
-// A technique's MP cost to the partner now; the other commands cost nothing.
-std::int32_t techniqueCostOf(const battle::Battle& battle, battle::Command command,
-                             battle::FighterId own) {
-  const auto number = static_cast<std::int32_t>(command);
-  constexpr auto FirstTechnique = static_cast<std::int32_t>(battle::Command::Technique1);
-  constexpr auto LastTechnique = static_cast<std::int32_t>(battle::Command::Technique3);
-  if (number < FirstTechnique || number > LastTechnique) {
-    return 0;
-  }
-  return battle.partnerMoveCost(static_cast<std::size_t>(number - FirstTechnique), own).value_or(0);
-}
-
 std::string_view stanceName(battle::Stance stance) {
   switch (stance) {
   case battle::Stance::Aggressive:
@@ -216,6 +205,76 @@ std::string_view stanceName(battle::Stance stance) {
     return "guard";
   }
   return "aggressive";
+}
+
+std::string_view orderPhaseName(battle::OrderPhase phase) {
+  switch (phase) {
+  case battle::OrderPhase::Idle:
+    break;
+  case battle::OrderPhase::Processing:
+    return "processing";
+  case battle::OrderPhase::Positioning:
+    return "positioning";
+  case battle::OrderPhase::Preparing:
+    return "preparing";
+  case battle::OrderPhase::Executing:
+    return "executing";
+  case battle::OrderPhase::Recovering:
+    return "recovering";
+  }
+  return {};
+}
+
+std::string orderProblemKey(battle::OrderProblem problem) {
+  switch (problem) {
+  case battle::OrderProblem::None:
+  case battle::OrderProblem::ByTrainer:
+    break;
+  case battle::OrderProblem::EmptySlot:
+    return "battle.folder.problem.empty_slot";
+  case battle::OrderProblem::NotEnoughMp:
+    return "battle.folder.problem.not_enough_mp";
+  case battle::OrderProblem::FinisherNotReady:
+    return "battle.folder.problem.finisher_not_ready";
+  case battle::OrderProblem::NoTarget:
+    return "battle.folder.problem.no_target";
+  case battle::OrderProblem::TargetGone:
+    return "battle.folder.problem.target_gone";
+  case battle::OrderProblem::Unreachable:
+    return "battle.folder.problem.unreachable";
+  }
+  return {};
+}
+
+std::string orderEndKey(battle::OrderEnd end, battle::OrderProblem problem) {
+  switch (end) {
+  case battle::OrderEnd::Done:
+    break;
+  case battle::OrderEnd::Interrupted:
+    return "battle.folder.end.interrupted";
+  case battle::OrderEnd::Invalid:
+    return "battle.folder.end.invalid";
+  case battle::OrderEnd::Cancelled:
+    return problem == battle::OrderProblem::ByTrainer ? "battle.folder.end.annulled"
+                                                      : "battle.folder.end.cancelled";
+  case battle::OrderEnd::Replaced:
+    return "battle.folder.end.replaced";
+  }
+  return {};
+}
+
+namespace {
+
+// A technique's MP cost to the partner now; the other commands cost nothing.
+std::int32_t techniqueCostOf(const battle::Battle& battle, battle::Command command,
+                             battle::FighterId own) {
+  const auto number = static_cast<std::int32_t>(command);
+  constexpr auto FirstTechnique = static_cast<std::int32_t>(battle::Command::Technique1);
+  constexpr auto LastTechnique = static_cast<std::int32_t>(battle::Command::Technique3);
+  if (number < FirstTechnique || number > LastTechnique) {
+    return 0;
+  }
+  return battle.partnerMoveCost(static_cast<std::size_t>(number - FirstTechnique), own).value_or(0);
 }
 
 // The letter of a foe that shares its species with another foe, by their order in the battle.
@@ -239,74 +298,19 @@ std::string foeTagOf(const battle::BattleState& state, battle::FighterId own,
   return same > 1 ? std::string(1, letter) : std::string{};
 }
 
-std::string_view phaseName(battle::OrderPhase phase) {
-  switch (phase) {
-  case battle::OrderPhase::Idle:
-    break;
-  case battle::OrderPhase::Processing:
-    return "processing";
-  case battle::OrderPhase::Positioning:
-    return "positioning";
-  case battle::OrderPhase::Preparing:
-    return "preparing";
-  case battle::OrderPhase::Executing:
-    return "executing";
-  case battle::OrderPhase::Recovering:
-    return "recovering";
-  }
-  return {};
-}
-
-std::string problemKeyOf(battle::OrderProblem problem) {
-  switch (problem) {
-  case battle::OrderProblem::None:
-  case battle::OrderProblem::ByTrainer:
-    break;
-  case battle::OrderProblem::EmptySlot:
-    return "battle.folder.problem.empty_slot";
-  case battle::OrderProblem::NotEnoughMp:
-    return "battle.folder.problem.not_enough_mp";
-  case battle::OrderProblem::FinisherNotReady:
-    return "battle.folder.problem.finisher_not_ready";
-  case battle::OrderProblem::NoTarget:
-    return "battle.folder.problem.no_target";
-  case battle::OrderProblem::TargetGone:
-    return "battle.folder.problem.target_gone";
-  case battle::OrderProblem::Unreachable:
-    return "battle.folder.problem.unreachable";
-  }
-  return {};
-}
-
-std::string endKeyOf(battle::OrderEnd end, battle::OrderProblem problem) {
-  switch (end) {
-  case battle::OrderEnd::Done:
-    break;
-  case battle::OrderEnd::Interrupted:
-    return "battle.folder.end.interrupted";
-  case battle::OrderEnd::Invalid:
-    return "battle.folder.end.invalid";
-  case battle::OrderEnd::Cancelled:
-    return problem == battle::OrderProblem::ByTrainer ? "battle.folder.end.annulled"
-                                                      : "battle.folder.end.cancelled";
-  case battle::OrderEnd::Replaced:
-    return "battle.folder.end.replaced";
-  }
-  return {};
-}
-
 std::string commandProblemOf(const battle::Battle& battle, battle::Command command,
                              battle::FighterId own) {
   const auto number = static_cast<std::int32_t>(command);
   constexpr auto FirstTechnique = static_cast<std::int32_t>(battle::Command::Technique1);
   constexpr auto LastTechnique = static_cast<std::int32_t>(battle::Command::Technique3);
   if (command == battle::Command::Finisher) {
-    return problemKeyOf(battle.orderProblem(battle::FinisherSlot, own));
+    return orderProblemKey(battle.orderProblem(battle::FinisherSlot, own));
   }
   if (number < FirstTechnique || number > LastTechnique) {
     return {};
   }
-  return problemKeyOf(battle.orderProblem(static_cast<std::size_t>(number - FirstTechnique), own));
+  return orderProblemKey(
+      battle.orderProblem(static_cast<std::size_t>(number - FirstTechnique), own));
 }
 
 std::string orderMoveKey(const battle::Battle& battle, battle::FighterId own,
@@ -333,7 +337,7 @@ BattleView::Folder folderViewOf(const battle::Battle& battle, const battle::Fold
   BattleView::Folder view;
   if (folder.active) {
     view.moveKey = orderMoveKey(battle, own, *folder.active, names);
-    view.phase = std::string{phaseName(folder.phase)};
+    view.phase = std::string{orderPhaseName(folder.phase)};
     if (folder.phaseLength > 0) {
       view.phasePercent = (folder.phaseLength - folder.phaseFrames) * Hundred / folder.phaseLength;
     }
@@ -366,9 +370,9 @@ BattleView::Folder folderViewOf(const battle::Battle& battle, const battle::Fold
   view.brokenSeconds =
       (folder.brokenFrames + battle::FramesPerSecond - 1) / battle::FramesPerSecond;
   if (folder.notice) {
-    view.noticeKey = endKeyOf(folder.notice->end, folder.notice->problem);
+    view.noticeKey = orderEndKey(folder.notice->end, folder.notice->problem);
     view.noticeMoveKey = orderMoveKey(battle, own, folder.notice->order, names);
-    view.noticeReasonKey = problemKeyOf(folder.notice->problem);
+    view.noticeReasonKey = orderProblemKey(folder.notice->problem);
     if (folder.notice->by) {
       view.noticeByKey = orderMoveKey(battle, own, *folder.notice->by, names);
     }

@@ -96,6 +96,7 @@ local function fighters_of(list)
     end
     if list == "battle.ally" then
       found[index + 1].order_key = value(entry(list, index, "order"), "")
+      found[index + 1].throw_target = value(entry(list, index, "throw_target"), false)
     end
   end
   return found
@@ -112,8 +113,9 @@ function battle.fighters()
 end
 
 -- The other players' partners fighting beside this player's in a co-op battle, with the same
--- fields as battle.fighters, revive_seconds (a fallen ally's countdown, or nil) and order_key (the
--- text key of its current command, Folder move or stance); empty in any other battle.
+-- fields as battle.fighters, revive_seconds (a fallen ally's countdown, or nil), order_key (the
+-- text key of its current command, Folder move or stance) and throw_target (a guest's next item
+-- flies to it); empty in any other battle.
 function battle.allies()
   return fighters_of("battle.ally")
 end

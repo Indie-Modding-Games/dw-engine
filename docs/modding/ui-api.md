@@ -67,7 +67,7 @@ between game versions.
 
 | Version | Changes |
 |---|---|
-| 0.33.0 | The Folder battle's order panel: `battle.folder()` and its `battle.folder.*` settings (the active order, its phase, the waiting orders, the target, each waiting order's foe, the defense bar and the break, the stance, the commit point, the foes' letters and which foes the orders aim at, the move that replaced an order), and the `battle_system` option and the `strip` skin layout option ([Folder battle](../architecture/folder-battle.md)); each co-op ally's current order (`order_key` in `battle.allies()`) |
+| 0.33.0 | The Folder battle's order panel: `battle.folder()` and its `battle.folder.*` settings (the active order, its phase, the waiting orders, the target, each waiting order's foe, the defense bar and the break, the stance, the commit point, the foes' letters and which foes the orders aim at, the move that replaced an order), and the `battle_system` option and the `strip` skin layout option ([Folder battle](../architecture/folder-battle.md)); each co-op ally's current order (`order_key` in `battle.allies()`) and the ally a guest's next item flies to (`throw_target`) |
 | 0.32.0 | Software mode ([software mode](../architecture/software-mode.md)): the options `auto_quality`, `render_scale` and `frame_limit`, and the `software_notice` notice with the `software_mode` setting |
 | 0.31.0 | The partner menu marks the partner's boosted technique (`partner.technique.<n>.boosted`, `partner.technique.choice.<n>.boosted`: its power and MP are already the boosted ones), and the `boosted_techniques` option arrives ([battle](../modules/game/battle.md#boosted-techniques)) |
 | 0.30.0 | The field's need meters and danger alert: `partner.gauges()` (hunger, the toilet and tiredness as they build up: `hud.gauge.<n>.label`, `need`, `value`, `max` and `fill`), `field.dangers()` and its event `field.danger` (the marks over the wild monsters that would crush the partner: `hud.danger.<n>.visible`, `x`, `y` and `hud.danger.revision`), and the options `need_meters` and `danger_alert` |
@@ -853,6 +853,7 @@ UI API version: **0.33.0**.
 | `battle.ally.<n>.hp_bar` | setting | yes/no | Always on for an ally. |
 | `battle.ally.<n>.revive_seconds` | setting | number | The countdown to revive a fainted ally; -1 without one. |
 | `battle.ally.<n>.order` | setting | text | The text key of an ally's current order: its command, its Folder move or stance. |
+| `battle.ally.<n>.throw_target` | setting | yes/no | In a co-op guest's battle, whether its next thrown item flies to this ally (tab_previous and tab_next pick it while the bag is open). |
 | `battle.finisher.progress` | setting | number | How much the finisher gauge has charged. |
 | `battle.finisher.goal` | setting | number | How much it has to charge to be full. |
 | `battle.finisher.ready` | setting | yes/no | Whether the finisher is ready. |

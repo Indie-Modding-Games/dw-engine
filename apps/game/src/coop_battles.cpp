@@ -552,46 +552,27 @@ coop::BattleBegin CoopBattles::beginOf(PlaySession& play, coop::PlayerId starter
     }
   }
   frames_ = 0;
-  return referee_.begin(starter, ask, play.scene().field().mapId(), std::move(enemies),
-                        std::move(species), screen.fixedFight(), std::move(allies), folder);
+  coop::BattleBegin begin =
+      referee_.begin(starter, ask, play.scene().field().mapId(), std::move(enemies),
+                     std::move(species), screen.fixedFight(), std::move(allies), folder);
+  if (const game::battle::Battle* battle = screen.battle()) {
+    begin.moves = coopBattleMovesOf(*battle);
+  }
+  return begin;
 }
 
 coop::BattleFrame CoopBattles::frameOf(const PlaySession& play, coop::PlayerId to) {
   const BattleScreen& screen = play.battleScreen();
-  coop::BattleFrame frame{.battle = referee_.running()->battle,
-                          .frame = frames_,
-                          .phase = screen.coopPhase(),
-                          .command = 0,
-                          .menu = 0,
-                          .bagAvailable = false,
-                          .finisherCharging = false,
-                          .fighters = {},
-                          .figures = {},
-                          .throws = screen.coopThrows()};
-  if (const game::battle::Battle* battle = screen.battle()) {
-    const game::battle::BattleState& state = battle->state();
-    // The guest's own partner's strip, bag and finisher (the fighting one's when it has none).
-    const game::battle::FighterId own = screen.fighterOf(to).value_or(game::battle::PartnerId);
-    const game::battle::CommandState& commands = state.commandsOf(own);
-    frame.command = static_cast<std::uint8_t>(commands.current);
-    for (const game::battle::Command command : commands.menu) {
-      frame.menu = static_cast<std::uint16_t>(frame.menu | (1U << static_cast<unsigned>(command)));
-    }
-    frame.bagAvailable = battle->bagAvailableFor(own);
-    frame.finisherCharging = state.finisher.charging;
-    for (game::battle::FighterId id = 0;
-         id < state.fighters.size() && frame.fighters.size() < coop::MaxBattleFighters; ++id) {
-      const game::battle::Fighter& fighter = state.fighters[id];
-      const std::optional<std::int32_t> revive = screens::reviveSecondsOf(*battle, id);
-      frame.fighters.push_back(
-          {.hp = fighter.hp,
-           .mp = fighter.mp,
-           .maxHp = fighter.stats.maxHp,
-           .maxMp = fighter.stats.maxMp,
-           .down = fighter.hp <= 0,
-           .reviveSeconds = static_cast<std::uint8_t>(std::clamp(revive.value_or(0), 0, 255))});
-    }
-  }
+  // The guest's own partner's strip, bag, finisher and plate (the fighting one's when it has none).
+  const game::battle::Battle* battle = screen.battle();
+  coop::BattleFrame frame =
+      battle != nullptr
+          ? coopBattleFrameOf(*battle, screen.fighterOf(to).value_or(game::battle::PartnerId))
+          : coop::BattleFrame{};
+  frame.battle = referee_.running()->battle;
+  frame.frame = frames_;
+  frame.phase = screen.coopPhase();
+  frame.throws = screen.coopThrows();
   for (const FieldScene::HeldFigure& held : play.scene().heldFigures()) {
     if (frame.figures.size() >= coop::MaxBattleFigures) {
       break;
@@ -1027,7 +1008,19 @@ bool CoopBattles::handle(const ui::UiCommand& command) {
 }
 
 void CoopBattles::press(const input::InputState& input) {
-  if (!mirror_.running() || !watching_ || !input.wasPressed("extra")) {
+  if (!mirror_.running() || !watching_) {
+    return;
+  }
+  // With its bag open over the HUD, the tab keys pick the partner this player's items fly to.
+  if (hudBag_ && (input.wasPressed("tab_previous") || input.wasPressed("tab_next"))) {
+    target_ =
+        coopNextThrowTarget(*mirror_.running(), mirror_.role().value_or(coop::BattleRole::Helper),
+                            mirror_.self(), target_, input.wasPressed("tab_next") ? 1 : -1);
+    if (play_ != nullptr) {
+      publish(*play_);
+    }
+  }
+  if (!input.wasPressed("extra")) {
     return;
   }
   // The square button calls this player's partner's finisher, and charges (or cheers for) a
@@ -1184,7 +1177,8 @@ void CoopBattles::publishHud(const PlaySession& play) {
        .self = mirror_.self(),
        .partner = role != coop::BattleRole::Helper && hudPartner_ ? &*hudPartner_ : nullptr,
        .moves = play.coopMoves(),
-       .bagOpen = hudBag_},
+       .bagOpen = hudBag_,
+       .throwTarget = target_},
       play.coopNameKeys());
   screens::publish(*ui_, screens::settingsOf(view), screens::BattleRevisionSetting);
   ui_->setSetting(

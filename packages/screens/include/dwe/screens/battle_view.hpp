@@ -73,6 +73,14 @@ inline constexpr std::string_view FolderCommittedSetting = "battle.folder.commit
 [[nodiscard]] std::string commandIconOf(game::battle::Command command,
                                         const game::battle::Fighter& fighter,
                                         const game::battle::MoveCatalog& moves);
+// The Folder battle's words on its HUD (docs/architecture/folder-battle.md): a stance's name
+// ("aggressive"...), an order phase's ("processing"..., empty while idle), the text key of why an
+// order cannot go on and of how one ended other than done (empty when that says nothing).
+[[nodiscard]] std::string_view stanceName(game::battle::Stance stance);
+[[nodiscard]] std::string_view orderPhaseName(game::battle::OrderPhase phase);
+[[nodiscard]] std::string orderProblemKey(game::battle::OrderProblem problem);
+[[nodiscard]] std::string orderEndKey(game::battle::OrderEnd end,
+                                      game::battle::OrderProblem problem);
 // The whole seconds a fainted partner's revive countdown shows (the ending rules' revive frames,
 // shown from reviveCountdownShownAt); none while it stands, before the countdown shows or for an
 // enemy.
@@ -107,6 +115,8 @@ struct FighterView {
   // A co-op ally's current order: the text key of its command, its Folder order's move or its
   // stance; empty for the others.
   std::string orderKey;
+  // A co-op ally a guest's next thrown item flies to (the guest picks it in its bag).
+  bool throwTarget = false;
 
   friend bool operator==(const FighterView&, const FighterView&) = default;
 };

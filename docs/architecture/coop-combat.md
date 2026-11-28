@@ -156,6 +156,9 @@ hit each other: their area moves skip allies (enemies keep the original's friend
 - Each player throws from **their own bag**, from their own tamer. Bags never merge.
 - Target: their own partner by default; left and right in the bag pick an ally partner (its card lights up). Revive items
   can target an ally in the death countdown.
+- A guest on the skin's battle screen picks with Q and E (`tab_previous`, `tab_next`; the shoulder buttons on a pad)
+  while its bag is open: its own partner, then each other partner in turn; the picked ally's card gets
+  `battle.ally.<n>.throw_target`.
 - The bag does not pause the battle in co-op (decision 5 of [multiplayer](multiplayer.md) §6).
 - One item in flight per player (`ThrownItemState` per player); any item in flight toward a partner pauses that
   partner's countdown, as in the original.
@@ -238,12 +241,17 @@ one only orders their own partner.
 
 | Message | Change from PR #363 |
 |---|---|
-| `BattleBegin` | Roster: slot → side, owner `PlayerId`, species |
+| `BattleBegin` | Roster: slot → side, owner `PlayerId`, species; each fighter's four move ids (protocol 15) |
 | `BattleFrame` (every 3 ticks) | Every fighter (up to 7): HP, max HP, MP, status, current order, finisher meter and aura, countdown; figures as today (place, heading, clip and its start) |
 | `BattleAction` | `Command` (own partner implied by the sender), `ThrowItem` with target slot, `Cheer` with ally slot, `Run`, `Join` (with `join_running`), `CloseEnd` |
 | `BattleEnd` | One spoils block per player (their partner's `PartnerResult` and the drops they received) |
 
 Limits: `MaxBattleFighters` 4 → 7. `ProtocolVersion` goes up.
+
+Protocol 15 also gives each fighter of a `BattleFrame` its current order (a command, or in a Folder battle the active
+slot and stance), and the frame for one guest carries that guest's finisher progress and goal and, in a Folder battle,
+its partner's plate: active order and phase, the queue with targets, the target, stance, defense bar, break countdown,
+commit lock and the last order's notice. A plate costs at most 23 bytes.
 
 ```mermaid
 sequenceDiagram
@@ -386,6 +394,10 @@ play on.
   - Lost frames do not stall the glows: the guest moves them on by the frames that went by.
   - Sound slots: this game's partner keeps slot 4 and the enemies take 5 on, as in the original; each other partner
     takes the next ally slot. Past the three ally slots, a body plays from this game's partner's slot.
+- Task 10, the guest's HUD (protocol 15): a guest's skin battle screen reads the same settings as the host's. The
+  ally cards name each partner's order, the finisher gauge fills, the Folder plate shows the guest's own partner and the
+  foes it targets or has queued, and the bag picks the ally an item flies to. Not sent yet: the finisher's charge
+  gauge corner, the menu entries' MP cost and problem, and an ally's status.
 - Not yet: task 12 (one battle per map: a second battle on another map is still refused while one runs), the optional
   mechanics of §8 and a per-player shout.
 

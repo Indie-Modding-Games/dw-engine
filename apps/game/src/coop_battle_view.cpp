@@ -6,15 +6,104 @@
 #include <algorithm>
 #include <cstddef>
 #include <format>
+#include <limits>
 #include <map>
+#include <tuple>
 
 namespace dwe::app {
 
 namespace {
 
 constexpr std::int64_t PartnerSoundSlot = 4;
+constexpr std::int32_t Hundred = 100;
 
 namespace coop = game::coop;
+using game::battle::Command;
+using game::battle::FighterId;
+
+static_assert(coop::LastOrderPhase ==
+              static_cast<std::uint8_t>(game::battle::OrderPhase::Recovering));
+static_assert(coop::LastOrderEnd == static_cast<std::uint8_t>(game::battle::OrderEnd::Replaced));
+static_assert(coop::LastOrderProblem ==
+              static_cast<std::uint8_t>(game::battle::OrderProblem::ByTrainer));
+static_assert(coop::LastStance == static_cast<std::int32_t>(game::battle::Stance::Guard));
+static_assert(coop::MaxBattleQueue == game::battle::OrderQueueSize);
+static_assert(std::tuple_size_v<coop::BattleMoveIds> == game::battle::EquippedSlots);
+
+template <typename T>
+T clampedTo(std::int64_t value) {
+  return static_cast<T>(std::clamp<std::int64_t>(value, 0, std::numeric_limits<T>::max()));
+}
+
+std::optional<std::uint8_t> fighterByteOf(std::optional<FighterId> fighter) {
+  return fighter && *fighter < coop::MaxBattleFighters
+             ? std::optional{static_cast<std::uint8_t>(*fighter)}
+             : std::nullopt;
+}
+
+coop::BattleOrderShown orderShownOf(const game::battle::Order& order) {
+  return {.slot = static_cast<std::uint8_t>(order.slot), .target = fighterByteOf(order.target)};
+}
+
+// A partner's current order as its ally row names it (screens' battleViewOf).
+void addOrderOf(coop::BattleFighterState& shown, const game::battle::Battle& battle, FighterId id) {
+  const game::battle::BattleState& state = battle.state();
+  if (!state.isPlayerSide(id)) {
+    return;
+  }
+  if (const game::battle::FolderFighter* folder = battle.folderOf(id)) {
+    shown.order = folder->active ? static_cast<std::uint8_t>(folder->active->slot + 1) : 0;
+    shown.stance = static_cast<std::uint8_t>(folder->effectiveStance());
+  } else if (state.commanded(id)) {
+    shown.order = static_cast<std::uint8_t>(state.commandsOf(id).current);
+  }
+}
+
+coop::BattleFolderPlate plateOf(const game::battle::Battle& battle,
+                                const game::battle::FolderFighter& folder, FighterId own) {
+  coop::BattleFolderPlate plate;
+  if (folder.active) {
+    plate.active = orderShownOf(*folder.active);
+    plate.phase = static_cast<std::uint8_t>(folder.phase);
+    if (folder.phaseLength > 0) {
+      plate.phasePercent = clampedTo<std::uint8_t>(std::min(
+          (folder.phaseLength - folder.phaseFrames) * Hundred / folder.phaseLength, Hundred));
+    }
+    plate.committed = folder.committed;
+  }
+  for (const game::battle::Order& order : folder.queue) {
+    if (plate.queue.size() < coop::MaxBattleQueue) {
+      plate.queue.push_back(orderShownOf(order));
+    }
+  }
+  plate.target = fighterByteOf(battle.state().fighters[own].target);
+  plate.stance = static_cast<std::uint8_t>(folder.effectiveStance());
+  plate.bar = clampedTo<std::uint16_t>(folder.defenseBar);
+  plate.barMax = clampedTo<std::uint16_t>(battle.defenseBarCapacity(own));
+  plate.brokenSeconds = clampedTo<std::uint8_t>(
+      (folder.brokenFrames + game::battle::FramesPerSecond - 1) / game::battle::FramesPerSecond);
+  if (const auto& notice = folder.notice) {
+    plate.notice = coop::BattleOrderNotice{
+        .slot = static_cast<std::uint8_t>(notice->order.slot),
+        .end = static_cast<std::uint8_t>(notice->end),
+        .problem = static_cast<std::uint8_t>(notice->problem),
+        .by =
+            notice->by ? std::optional{static_cast<std::uint8_t>(notice->by->slot)} : std::nullopt};
+  }
+  return plate;
+}
+
+// The ally rows' fighters: the partners but the own one, in the frames' order.
+std::vector<std::size_t> allyRowsOf(const coop::BattleBegin& begin, std::size_t own) {
+  const std::size_t enemies = begin.enemyNpcs.size();
+  std::vector<std::size_t> rows;
+  for (std::size_t index = 0; index < 1 + enemies + begin.allies.size(); ++index) {
+    if (index != own && (index == 0 || index > enemies)) {
+      rows.push_back(index);
+    }
+  }
+  return rows;
+}
 
 screens::FighterView fighterViewOf(const CoopBattleViewSource& source, std::size_t index,
                                    const screens::NameKeys& names) {
@@ -37,28 +126,135 @@ screens::FighterView fighterViewOf(const CoopBattleViewSource& source, std::size
   return view;
 }
 
+// The name key of a partner's move by its place, from the begin's moves.
+std::string moveKeyOf(const CoopBattleViewSource& source, std::size_t fighter, std::size_t slot,
+                      const screens::NameKeys& names) {
+  const std::vector<coop::BattleMoveIds>& moves = source.begin->moves;
+  if (fighter >= moves.size() || slot >= moves[fighter].size() || moves[fighter][slot].empty()) {
+    return {};
+  }
+  return names.move(moves[fighter][slot]);
+}
+
+// An ally row's current order (screens' allyOrderKeyOf): its Folder order's move or its stance, or
+// its command.
+std::string allyOrderKeyOf(const CoopBattleViewSource& source, std::size_t index,
+                           const screens::NameKeys& names) {
+  if (index >= source.fighters.size()) {
+    return {};
+  }
+  const coop::BattleFighterState& fighter = source.fighters[index];
+  if (source.begin->folder) {
+    return fighter.order > 0 ? moveKeyOf(source, index, fighter.order - 1U, names)
+                             : std::format("battle.stance.{}",
+                                           screens::stanceName(
+                                               static_cast<game::battle::Stance>(fighter.stance)));
+  }
+  const auto command = static_cast<Command>(fighter.order);
+  if (command == Command::None) {
+    return {};
+  }
+  if (command < Command::Technique1) {
+    return screens::commandLabelKey(command);
+  }
+  return moveKeyOf(source, index,
+                   command == Command::Finisher ? game::battle::FinisherSlot
+                                                : static_cast<std::size_t>(fighter.order) -
+                                                      static_cast<std::size_t>(Command::Technique1),
+                   names);
+}
+
 screens::CommandEntry commandEntryOf(const CoopBattleViewSource& source, unsigned number,
                                      const screens::NameKeys& names) {
-  const auto command = static_cast<game::battle::Command>(number);
+  const auto command = static_cast<Command>(number);
   screens::CommandEntry entry;
   entry.command = command;
   entry.labelKey = coopOrderLabelKey(command, source.begin->folder);
   entry.current = source.frame->command == number;
   if (source.partner != nullptr && source.moves != nullptr) {
     if (std::string label = screens::commandLabelOf(command, *source.partner, names);
-        !label.empty() && command >= game::battle::Command::Technique1) {
+        !label.empty() && command >= Command::Technique1) {
       entry.labelKey = std::move(label);
     }
     entry.icon = screens::commandIconOf(command, *source.partner, *source.moves);
-  } else if (command < game::battle::Command::Technique1) {
+  } else if (command < Command::Technique1) {
     entry.icon = std::format("command-{}", number);
   }
   return entry;
 }
 
+// The guest's own partner's Folder plate as screens' battleViewOf reads it from its FolderFighter,
+// and the foes it aims at marked on their cards.
+void addFolderOf(screens::BattleView& view, const CoopBattleViewSource& source,
+                 const coop::BattleFolderPlate& plate, std::size_t own,
+                 const screens::NameKeys& names) {
+  const coop::BattleBegin& begin = *source.begin;
+  const auto foe = [&](std::optional<std::uint8_t> target) -> const screens::FighterView* {
+    if (!target || *target == 0 || *target > begin.enemyNpcs.size()) {
+      return nullptr;
+    }
+    const auto found =
+        std::ranges::find(view.fighters, std::size_t{*target}, &screens::FighterView::id);
+    return found != view.fighters.end() ? &*found : nullptr;
+  };
+  const auto foeKey = [&](std::optional<std::uint8_t> target) {
+    const screens::FighterView* fighter = foe(target);
+    return fighter != nullptr ? fighter->nameKey : std::string{};
+  };
+  const auto foeTag = [&](std::optional<std::uint8_t> target) {
+    const screens::FighterView* fighter = foe(target);
+    return fighter != nullptr ? fighter->tag : std::string{};
+  };
+  const auto moveOf = [&](std::uint8_t slot) { return moveKeyOf(source, own, slot, names); };
+  screens::BattleView::Folder folder;
+  if (plate.active) {
+    folder.moveKey = moveOf(plate.active->slot);
+    folder.phase =
+        std::string{screens::orderPhaseName(static_cast<game::battle::OrderPhase>(plate.phase))};
+    folder.phasePercent = plate.phasePercent;
+    folder.activeTargetKey = foeKey(plate.active->target);
+    folder.activeTargetTag = foeTag(plate.active->target);
+    folder.committed = plate.committed;
+  }
+  for (const coop::BattleOrderShown& order : plate.queue) {
+    folder.queue.push_back(moveOf(order.slot));
+    folder.queueTargets.push_back(foeKey(order.target));
+    folder.queueTargetTags.push_back(foeTag(order.target));
+  }
+  folder.targetKey = foeKey(plate.target);
+  folder.targetTag = foeTag(plate.target);
+  folder.stance = std::string{screens::stanceName(static_cast<game::battle::Stance>(plate.stance))};
+  folder.bar = plate.bar;
+  folder.barMax = plate.barMax;
+  folder.broken = plate.brokenSeconds > 0;
+  folder.brokenSeconds = plate.brokenSeconds;
+  if (const auto& notice = plate.notice) {
+    const auto problem = static_cast<game::battle::OrderProblem>(notice->problem);
+    folder.noticeKey =
+        screens::orderEndKey(static_cast<game::battle::OrderEnd>(notice->end), problem);
+    folder.noticeMoveKey = moveOf(notice->slot);
+    folder.noticeReasonKey = screens::orderProblemKey(problem);
+    if (notice->by) {
+      folder.noticeByKey = moveOf(*notice->by);
+    }
+  }
+  view.folder = std::move(folder);
+  const auto aims = [](const coop::BattleOrderShown& order, std::size_t id) {
+    return order.target == id;
+  };
+  for (screens::FighterView& fighter : view.fighters) {
+    fighter.targeted = plate.target == fighter.id && fighter.id != own;
+    fighter.queued = fighter.id != own &&
+                     ((plate.active && aims(*plate.active, fighter.id)) ||
+                      std::ranges::any_of(plate.queue, [&](const coop::BattleOrderShown& order) {
+                        return aims(order, fighter.id);
+                      }));
+  }
+}
+
 } // namespace
 
-std::string coopOrderLabelKey(game::battle::Command command, bool folder) {
+std::string coopOrderLabelKey(Command command, bool folder) {
   if (folder &&
       game::battle::folderCommandTextKey(command) != game::battle::commandTextKey(command)) {
     return std::string{game::battle::folderCommandTextKey(command)};
@@ -67,13 +263,13 @@ std::string coopOrderLabelKey(game::battle::Command command, bool folder) {
     return key;
   }
   switch (command) {
-  case game::battle::Command::Technique1:
+  case Command::Technique1:
     return "battle.command.technique_1";
-  case game::battle::Command::Technique2:
+  case Command::Technique2:
     return "battle.command.technique_2";
-  case game::battle::Command::Technique3:
+  case Command::Technique3:
     return "battle.command.technique_3";
-  case game::battle::Command::Finisher:
+  case Command::Finisher:
     return "battle.command.finisher";
   default:
     return "battle.command.none";
@@ -89,6 +285,72 @@ std::size_t coopOwnFighterOf(const coop::BattleBegin& begin, coop::BattleRole ro
     }
   }
   return 0;
+}
+
+std::vector<coop::BattleMoveIds> coopBattleMovesOf(const game::battle::Battle& battle) {
+  const game::battle::BattleState& state = battle.state();
+  std::vector<coop::BattleMoveIds> moves;
+  for (FighterId id = 0; id < state.fighters.size() && moves.size() < coop::MaxBattleFighters;
+       ++id) {
+    coop::BattleMoveIds& ids = moves.emplace_back();
+    if (!state.isPlayerSide(id)) {
+      continue;
+    }
+    for (std::size_t slot = 0; slot < ids.size(); ++slot) {
+      if (const auto& move = state.fighters[id].moves.at(slot)) {
+        ids.at(slot) = battle.moves().at(*move).id;
+      }
+    }
+  }
+  return moves;
+}
+
+coop::BattleFrame coopBattleFrameOf(const game::battle::Battle& battle, FighterId own) {
+  const game::battle::BattleState& state = battle.state();
+  coop::BattleFrame frame;
+  const game::battle::CommandState& commands = state.commandsOf(own);
+  frame.command = static_cast<std::uint8_t>(commands.current);
+  for (const Command command : commands.menu) {
+    frame.menu = static_cast<std::uint16_t>(frame.menu | (1U << static_cast<unsigned>(command)));
+  }
+  frame.bagAvailable = battle.bagAvailableFor(own);
+  frame.finisherCharging = state.finisher.charging;
+  if (const game::battle::Fighter& partner = state.fighters[own]; partner.hasFinisher()) {
+    frame.finisherProgress = clampedTo<std::uint16_t>(partner.finisherProgress);
+    frame.finisherGoal = clampedTo<std::uint16_t>(partner.finisherGoal);
+  }
+  if (const game::battle::FolderFighter* folder = battle.folderOf(own)) {
+    frame.folder = plateOf(battle, *folder, own);
+  }
+  for (FighterId id = 0;
+       id < state.fighters.size() && frame.fighters.size() < coop::MaxBattleFighters; ++id) {
+    const game::battle::Fighter& fighter = state.fighters[id];
+    const std::optional<std::int32_t> revive = screens::reviveSecondsOf(battle, id);
+    coop::BattleFighterState& shown = frame.fighters.emplace_back(
+        coop::BattleFighterState{.hp = fighter.hp,
+                                 .mp = fighter.mp,
+                                 .maxHp = fighter.stats.maxHp,
+                                 .maxMp = fighter.stats.maxMp,
+                                 .down = fighter.hp <= 0,
+                                 .reviveSeconds = clampedTo<std::uint8_t>(revive.value_or(0))});
+    addOrderOf(shown, battle, id);
+  }
+  return frame;
+}
+
+std::optional<std::size_t> coopNextThrowTarget(const coop::BattleBegin& begin,
+                                               coop::BattleRole role, coop::PlayerId self,
+                                               std::optional<std::size_t> current, int step) {
+  const std::vector<std::size_t> rows = allyRowsOf(begin, coopOwnFighterOf(begin, role, self));
+  const auto count = static_cast<std::ptrdiff_t>(rows.size()) + 1;
+  std::ptrdiff_t at = 0;
+  if (current) {
+    if (const auto found = std::ranges::find(rows, *current); found != rows.end()) {
+      at = std::distance(rows.begin(), found) + 1;
+    }
+  }
+  at = (((at + step) % count) + count) % count;
+  return at == 0 ? std::nullopt : std::optional{rows[static_cast<std::size_t>(at - 1)]};
 }
 
 screens::BattleView coopBattleViewOf(const CoopBattleViewSource& source,
@@ -111,23 +373,30 @@ screens::BattleView coopBattleViewOf(const CoopBattleViewSource& source,
     }
     view.fighters.push_back(std::move(fighter));
   }
-  for (std::size_t index = 0; index < 1 + enemies + begin.allies.size(); ++index) {
-    if (index != own && (index == 0 || index > enemies)) {
-      view.allies.push_back(fighterViewOf(source, index, names));
-    }
+  for (const std::size_t index : allyRowsOf(begin, own)) {
+    screens::FighterView& ally = view.allies.emplace_back(fighterViewOf(source, index, names));
+    ally.orderKey = allyOrderKeyOf(source, index, names);
+    ally.throwTarget = source.throwTarget == index;
   }
   view.reviveSeconds = view.fighters.front().reviveSeconds;
   view.bagOpen = source.bagOpen;
   if (const coop::BattleFrame* frame = source.frame) {
     view.bagAvailable = frame->bagAvailable;
+    view.finisher.progress = frame->finisherProgress;
+    view.finisher.goal = frame->finisherGoal;
+    view.finisher.ready = frame->finisherGoal > 0 && frame->finisherProgress >= frame->finisherGoal;
     view.finisher.charging = frame->finisherCharging;
     if (source.role != coop::BattleRole::Helper) {
-      for (unsigned number = 1; number <= static_cast<unsigned>(game::battle::Command::Finisher);
-           ++number) {
+      for (unsigned number = 1; number <= static_cast<unsigned>(Command::Finisher); ++number) {
         if ((frame->menu & (1U << number)) != 0) {
-          view.menu.push_back(commandEntryOf(source, number, names));
+          screens::CommandEntry& entry =
+              view.menu.emplace_back(commandEntryOf(source, number, names));
+          entry.available = entry.command != Command::Finisher || view.finisher.ready;
         }
       }
+    }
+    if (frame->folder) {
+      addFolderOf(view, source, *frame->folder, own, names);
     }
   }
   return view;

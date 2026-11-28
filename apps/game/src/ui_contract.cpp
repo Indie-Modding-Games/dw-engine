@@ -1078,6 +1078,9 @@ constexpr auto Contract =
         entry(
             Battle, Setting, "battle.ally.<n>.order", Text,
             "The text key of an ally's current order: its command, its Folder move or stance."),
+        entry(Battle, Setting, "battle.ally.<n>.throw_target", Boolean,
+              "In a co-op guest's battle, whether its next thrown item flies to this ally "
+              "(tab_previous and tab_next pick it while the bag is open)."),
         entry(Battle, Setting, "battle.finisher.progress", Number,
               "How much the finisher gauge has charged."),
         entry(Battle, Setting, "battle.finisher.goal", Number,

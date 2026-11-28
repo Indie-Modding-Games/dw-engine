@@ -158,6 +158,24 @@ bool getTexts(net::WireReader& in, std::vector<std::string>& texts, std::size_t 
   return in.ok();
 }
 
+// Each fighter's equipped move ids, "" for an empty place: none, or one set per fighter.
+bool getMoves(net::WireReader& in, std::vector<BattleMoveIds>& fighters) {
+  const std::uint8_t count = in.get<std::uint8_t>();
+  if (!in.ok() || count > MaxBattleFighters) {
+    return false;
+  }
+  for (std::uint8_t i = 0; i < count && in.ok(); ++i) {
+    BattleMoveIds& moves = fighters.emplace_back();
+    for (std::string& move : moves) {
+      move = in.text();
+      if (move.size() > MaxBattleText) {
+        return false;
+      }
+    }
+  }
+  return in.ok();
+}
+
 // Item trades (protocol.hpp: TradeAsk and the others).
 constexpr std::size_t MaxTradeItemText = 64;
 
@@ -304,6 +322,98 @@ bool getThrow(net::WireReader& in, BattleThrow& thrown) {
          validCoordinate(thrown.x, MaxWorldCoordinate) &&
          validCoordinate(thrown.z, MaxWorldCoordinate) &&
          validCoordinate(thrown.height, MaxWorldCoordinate);
+}
+
+// A fighter of a battle in one byte, this for none.
+constexpr std::uint8_t NoBattleFighter = 0xFF;
+
+void putFighterIndex(net::WireWriter& out, const std::optional<std::uint8_t>& fighter) {
+  out.put(fighter.value_or(NoBattleFighter));
+}
+
+bool getFighterIndex(net::WireReader& in, std::optional<std::uint8_t>& fighter) {
+  const auto byte = in.get<std::uint8_t>();
+  if (byte != NoBattleFighter) {
+    fighter = byte;
+  }
+  return in.ok() && (byte == NoBattleFighter || byte < MaxBattleFighters);
+}
+
+void put(net::WireWriter& out, const BattleOrderShown& order) {
+  out.put(order.slot);
+  putFighterIndex(out, order.target);
+}
+
+bool getOrder(net::WireReader& in, BattleOrderShown& order) {
+  order.slot = in.get<std::uint8_t>();
+  return getFighterIndex(in, order.target) && order.slot < OrderSlots;
+}
+
+void put(net::WireWriter& out, const BattleFolderPlate& plate) {
+  out.put(plate.active.has_value());
+  if (plate.active) {
+    put(out, *plate.active);
+  }
+  out.put(plate.phase).put(plate.phasePercent).put(plate.committed);
+  out.put(static_cast<std::uint8_t>(plate.queue.size()));
+  for (const BattleOrderShown& order : plate.queue) {
+    put(out, order);
+  }
+  putFighterIndex(out, plate.target);
+  out.put(plate.stance).put(plate.bar).put(plate.barMax).put(plate.brokenSeconds);
+  out.put(plate.notice.has_value());
+  if (plate.notice) {
+    out.put(plate.notice->slot).put(plate.notice->end).put(plate.notice->problem);
+    putFighterIndex(out, plate.notice->by);
+  }
+}
+
+bool getPlate(net::WireReader& in, BattleFolderPlate& plate) {
+  constexpr std::uint8_t Hundred = 100;
+  bool active = false;
+  if (!getFlag(in, active)) {
+    return false;
+  }
+  if (active && !getOrder(in, plate.active.emplace())) {
+    return false;
+  }
+  plate.phase = in.get<std::uint8_t>();
+  plate.phasePercent = in.get<std::uint8_t>();
+  if (!getFlag(in, plate.committed)) {
+    return false;
+  }
+  const auto queued = in.get<std::uint8_t>();
+  if (!in.ok() || queued > MaxBattleQueue) {
+    return false;
+  }
+  for (std::uint8_t i = 0; i < queued; ++i) {
+    if (!getOrder(in, plate.queue.emplace_back())) {
+      return false;
+    }
+  }
+  if (!getFighterIndex(in, plate.target)) {
+    return false;
+  }
+  plate.stance = in.get<std::uint8_t>();
+  plate.bar = in.get<std::uint16_t>();
+  plate.barMax = in.get<std::uint16_t>();
+  plate.brokenSeconds = in.get<std::uint8_t>();
+  bool notice = false;
+  if (!getFlag(in, notice)) {
+    return false;
+  }
+  if (notice) {
+    BattleOrderNotice& told = plate.notice.emplace();
+    told.slot = in.get<std::uint8_t>();
+    told.end = in.get<std::uint8_t>();
+    told.problem = in.get<std::uint8_t>();
+    if (!getFighterIndex(in, told.by) || told.slot >= OrderSlots || told.end > LastOrderEnd ||
+        told.problem > LastOrderProblem || (told.by && *told.by >= OrderSlots)) {
+      return false;
+    }
+  }
+  return in.ok() && plate.phase <= LastOrderPhase && plate.phasePercent <= Hundred &&
+         plate.stance <= LastStance;
 }
 
 void put(net::WireWriter& out, const BattleSpoils& spoils) {
@@ -554,6 +664,12 @@ net::Bytes encode(const Message& message) {
             out.put(ally);
           }
           out.put(body.folder);
+          out.put(static_cast<std::uint8_t>(body.moves.size()));
+          for (const BattleMoveIds& moves : body.moves) {
+            for (const std::string& move : moves) {
+              out.put(std::string_view{move});
+            }
+          }
         } else if constexpr (std::is_same_v<T, BattleOffer>) {
           out.put(BattleOfferKind).put(body.available);
           put(out, body.fighter);
@@ -565,7 +681,7 @@ net::Bytes encode(const Message& message) {
           out.put(static_cast<std::uint8_t>(body.fighters.size()));
           for (const BattleFighterState& fighter : body.fighters) {
             out.put(fighter.hp).put(fighter.mp).put(fighter.maxHp).put(fighter.maxMp);
-            out.put(fighter.down).put(fighter.reviveSeconds);
+            out.put(fighter.down).put(fighter.reviveSeconds).put(fighter.order).put(fighter.stance);
           }
           out.put(static_cast<std::uint8_t>(body.figures.size()));
           for (const BattleFigure& figure : body.figures) {
@@ -574,6 +690,10 @@ net::Bytes encode(const Message& message) {
           out.put(static_cast<std::uint8_t>(body.throws.size()));
           for (const BattleThrow& thrown : body.throws) {
             put(out, thrown);
+          }
+          out.put(body.finisherProgress).put(body.finisherGoal).put(body.folder.has_value());
+          if (body.folder) {
+            put(out, *body.folder);
           }
         } else if constexpr (std::is_same_v<T, BattleAction>) {
           out.put(BattleActionMessageKind).put(body.battle).put(body.kind).put(body.value);
@@ -813,9 +933,11 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     for (std::uint8_t i = 0; i < allies && in.ok() && allies < MaxPlayers; ++i) {
       begin.allies.push_back(in.get<PlayerId>());
     }
-    if (!getFlag(in, begin.folder) || !in.ok() || allies >= MaxPlayers || begin.battle == 0 ||
-        !validPlayer(begin.starter) || begin.mapId.empty() || begin.enemyNpcs.empty() ||
+    if (!getFlag(in, begin.folder) || !getMoves(in, begin.moves) || allies >= MaxPlayers ||
+        begin.battle == 0 || !validPlayer(begin.starter) || begin.mapId.empty() ||
+        begin.enemyNpcs.empty() ||
         begin.species.size() != begin.enemyNpcs.size() + 1 + begin.allies.size() ||
+        (!begin.moves.empty() && begin.moves.size() != begin.species.size()) ||
         (begin.starter != HostPlayerId) != (begin.ask != 0) ||
         !std::ranges::all_of(begin.allies, [&](PlayerId ally) {
           return validPlayer(ally) && ally != begin.starter;
@@ -870,6 +992,11 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
         return core::fail("invalid cooperative battle fighter");
       }
       fighter.reviveSeconds = in.get<std::uint8_t>();
+      fighter.order = in.get<std::uint8_t>();
+      fighter.stance = in.get<std::uint8_t>();
+      if (!in.ok() || fighter.order > LastBattleCommand || fighter.stance > LastStance) {
+        return core::fail("invalid cooperative battle fighter");
+      }
       frame.fighters.push_back(fighter);
     }
     const std::uint8_t figures = in.get<std::uint8_t>();
@@ -893,6 +1020,12 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
         return core::fail("invalid cooperative battle throw");
       }
       frame.throws.push_back(std::move(thrown));
+    }
+    frame.finisherProgress = in.get<std::uint16_t>();
+    frame.finisherGoal = in.get<std::uint16_t>();
+    bool plate = false;
+    if (!getFlag(in, plate) || (plate && !getPlate(in, frame.folder.emplace()))) {
+      return core::fail("invalid cooperative battle frame plate");
     }
     if (bytes.size() + 1 > net::MaxDatagram) {
       return core::fail("cooperative battle frame exceeds the unreliable datagram limit");
