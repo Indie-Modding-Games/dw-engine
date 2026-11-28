@@ -178,6 +178,9 @@ lifespan in hours: when it runs out, it dies and is reborn as a Fresh Digimon wi
   (`IS_SCRIPT_PAUSED` 1) and outside the protected hour after sleeping, the death event is launched **(verified)**.
 - **Lives:** losing a battle or leaving a sickness untreated for 12 hours takes away a life; with 0 lives, the
   remaining life goes to 0 and it dies (`script_interp.c`) **(verified)**.
+- **Dead with lives left** (engine): a save or a debug command can leave a partner counted dead with lives and
+  lifetime left. MAPHEAD 0x4DE plays its lost life (routine 9), as the original would, and the partner lives on
+  after it, so the next defeat takes a life again.
 - **Rebirth** (`reincarnatePartner` in `evolution.c`, `initializeReincarnatedPartner`, `setReincarnateStats`; the egg
   is chosen in `dooa.c`) **(verified)**:
   - One of the four Fresh Digimon comes out, at random.

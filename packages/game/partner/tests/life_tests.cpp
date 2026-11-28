@@ -8,6 +8,7 @@
 #include <memory>
 #include <ostream>
 #include <span>
+#include <utility>
 
 #include "partner_fixture.hpp"
 
@@ -135,6 +136,30 @@ TEST_CASE("care.md death: a lost battle costs a life; the last one kills the par
   raising.edit([](PartnerState& state) { state.life.lives = 1; });
   loseBattle(raising);
   CHECK(raising.state().life.phase == LifePhase::DiedOtherwise);
+}
+
+TEST_CASE(
+    "a lost life's scene brings back only a partner counted dead with lives and lifetime left") {
+  OriginalRuleset original;
+  Raising raising(original.rules());
+  CHECK_FALSE(raising.partner().surviveLostLife());
+  raising.edit([](PartnerState& state) {
+    state.life.lives = 3;
+    state.life.phase = LifePhase::DiedOtherwise;
+  });
+  CHECK(raising.partner().surviveLostLife());
+  CHECK(raising.partner().alive());
+  loseBattle(raising);
+  CHECK(raising.state().life.lives == 2);
+  for (const auto& [lives, lifetime] : {std::pair{0, 100}, std::pair{2, 0}}) {
+    raising.edit([lives, lifetime](PartnerState& state) {
+      state.life.lives = lives;
+      state.life.remainingLifetime = lifetime;
+      state.life.phase = LifePhase::DiedOtherwise;
+    });
+    CHECK_FALSE(raising.partner().surviveLostLife());
+    CHECK_FALSE(raising.partner().alive());
+  }
 }
 
 TEST_CASE(

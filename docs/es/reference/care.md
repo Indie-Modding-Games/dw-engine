@@ -181,6 +181,9 @@ se acaba, muere y renace como bebé con parte de sus stats.
   (`IS_SCRIPT_PAUSED` 1) y fuera de la hora protegida tras dormir, se lanza el evento de muerte **(comprobado)**.
 - **Vidas:** perder un combate o dejar 12 horas una enfermedad sin tratar quita una vida; con 0 vidas, la vida
   restante pasa a 0 y muere (`script_interp.c`) **(comprobado)**.
+- **Muerto con vidas** (motor): una partida guardada o un comando de depuración pueden dejar al partner contado
+  como muerto con vidas y vida restante. MAPHEAD 0x4DE juega su vida perdida (rutina 9), como haría el original, y
+  el partner sigue vivo después, así que la siguiente derrota vuelve a quitarle una vida.
 - **Renacer** (`reincarnatePartner` en `evolution.c`, `initializeReincarnatedPartner`, `setReincarnateStats`;
   el huevo se elige en `dooa.c`) **(comprobado)**:
   - Sale uno de los cuatro bebés, al azar.
