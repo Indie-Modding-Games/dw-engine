@@ -619,6 +619,13 @@ every free player on that map fights in it ([co-op combat](coop-combat.md) §12)
 the play reads (a lobby's ready, a save's chunks) instead of queueing them, so a peer that keeps sending them grows
 nothing on the other side.
 
+**A player leaving while the others play.** Its link alone ends; the other guests keep theirs (`room_tests.cpp`). The
+host takes it out of the roster at once, but a battle it fights in keeps its bodies until that battle ends, on the host
+and on every guest (`CoopGuestWorld::keepsBodies` with `BattleMirror::fighting`): a guest no longer drops them the
+moment the roster loses them, so their partner never borrows this guest's own partner's body. A battle's `BattleBegin`
+takes any player as its starter; before, the check stopped a battle that the third or fourth player started from going
+out. Audit: [#352](audits/352-audit.md).
+
 **Sync diagnostics.** A developer tool behind the console (F1), which only opens with the developer tools on, so it
 never runs in release builds. `coop_sync("on")` on the host tells every guest to report; `coop_sync("report")` prints
 the whole picture once and `coop_sync("off")` stops it. While on, the log says when a player changes map, when

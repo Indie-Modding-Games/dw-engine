@@ -2934,7 +2934,7 @@ int runGame(const Options& requested) {
         const net::Millis drawnAt{static_cast<std::int64_t>(platform->nowSeconds() * 1000.0)};
         const auto presented = coopBridge()->presentedWorld(drawnAt);
         presentCoopPlayers(play->scene(), presented ? &*presented : nullptr, *coopGuestWorld,
-                           coop.remotePartnerSpecies());
+                           coop.remotePartnerSpecies(), coopBattles.fighting());
         play->mirrorCoopNpcs(presented ? &*presented : nullptr, drawnAt);
       } else {
         play->mirrorCoopNpcs(nullptr, {});

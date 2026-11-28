@@ -726,6 +726,14 @@ de ese mapa pelea en él ([combate cooperativo](coop-combat.md) §12). Un puente
 del juego lee (el listo de un lobby, los fragmentos de un guardado) en vez de encolarlos, así que un compañero que los
 siga enviando no hace crecer nada del otro lado.
 
+**Un jugador que se va mientras los demás juegan.** Solo termina su enlace; los otros invitados mantienen el suyo
+(`room_tests.cpp`). El anfitrión lo saca de la lista de jugadores enseguida, pero un combate en el que pelea conserva sus
+cuerpos hasta que termina, en el anfitrión y en cada invitado (`CoopGuestWorld::keepsBodies` con
+`BattleMirror::fighting`): un invitado ya no los quita en cuanto la lista los pierde, así que su compañero no usa el
+cuerpo del compañero propio de ese invitado. El `BattleBegin` de un combate acepta a cualquier jugador como quien lo
+empezó (antes la comprobación impedía que saliera un combate empezado por el tercer o cuarto jugador). Auditoría:
+[#352](audits/352-audit.md).
+
 **Diagnóstico de sincronía.** Una herramienta de desarrollo detrás de la consola (F1), que solo se abre con las
 herramientas de desarrollo activas, así que nunca corre en las builds de release. `coop_sync("on")` en el anfitrión
 pide a cada invitado que informe; `coop_sync("report")` imprime el cuadro completo una vez y `coop_sync("off")` lo

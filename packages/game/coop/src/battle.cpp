@@ -266,6 +266,15 @@ std::optional<BattleEnd> BattleMirror::takeEnded() {
   return std::exchange(ended_, std::nullopt);
 }
 
+std::vector<PlayerId> BattleMirror::fighting() const {
+  if (!running_) {
+    return {};
+  }
+  std::vector<PlayerId> players{running_->starter};
+  players.append_range(running_->allies);
+  return players;
+}
+
 std::optional<BattleRole> BattleMirror::role() const {
   if (!running_) {
     return std::nullopt;
