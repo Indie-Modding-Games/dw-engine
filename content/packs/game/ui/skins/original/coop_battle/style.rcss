@@ -1,5 +1,5 @@
-/* The co-op battle panel in the original look: one of the original's windows (the box border and corners of
-   theme.rcss), its grey ink, the partner's name in the heading yellow and the original's green life bars. */
+/* The co-op battle's end box in the original look: one of the original's windows (the box border and corners of
+   theme.rcss), its grey ink and the heading in yellow. */
 
 #panel {
 	border: 3dp transparent;
@@ -17,21 +17,6 @@
 	font-size: 22dp;
 }
 
-.fighter.partner .name {
-	color: #e8d048;
-}
-
-.fighter .bar {
-	width: 54%;
-	border-radius: 0;
-	background-color: #303030;
-}
-
-.fighter .fill {
-	border-radius: 0;
-	background-color: #30c030;
-}
-
 button {
 	border: 2dp #808080;
 	border-radius: 0;
@@ -42,36 +27,4 @@ button {
 button:hover,
 button:focus {
 	border-color: #e8d048;
-}
-
-.fighter .mp {
-	color: #68a8e8;
-}
-
-.fighter .hp,
-.fighter .mp,
-.fighter .revive,
-.fighter .target {
-	font-size: 22dp;
-}
-
-.fighter.mine {
-	border-left-color: #e8d048;
-}
-
-.fighter .revive {
-	padding: 0 6dp;
-	color: #1d262e;
-	background-color: #e8d048;
-}
-
-.fighter.down {
-	opacity: 1;
-}
-
-.fighter.down .name,
-.fighter.down .bar,
-.fighter.down .hp,
-.fighter.down .mp {
-	opacity: 0.5;
 }

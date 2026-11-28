@@ -1,5 +1,5 @@
-/* The co-op battle panel in the modern look: the skin's dark rounded card with its amber line, soft pill buttons and
-   rounded life bars, at the skin's readable text sizes. */
+/* The co-op battle's end box in the modern look: the skin's dark rounded card with its amber line and a soft pill
+   button, at the skin's readable text sizes. */
 
 #panel {
 	border: 2dp #f2a93b;
@@ -8,14 +8,8 @@
 	color: #e9eef5;
 }
 
-.fighter.partner .name,
 #title {
 	color: #f2a93b;
-}
-
-.fighter .bar,
-.fighter .fill {
-	border-radius: 6dp;
 }
 
 button {
@@ -25,11 +19,6 @@ button {
 }
 
 button:hover,
-button:focus,
-button.current {
+button:focus {
 	border-color: #f2a93b;
-}
-
-.fighter.mine {
-	border-left-color: #f2a93b;
 }

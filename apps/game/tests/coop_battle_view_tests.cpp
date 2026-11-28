@@ -119,3 +119,73 @@ TEST_CASE("a guest pays for its thrown item only once the host's frames show the
   purse.reset();
   CHECK(purse.due(mine, self, 1) == std::vector<std::string>{"meat"});
 }
+
+TEST_CASE("a guest's battle HUD shows its own partner first and the other partners as allies") {
+  const coop::BattleBegin begin = fourPlayers();
+  const std::vector<coop::BattleFighterState> fighters{
+      {.hp = 100, .mp = 10, .maxHp = 200, .maxMp = 20},
+      {.hp = 300, .maxHp = 300},
+      {.hp = 0, .maxHp = 250, .down = true},
+      {.hp = 150, .mp = 30, .maxHp = 150, .maxMp = 40},
+      {.hp = 0, .mp = 5, .maxHp = 180, .maxMp = 50, .down = true, .reviveSeconds = 7}};
+  coop::BattleFrame frame;
+  frame.phase = coop::BattlePhase::Fight;
+  frame.command = 2;
+  frame.menu = (1U << 1U) | (1U << 2U) | (1U << 8U);
+  frame.bagAvailable = true;
+  const dwe::screens::NameKeys names{nullptr, nullptr, nullptr};
+  CHECK(dwe::app::coopOwnFighterOf(begin, coop::BattleRole::Ally, 3) == 4);
+  CHECK(dwe::app::coopOwnFighterOf(begin, coop::BattleRole::Starter, 2) == 0);
+  CHECK(dwe::app::coopOwnFighterOf(begin, coop::BattleRole::Helper, 5) == 0);
+
+  const dwe::screens::BattleView ally = dwe::app::coopBattleViewOf({.begin = &begin,
+                                                                    .frame = &frame,
+                                                                    .fighters = fighters,
+                                                                    .role = coop::BattleRole::Ally,
+                                                                    .self = 3},
+                                                                   names);
+  REQUIRE(ally.fighters.size() == 3);
+  CHECK(ally.fighters[0].id == 4);
+  CHECK(ally.fighters[0].fainted);
+  CHECK(ally.fighters[0].reviveSeconds == 7);
+  CHECK(ally.reviveSeconds == 7);
+  CHECK(ally.fighters[1].id == 1);
+  CHECK(ally.fighters[2].fainted);
+  REQUIRE(ally.allies.size() == 2);
+  CHECK(ally.allies[0].id == 0);
+  CHECK(ally.allies[1].id == 3);
+  CHECK(ally.allies[1].mp == 30);
+  CHECK(ally.bagAvailable);
+  REQUIRE(ally.menu.size() == 3);
+  CHECK(ally.menu[1].command == dwe::game::battle::Command::Attack);
+  CHECK(ally.menu[1].current);
+  CHECK(ally.menu[1].icon == "command-2");
+  CHECK(ally.menu[2].labelKey == "battle.command.technique_1");
+  CHECK(ally.menu[2].icon.empty());
+
+  const dwe::screens::BattleView helper =
+      dwe::app::coopBattleViewOf({.begin = &begin,
+                                  .frame = &frame,
+                                  .fighters = fighters,
+                                  .role = coop::BattleRole::Helper,
+                                  .self = 5},
+                                 names);
+  CHECK(helper.fighters[0].id == 0);
+  CHECK(helper.allies.size() == 2);
+  CHECK(helper.menu.empty());
+}
+
+TEST_CASE("a guest's battle HUD letters the foes of one species as the host's does") {
+  coop::BattleBegin begin = fourPlayers();
+  begin.species[2] = begin.species[1];
+  const dwe::screens::NameKeys names{nullptr, nullptr, nullptr};
+  dwe::app::CoopBattleViewSource source;
+  source.begin = &begin;
+  source.role = coop::BattleRole::Starter;
+  source.self = 2;
+  const dwe::screens::BattleView view = dwe::app::coopBattleViewOf(source, names);
+  REQUIRE(view.fighters.size() == 3);
+  CHECK(view.fighters[0].tag.empty());
+  CHECK(view.fighters[1].tag == "A");
+  CHECK(view.fighters[2].tag == "B");
+}

@@ -748,7 +748,8 @@ the **host's simulation**:
 - **What the other player sees.** The host sends `BattleBegin`, then a `BattleFrame` every 3 ticks (phase, current
   order, the orders available, whether the bag can be used, the fighters' HP and MP, and every held figure: place,
   heading, clip and its start), then `BattleEnd`. The guest's field holds and draws its own actors where the frames put
-  them; the `coop_battle` screen shows the life bars, the starter's orders and the helper's help.
+  them; its `battle` screen shows the fight as the host's own HUD in its skin, and the `coop_battle` screen only the end
+  box.
   A helper's camera turns to the battle when it begins and comes back when it ends.
 - **What each player can do.** The starter gives the orders (the strip's commands, the finisher) and closes the end
   box; the others see whom they wait on in its place (`Waiting for <name> to continue...`, `BattleMirror::waitingFor`)

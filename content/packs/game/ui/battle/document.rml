@@ -113,7 +113,7 @@
 			</div>
 			<div id="finisher">
 				<span class="original-look" id="finisher-label" text-key="battle.finisher"></span>
-				<span class="original-look" id="finisher-word"></span>
+				<span class="original-look" id="finisher-word"><span id="finisher-word-lit"></span><span id="finisher-word-dim"></span></span>
 				<div id="finisher-segments"><div class="segment" id="finisher-0"></div><div class="segment" id="finisher-1"></div><div class="segment" id="finisher-2"></div><div class="segment" id="finisher-3"></div><div class="segment" id="finisher-4"></div><div class="segment" id="finisher-5"></div><div class="segment extra" id="finisher-6"></div><div class="segment extra" id="finisher-7"></div></div>
 				<span id="finisher-percent"></span>
 				<div id="finisher-ready"><span class="key" id="prompt-finisher"></span><div id="finisher-push" text-key="battle.finisher_push"></div></div>

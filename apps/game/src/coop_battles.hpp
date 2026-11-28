@@ -5,6 +5,8 @@
 #include <dwe/game/coop/battle.hpp>
 #include <dwe/game/coop/protocol.hpp>
 #include <dwe/input/input_state.hpp>
+#include <dwe/screens/command_menu.hpp>
+#include <dwe/screens/partner_bars.hpp>
 #include <dwe/screens/screen_settings.hpp>
 #include <dwe/ui/ui.hpp>
 
@@ -128,6 +130,12 @@ private:
   void lookBack(PlaySession& play);
   void pickTarget(const ui::UiValue& value);
   void publish(const PlaySession& play);
+  void publishHud(const PlaySession& play);
+  void publishHudBars(const PlaySession& play);
+  void stepHud();
+  void hideHud();
+  bool handleHud(const ui::UiCommand& command);
+  void openHudBag();
   void hideDocument();
   void send(CoopGameplayBridge* bridge, game::coop::Message message);
   void sendTo(game::coop::PlayerId to, game::coop::Message message);
@@ -169,6 +177,19 @@ private:
   // The guest's actions from its document, sent on the next tick.
   std::vector<game::coop::BattleAction> actions_;
   bool documentShown_ = false;
+  // The guest's battle HUD: the battle document as the host's own, its strip and partner bars,
+  // the bag open over it, this player's partner for the strip's techniques, and each foe's HP
+  // with the tick it last moved (its world bar shows a while after).
+  struct FoeHp {
+    std::int32_t hp = 0;
+    std::optional<std::uint64_t> hitAt;
+  };
+  bool hudShown_ = false;
+  bool hudBag_ = false;
+  screens::CommandMenuMotion hudMenu_;
+  screens::PartnerBarsMotion hudBars_;
+  std::optional<game::battle::Fighter> hudPartner_;
+  std::vector<FoeHp> hudFoes_;
   // Whether the helper's camera was turned to the battle.
   bool cameraOnBattle_ = false;
 };

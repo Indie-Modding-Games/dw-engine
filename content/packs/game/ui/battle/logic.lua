@@ -577,13 +577,17 @@ local function draw_finisher(document)
   for index = 0, finisher_marks - 1 do
     lookup(document, "finisher-" .. index):set_class("filled", index < filled)
   end
-  -- The same word in the player's language, as many of its letters as the gauge has marks lit
-  -- (the original look shows it where the original's English picture is not used).
+  -- The same word in the player's language, as many of its letters lit as the gauge has marks lit
+  -- and the rest dim (the original look shows it where the original's English picture is not used).
   local word = t("battle.finisher_word")
   local letters = utf8.len(word) or #word
   local shown = math.floor(letters * filled / finisher_marks)
   local stop = utf8.offset(word, shown + 1) or (#word + 1)
-  lookup(document, "finisher-word"):set_text(string.sub(word, 1, stop - 1))
+  if applied["finisher-word text"] ~= word .. shown then
+    applied["finisher-word text"] = word .. shown
+    lookup(document, "finisher-word-lit"):set_text(string.sub(word, 1, stop - 1))
+    lookup(document, "finisher-word-dim"):set_text(string.sub(word, stop))
+  end
   lookup(document, "finisher"):set_class("ready", ready)
   local filled_percent = math.floor(percent(progress, goal))
   local shown_percent = ready and t("battle.finisher_ready")

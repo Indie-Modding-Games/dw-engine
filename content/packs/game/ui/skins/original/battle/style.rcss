@@ -147,6 +147,11 @@
 	display: none;
 }
 
+#finisher-word-dim {
+	color: #f8c80040;
+	font-effect: none;
+}
+
 #finisher-segments {
 	display: block;
 	position: absolute;
