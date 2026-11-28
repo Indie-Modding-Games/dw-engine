@@ -148,7 +148,7 @@ One player's session in co-op, from the confirm cell to the next free step:
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Script: confirm cell (the host's world clock stands while the host reads it)
+  [*] --> Script: confirm cell (the world's clock runs on; the reader's partner stands, T7)
   Script --> Course: routine 7; holdForCourse(true), clock start kept
   Course --> Award: frames run out, cancel held or reels stop
   Award --> Count: partner charged one hour (sharedClock, no jump)
@@ -189,8 +189,11 @@ The same rules hold for every size of room; nothing scales with the number of pl
 - **One session per player.** A player's game runs one course at a time (`GymScreen::start` does nothing while a
   course runs); a batch runs its sessions one after the other, each waiting for its hour.
 - **The same machine.** Each game runs the gym on its own copy of the map, so two players can use the same machine at
-  once. Their partners are drawn on the same spot on the others' screens, and only each player's own screen moves the
-  machine's objects (the boulder, the log): a visual limit, ticket T8 in §9.
+  once. On each screen a second partner on a course at a used machine is drawn one step (300 units) beside the first, to
+  either side, up to four (`machineSpotBeside`, T8): the host does it for the guests' partners on its field, so its
+  snapshots carry it, and each guest for the partners it draws next to its own. Only a partner playing a course's clip
+  moves aside; off the course it stands where its game has it. Only each player's own screen moves the machine's objects
+  (the boulder, the log).
 - **Training and exploring.** A player on a course is busy: no trades, no battle ally offers, not pulled into a battle.
   The others keep exploring, fighting and trading; the world is never held for a trainer.
 
@@ -207,6 +210,30 @@ The same rules hold for every size of room; nothing scales with the number of pl
 - **Progress goes home.** A guest's trained partner goes back to its own save with the rest of its progress (#383,
   [multiplayer](multiplayer.md), "What goes home").
 
+### 4.8 The host held by its own script or screen (T7, T9)
+
+A host's script holds only the host's player (decision 6 of [multiplayer](multiplayer.md)), and so does a full screen of
+its own. Neither stands the world's clock any more:
+
+- **Which holds.** On the co-op host, the world's clock runs on while a script holds its field (a talk, the gym's menu,
+  a scene) and while a screen of its own runs instead of the field: the shops (items, cards, merits), the item keeper,
+  the discard menu, the jukebox, the trade and bird screens, the schedule, the world map, the debug menu, the fishing,
+  the stones game, the award notice, the partner's care scenes (pile, toilet, feeding, praise and scold) and its
+  evolution. What still stands it: a map change (it takes every player), the host's sleep (its skip moves the world),
+  a tournament, the death and ending scenes, and a battle.
+- **The host's partner stands meanwhile,** as it would alone, and lives that time once its player is let go, as a
+  guest's partner catches up with the world after its own dialog (§4.1): whole hours as a time skip (`skipHours`), the
+  rest frame by frame on the world's clock (`GameSession::liveStoodTime`). So a long talk costs the partner the same
+  care as the same time on the field, and no time is lived twice: a time skip or a debug jump during the hold is not
+  counted, and the gym's menu is lived when the course starts, so the course's hour is not.
+- **The guests** keep playing: the host tells its clock as running, and they follow it.
+- **Alone nothing changes:** the script or screen stands the clock, as in the original. **A guest's own** scripts and
+  screens are as before: its clock stands with them and catches up with the world afterwards.
+
+The pieces: `GameSession::hostHeldByOwnScript` (a script hold that is not a map change), `runWorldPastHeldPlayer` (the
+clock runs, the frames are kept in `stoodFrames_`) and `tickHeldPlayer`, which `PlaySession::tickSystems` calls on the
+ticks a screen of the player's own runs instead of the session's tick (a no-op alone and on a guest).
+
 ## 5. Disconnections and edge cases
 
 - **A guest leaves:** the host clears its course (`CoopTraining::playerLeft`) and tells the others; a guest that comes
@@ -214,8 +241,9 @@ The same rules hold for every size of room; nothing scales with the number of pl
 - **The host leaves:** the guest goes back to the title as before; nothing of this ticket outlives the game.
 - **Day change and events:** only the world's midnight changes the day, for every player at once (a guest that missed
   it by a skip pays it in `skipHours`). Day-time changes follow the shared clock.
-- **Host menus and scripts:** the host's menus and Start's pause no longer hold the world's clock (#415); its scripts
-  still do (§7), so the world stands for everyone while the host reads a dialog, and guests wait with it.
+- **Host menus, scripts and screens:** nothing the host reads or opens holds the world's clock any more: not its menus
+  or Start's pause (#415), not its scripts (a talk, the gym's menu, T7), not its own full screens (a shop, the item
+  keeper, the fishing, a care scene, an evolution, T9). See §4.8.
 - **A guest sleeps:** its partner sleeps and its screen waits in the dark for the world's morning (§4.5); it no
   longer goes back to the night.
 - **The host sleeps:** guests skip those hours (§4.1), as a script time skip.
@@ -234,7 +262,7 @@ The cases the issue lists:
 | The day changes during a session | Only the world's midnight changes the day; a session never adds one (§4.2). |
 | A timed event fires during a session | World events follow the world's clock; on the trainer's own game the course holds the field, so an event that needs it starts after the course, as alone. |
 | A player tries several sessions at once | One course per game; a batch runs them in a row, each lasting its hour. |
-| Latency or packet loss | `WorldClock` and `TrainingStatus` are reliable; a guest runs on at most two seconds past the last word, then waits; a late word is played as frames or a skip. A course waiting for its hour waits longer while the host's clock stands (a host dialog). |
+| Latency or packet loss | `WorldClock` and `TrainingStatus` are reliable; a guest runs on at most two seconds past the last word, then waits; a late word is played as frames or a skip. A course waiting for its hour waits longer while the host's clock stands (a map change or a battle of the host's). |
 
 ## 6. Code
 
@@ -245,15 +273,22 @@ The cases the issue lists:
 | The course waits for its hour | `packages/game/gym` (`GymPorts::hourRuns`, `CourseRun::finish`), `packages/session` (`GymFieldPorts::hourRuns`) |
 | Messages `0xC0`, `0xC1`, protocol 11 | `packages/game/coop` (`protocol.hpp`, `link.cpp` `directionAllowed`) |
 | Routing and the game loop | `apps/game` (`coop_gameplay_bridge`, `coop_training`, `game.cpp`, `play_session`) |
+| The host held by its own script or screen | `packages/session` (`GameSession::hostHeldByOwnScript`, `runWorldPastHeldPlayer`, `liveStoodTime`, `tickHeldPlayer`), `apps/game` (`PlaySession::tickSystems`) |
+| A second partner beside a used machine | `apps/game` (`coop_machine_spot.hpp`, `CoopHostWorld::showHeld`, `presentCoopPlayers`) |
 | The tag | `content/packs/game/ui/coop_hud`, UI API 0.25.0 |
 
 ## 7. Limits and follow-ups
 
 - **Co-op sleep** (§4.5): a guest that sleeps while the host stays awake waits up to a night in real time (about ten
   minutes); the host is not told that a guest sleeps.
-- **Host dialogs and scripts still hold the world's clock** for everyone (its menus and pause no longer do, #415).
+- **What still stands the world's clock** for everyone: the host's map changes, its battles, a tournament and the death
+  and ending scenes (§4.8).
+- **A host's partner held for long** lives that time in one go when let go: more than an hour of a talk is a time skip
+  for it, as for a guest.
 - **A course waits for the world's hour (#411)**: a session the player skips holds its actors up to a real minute in
-  co-op, and longer while a host dialog stands the world's clock.
+  co-op.
+- **Partners side by side (T8)** is drawing only: each game still runs the course on its own spot. A partner walking to
+  or from the machine past another on a course may step aside for a moment.
 - **The remote partner's training animation** is drawn on the other machines since protocol 14 (#420): the course's
   clips and the partner's place on the equipment travel in the snapshots and the guest's states
   ([multiplayer](multiplayer.md) §5.7, "What a script plays").
@@ -273,7 +308,11 @@ The cases the issue lists:
   `CoopLink`.
 - `apps/game/tests/coop_training_tests.cpp`: a host and three guests on loopback links training at once.
 - `apps/game/tests/coop_replication_tests.cpp`: a guest's course drawn on the host's field and in its snapshot, and
-  let go when it ends.
+  let go when it ends; a second partner on the same machine drawn beside the first, and the free spot to either side.
+- `apps/game/tests/coop_host_clock_tests.cpp`: a host and a guest on a `CoopPair`: a host's script and a host's screen
+  run the world's clock on for the guest while the host's partner stands, then lives it as it would have played it;
+  alone a script stands the clock; a guest's own talk stands its clock and catches up; the gym's menu is lived before
+  the course and the course's hour is not lived twice.
 
 ## 9. Tickets
 
@@ -287,7 +326,7 @@ What was built, and what is left, as implementation tickets. Each keeps rule zer
 | T4. Remote training clips | Clips and partner place in snapshots and guest states | Done (#420) |
 | T5. Co-op sleep | A guest's sleep waits for the world's morning | Done (#424) |
 | T6. A session lasts its hour | The course waits for the world's hour before it ends | Done (#411) |
-| T7. Host dialogs and the world's clock | Let the world's clock run while the host reads a script that holds only its own player (the gym's menu among them) | Open |
-| T8. Shared machines | Draw a second partner at a used machine beside it, or show the machine busy | Open |
-| T9. Host local screens | The host's shops and other full screens still stand the world's clock (`PlaySession::tickSystems` returns before the session's tick) | Open |
+| T7. Host dialogs and the world's clock | The world's clock runs while a script of the host's own holds it; its partner lives that time once let go (§4.8) | Done |
+| T8. Shared machines | A second partner on a course at a used machine is drawn beside the first (§4.6) | Done |
+| T9. Host local screens | The host's shops and other full screens of its own run the world's clock on (`GameSession::tickHeldPlayer`, §4.8) | Done |
 | T10. Host validation of gains | Optional: the host checks a guest's gains against the formula's bounds | Open, only if cheating matters |
