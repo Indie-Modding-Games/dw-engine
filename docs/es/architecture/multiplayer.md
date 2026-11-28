@@ -501,12 +501,19 @@ salida y el punto de aparición del anfitrión, y llega justo allí. Los estados
 rechazan, y el invitado no informa nada mientras viaja. Cada jugador sigue teniendo su propio mapa actual: un jugador
 remoto en otro mapa no se dibuja ni se mueve, y vuelve a mostrarse cuando llega.
 
-**Interpolación.** Los jugadores remotos se dibujan desde un búfer corto de estados con hora (`PoseTrack`): 100 ms por
-detrás del más nuevo, mezclando los dos que rodean ese momento. Los estados tardíos nunca hacen retroceder una pista,
-un hueco corto se extrapola como mucho 100 ms y luego se queda quieto, un paso de más de 800 unidades (un salto de
-mapa o una corrección) se dibuja como salto, y un emisor cuyo reloj se pausó se retoma sin una recuperación lenta. El
-anfitrión dibuja así a los invitados, y los invitados dibujan a todos desde las instantáneas del anfitrión, con la
-hora del reloj del anfitrión. Dibujar es solo presentación: nunca cambia lo que guarda la autoridad.
+**Interpolación (#358).** Los jugadores remotos y sus compañeros se dibujan desde un búfer corto de estados con hora
+(`PoseTrack`): 100 ms por detrás del más nuevo, mezclando los dos que rodean ese momento. Un estado tardío que aún va
+por delante de la reproducción ocupa su sitio; uno ya reproducido, o repetido, se descarta, y uno rezagado del mapa
+anterior a un cambio nunca devuelve la pista allí. Un hueco se extrapola como mucho 100 ms y luego se queda quieto;
+cuando vuelven los estados, la pista alcanza desde donde se quedó dentro de los 100 ms de retraso en vez de saltar. Un
+paso más largo de lo que el emisor pudo moverse entre dos estados (2500 unidades por segundo más 64, en el reloj del
+emisor) es un teletransporte, como un salto dentro de un mapa, un script que pone a un personaje en otro sitio o una
+corrección, y se dibuja como salto, nunca como deslizamiento; un cambio de mapa empieza la pista de nuevo. Un emisor
+cuyo reloj se pausó se retoma sin una recuperación lenta. El anfitrión dibuja así a los invitados, y los invitados
+dibujan a todos desde las instantáneas del anfitrión, con la hora del reloj del anfitrión. Dibujar es solo
+presentación: nunca cambia lo que guarda la autoridad. Un teletransporte escondido dentro de una pérdida larga no se
+distingue de una carrera, así que se dibuja como la recuperación de 100 ms. Auditoría:
+[#358](audits/358-audit.md).
 
 **La forma del compañero (#412).** Cada compañero vive y evoluciona solo en la partida de su dueño, así que su forma
 viaja como los nombres del roster. El anfitrión pone la especie de su propio compañero en el roster en cada tick en que
@@ -558,6 +565,7 @@ se colgó o perdió la línea sale de la lista en menos de tres minutos.
 Pruebas: `packages/game/coop/tests/authority_tests.cpp`, `packages/game/coop/tests/replication_tests.cpp`,
 `apps/game/tests/coop_world_tests.cpp`, `apps/game/tests/coop_replication_tests.cpp`,
 `apps/game/tests/coop_npc_mirror_tests.cpp`,
+`packages/game/coop/tests/pose_track_tests.cpp`,
 `apps/game/tests/coop_snapshot_interpolation_tests.cpp`, `apps/game/tests/player_registry_tests.cpp` y los casos
 cooperativos de `packages/game/field/tests/field_tests.cpp`.
 

@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <iterator>
 
 namespace dwe::game::coop {
 
@@ -28,22 +30,15 @@ float yawRadians(std::uint16_t units) {
   return static_cast<float>(units) * YawUnitsToRadians;
 }
 
-float mixYaw(std::uint16_t from, std::uint16_t to, float t) {
-  std::int32_t delta = static_cast<std::int32_t>(to) - static_cast<std::int32_t>(from);
-  if (delta > 32767) {
-    delta -= 65536;
-  }
-  if (delta < -32768) {
-    delta += 65536;
-  }
-  float units = static_cast<float>(from) + (static_cast<float>(delta) * t);
-  if (units < 0.0F) {
-    units += 65536.0F;
-  }
-  if (units >= 65536.0F) {
-    units -= 65536.0F;
-  }
-  return units * YawUnitsToRadians;
+float groundDistance(const TrackedPose& a, const TrackedPose& b) {
+  return std::hypot(a.x - b.x, a.z - b.z);
+}
+
+// The yaw `t` of the way from `from` to `to` (radians) the short way round, in [0, 2 pi).
+float mixYaw(float from, float to, float t) {
+  constexpr float Turn = 6.2831853071795864769F;
+  const float yaw = std::fmod(from + (std::remainder(to - from, Turn) * t), Turn);
+  return yaw < 0.0F ? yaw + Turn : yaw;
 }
 
 TrackedPose tracked(const PlayerPose& pose) {
@@ -273,15 +268,67 @@ void WorldAuthority::heard(PlayerId id, net::Millis now) {
   }
 }
 
+net::Millis PoseTrack::playhead(net::Millis now) const {
+  return now - *offset_ - rules_.delay;
+}
+
+const PoseTrack::Entry* PoseTrack::stateBefore(std::size_t index) const {
+  for (std::size_t i = std::min(index, entries_.size()); i-- > 0;) {
+    if (!entries_[i].bridge) {
+      return &entries_[i];
+    }
+  }
+  return nullptr;
+}
+
+bool PoseTrack::jumped(const Entry* from, const Entry& to) const {
+  if (from == nullptr) {
+    return false;
+  }
+  const float seconds =
+      static_cast<float>(std::max(to.senderTime - from->senderTime, net::Millis{0}).count()) /
+      1000.0F;
+  return groundDistance(from->pose, to.pose) > rules_.snapSlack + (rules_.maxSpeed * seconds);
+}
+
 bool PoseTrack::push(std::uint32_t sequence, net::Millis senderTime, const PlayerPose& pose,
                      net::Millis now) {
+  const bool newest = entries_.empty() || sequenceNewer(sequence, entries_.back().sequence);
   if (pose.mapId != mapId_) {
+    // A straggler of the map before must not take the track back there.
+    if (!newest) {
+      return false;
+    }
     reset();
     mapId_ = pose.mapId;
   }
-  if (!entries_.empty() && !sequenceNewer(sequence, entries_.back().sequence)) {
+  if (std::ranges::any_of(entries_,
+                          [&](const Entry& e) { return !e.bridge && e.sequence == sequence; })) {
     return false;
   }
+  Entry entry{.sequence = sequence, .senderTime = senderTime, .pose = tracked(pose)};
+  if (!newest) {
+    // Late, but still ahead of the playback: it fills its place (never before a catch-up).
+    if (senderTime <= playhead(now)) {
+      return false;
+    }
+    const auto place =
+        std::ranges::find_if(entries_, [&](const Entry& e) { return e.senderTime > senderTime; });
+    if (place == entries_.end() ||
+        std::any_of(place, entries_.end(), [](const Entry& e) { return e.bridge; })) {
+      return false;
+    }
+    const auto index = static_cast<std::size_t>(place - entries_.begin());
+    entry.jump = jumped(stateBefore(index), entry);
+    entries_.insert(place, entry);
+    const auto next = std::find_if(entries_.begin() + static_cast<std::ptrdiff_t>(index) + 1,
+                                   entries_.end(), [](const Entry& e) { return !e.bridge; });
+    if (next != entries_.end()) {
+      next->jump = jumped(&entries_[index], *next);
+    }
+    return true;
+  }
+  const std::optional<TrackedPose> drawn = sample(now);
   const net::Millis offset = now - senderTime;
   // The smallest offset is the quickest delivery; it creeps up slowly so a route that got a little
   // slower is followed too, and jumps after a pause of the sender's clock.
@@ -290,8 +337,21 @@ bool PoseTrack::push(std::uint32_t sequence, net::Millis senderTime, const Playe
   } else {
     offset_ = std::min(offset, *offset_ + net::Millis{1});
   }
-  entries_.push_back({.sequence = sequence, .senderTime = senderTime, .pose = pose});
-  if (entries_.size() > rules_.capacity) {
+  entry.jump = jumped(stateBefore(entries_.size()), entry);
+  if (drawn && !entry.jump && !entries_.empty()) {
+    // States came again after the playback ran past the newest: it goes on from where it was
+    // drawn, catching up within the delay instead of jumping to the new state's time.
+    const net::Millis head = playhead(now);
+    if (head > entries_.back().senderTime && head < senderTime) {
+      entries_.push_back({.sequence = entries_.back().sequence,
+                          .senderTime = head,
+                          .pose = *drawn,
+                          .jump = false,
+                          .bridge = true});
+    }
+  }
+  entries_.push_back(entry);
+  while (entries_.size() > rules_.capacity) {
     entries_.erase(entries_.begin());
   }
   return true;
@@ -301,43 +361,42 @@ std::optional<TrackedPose> PoseTrack::sample(net::Millis now) const {
   if (entries_.empty() || !offset_) {
     return std::nullopt;
   }
-  const net::Millis at = now - *offset_ - rules_.delay;
+  const net::Millis at = playhead(now);
   const Entry& newest = entries_.back();
   if (at >= newest.senderTime) {
-    TrackedPose pose = tracked(newest.pose);
-    if (entries_.size() < 2 || newest.pose.motion == Motion::Idle) {
+    TrackedPose pose = newest.pose;
+    const Entry* before = stateBefore(entries_.size() - 1);
+    if (before == nullptr || newest.jump || newest.pose.motion == Motion::Idle) {
       return pose;
     }
-    const Entry& before = entries_[entries_.size() - 2];
-    const auto span = static_cast<float>((newest.senderTime - before.senderTime).count());
-    if (span <= 0.0F || groundDistance(before.pose, newest.pose) > rules_.snapDistance) {
+    const auto span = static_cast<float>((newest.senderTime - before->senderTime).count());
+    if (span <= 0.0F) {
       return pose;
     }
     const float ahead =
         static_cast<float>(std::min(at - newest.senderTime, rules_.extrapolation).count()) / span;
-    pose.x += (static_cast<float>(newest.pose.x) - static_cast<float>(before.pose.x)) * ahead;
-    pose.y += (static_cast<float>(newest.pose.y) - static_cast<float>(before.pose.y)) * ahead;
-    pose.z += (static_cast<float>(newest.pose.z) - static_cast<float>(before.pose.z)) * ahead;
+    pose.x += (newest.pose.x - before->pose.x) * ahead;
+    pose.y += (newest.pose.y - before->pose.y) * ahead;
+    pose.z += (newest.pose.z - before->pose.z) * ahead;
     return pose;
   }
   if (at <= entries_.front().senderTime) {
-    return tracked(entries_.front().pose);
+    return entries_.front().pose;
   }
   const auto after =
       std::ranges::find_if(entries_, [&](const Entry& e) { return e.senderTime > at; });
   const Entry& to = *after;
   const Entry& from = *std::prev(after);
-  if (groundDistance(from.pose, to.pose) > rules_.snapDistance) {
-    return tracked(from.pose);
+  if (to.jump) {
+    return from.pose;
   }
   const auto span = static_cast<float>((to.senderTime - from.senderTime).count());
   const float t = span > 0.0F ? static_cast<float>((at - from.senderTime).count()) / span : 1.0F;
-  return TrackedPose{
-      .x = std::lerp(static_cast<float>(from.pose.x), static_cast<float>(to.pose.x), t),
-      .y = std::lerp(static_cast<float>(from.pose.y), static_cast<float>(to.pose.y), t),
-      .z = std::lerp(static_cast<float>(from.pose.z), static_cast<float>(to.pose.z), t),
-      .yaw = mixYaw(from.pose.yaw, to.pose.yaw, t),
-      .motion = t < 0.5F ? from.pose.motion : to.pose.motion};
+  return TrackedPose{.x = std::lerp(from.pose.x, to.pose.x, t),
+                     .y = std::lerp(from.pose.y, to.pose.y, t),
+                     .z = std::lerp(from.pose.z, to.pose.z, t),
+                     .yaw = mixYaw(from.pose.yaw, to.pose.yaw, t),
+                     .motion = t < 0.5F ? from.pose.motion : to.pose.motion};
 }
 
 std::optional<std::uint32_t> PoseTrack::newest() const {

@@ -411,12 +411,17 @@ host's spawn spot, and arrives there exactly. States from the old map or epoch a
 nothing while it travels. Each player still has its own current map: a remote player on another map is neither drawn
 nor driven, and is shown again when it arrives.
 
-**Interpolation.** Remote players are drawn from a short buffer of timed states (`PoseTrack`): 100 ms behind the
-newest one, blending between the two around that moment. Late states never move a track back, a short gap
-extrapolates for at most 100 ms and then holds, a step longer than 800 units (a warp or a correction) is drawn as a
-jump, and a sender whose clock paused is picked up again without a slow catch-up. The host draws guests this way,
-and guests draw everyone from the host's snapshots, timed on the host's clock. Drawing is presentation only: it
-never changes what the authority holds.
+**Interpolation (#358).** Remote players and their partners are drawn from a short buffer of timed states
+(`PoseTrack`): 100 ms behind the newest one, blending between the two around that moment. A late state that is still
+ahead of the playback fills its place; one already played, or repeated, is dropped, and a straggler from the map before
+a change never takes the track back there. A gap extrapolates for at most 100 ms and then holds; when states come
+again the track catches up from where it held within the 100 ms delay instead of jumping. A step longer than the
+sender could have moved in the time between two states (2500 units a second plus 64, on the sender's clock) is a
+teleport, such as a warp inside a map, a script putting a character somewhere or a correction, and is drawn as a jump,
+never a slide; a map change starts the track over. A sender whose clock paused is picked up again without a slow
+catch-up. The host draws guests this way, and guests draw everyone from the host's snapshots, timed on the host's
+clock. Drawing is presentation only: it never changes what the authority holds. A teleport hidden inside a long loss
+cannot be told from a run, so it is drawn as the 100 ms catch-up. Audit: [#358](audits/358-audit.md).
 
 **The partner's form (#412).** Each partner lives and evolves in its owner's game only, so its form travels like the
 roster's names. The host lists its own partner's species in the roster on every tick it changes; a guest tells its own
@@ -464,6 +469,7 @@ objects).
 Tests: `packages/game/coop/tests/authority_tests.cpp`, `packages/game/coop/tests/replication_tests.cpp`,
 `apps/game/tests/coop_world_tests.cpp`, `apps/game/tests/coop_replication_tests.cpp`,
 `apps/game/tests/coop_npc_mirror_tests.cpp`,
+`packages/game/coop/tests/pose_track_tests.cpp`,
 `apps/game/tests/coop_snapshot_interpolation_tests.cpp`, `apps/game/tests/player_registry_tests.cpp` and the
 co-op cases of `packages/game/field/tests/field_tests.cpp`.
 
