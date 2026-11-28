@@ -2,6 +2,7 @@
 // #356 maps, #358 smoothing), against bare fields: the host's field with the guests' bodies, a
 // guest's field with its own player.
 
+#include <dwe/game/coop/battle.hpp>
 #include <dwe/game/field/field.hpp>
 #include <dwe/scene/world.hpp>
 
@@ -357,6 +358,37 @@ TEST_CASE("a guest keeps the newest roster and knows who is in the session") {
                                          {.id = 1, .name = "Me", .partnerSpecies = "gabumon"}}});
   CHECK_FALSE(guest.inSession(2));
   CHECK(guest.partnerOf(2).empty());
+}
+
+TEST_CASE("a guest keeps another guest's bodies that left while its partner still fights (#352)") {
+  CoopGuestWorld guest{3};
+  coop::BattleMirror mirror{3};
+  mirror.receive(coop::BattleBegin{.battle = 5,
+                                   .starter = 2,
+                                   .ask = 9,
+                                   .mapId = "forest",
+                                   .enemyNpcs = {1},
+                                   .species = {"patamon", "foe", "agumon", "gabumon"},
+                                   .fixedFight = false,
+                                   .allies = {coop::HostPlayerId, 3},
+                                   .folder = false});
+  CHECK(mirror.fighting() == std::vector<coop::PlayerId>{2, coop::HostPlayerId, 3});
+  // Player 2 started the battle and left: the host's roster drops it, its partner fights on.
+  guest.receive(coop::Roster{.revision = 1,
+                             .players = {{.id = 0, .name = "Host", .partnerSpecies = "agumon"},
+                                         {.id = 1, .name = "Other", .partnerSpecies = "elecmon"},
+                                         {.id = 3, .name = "Me", .partnerSpecies = "gabumon"}}});
+  CHECK_FALSE(guest.inSession(2));
+  CHECK(guest.keepsBodies(2, mirror.fighting()));
+  CHECK(guest.keepsBodies(1, mirror.fighting()));
+  // Once the battle ends nothing holds them.
+  mirror.receive(coop::BattleEnd{.battle = 5,
+                                 .outcome = coop::BattleOutcome::Victory,
+                                 .leftMap = {},
+                                 .bits = 0,
+                                 .spoils = std::nullopt});
+  CHECK(mirror.fighting().empty());
+  CHECK_FALSE(guest.keepsBodies(2, mirror.fighting()));
 }
 
 TEST_CASE("shared battles see a player here only on this map and not between maps (#351)") {

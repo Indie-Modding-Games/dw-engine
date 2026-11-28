@@ -151,6 +151,9 @@ public:
   [[nodiscard]] const std::optional<BattleBegin>& running() const { return running_; }
   [[nodiscard]] const std::optional<BattleFrame>& frame() const { return frame_; }
   [[nodiscard]] std::optional<BattleRole> role() const;
+  // The players whose partners fight in the running battle: its starter, then its allies; none
+  // without one.
+  [[nodiscard]] std::vector<PlayerId> fighting() const;
   // The player whose end box this one waits on: the starter, once the battle's end box is up and
   // this player cannot close it.
   [[nodiscard]] std::optional<PlayerId> waitingFor() const;

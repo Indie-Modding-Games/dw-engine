@@ -97,6 +97,8 @@ public:
   void hostLeft(PlaySession* play);
   // No game is played any more: everything goes.
   void reset();
+  // The guest: the players whose partners fight in the host's battle it follows.
+  [[nodiscard]] std::vector<game::coop::PlayerId> fighting() const { return mirror_.fighting(); }
 
 private:
   void hostTick(PlaySession& play);

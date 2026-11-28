@@ -5,6 +5,7 @@
 #include <dwe/game/field/field.hpp>
 #include <dwe/net/peer_link.hpp>
 
+#include <algorithm>
 #include <cstdint>
 #include <map>
 #include <optional>
@@ -149,6 +150,13 @@ public:
   // The session's players as the host last listed them (none before its first roster).
   [[nodiscard]] const std::optional<game::coop::Roster>& roster() const { return roster_; }
   [[nodiscard]] bool inSession(game::coop::PlayerId id) const;
+  // Whether player `id`'s bodies stay on this game's scene: while it is in the session, and after
+  // it left while the battle shown still fights with its partner (`fighting`, BattleMirror), as the
+  // host keeps them until that battle ends.
+  [[nodiscard]] bool keepsBodies(game::coop::PlayerId id,
+                                 std::span<const game::coop::PlayerId> fighting) const {
+    return inSession(id) || std::ranges::contains(fighting, id);
+  }
   // The partner species the roster gives player `id` (empty when none).
   [[nodiscard]] std::string partnerOf(game::coop::PlayerId id) const;
   // After the tick, the world's interactions (#357): what this game changed of the shared world
@@ -204,6 +212,7 @@ void applyCoopMapEdits(FieldScene& scene, std::span<const game::coop::WorldEdit>
 // the guest is not on that map, and gone once the roster no longer lists the player.
 // `hostPartner` is the host's partner species for a roster that does not give it.
 void presentCoopPlayers(FieldScene& scene, const PresentedCoopWorld* world,
-                        const CoopGuestWorld& guest, std::string_view hostPartner);
+                        const CoopGuestWorld& guest, std::string_view hostPartner,
+                        std::span<const game::coop::PlayerId> fighting);
 
 } // namespace dwe::app
