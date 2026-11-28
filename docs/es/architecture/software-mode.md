@@ -1,7 +1,7 @@
 # Modo software
 
 Cuando ninguna tarjeta gráfica puede mover el juego, el lanzador lo arranca con lavapipe, el driver Vulkan de Mesa que
-dibuja con el procesador ([lanzador: modo de compatibilidad](../modules/apps/launcher.md#requisitos-del-equipo)). El
+dibuja con el procesador ([lanzador: sin tarjeta gráfica](../modules/apps/launcher.md#requisitos-del-equipo)). El
 juego lo nota solo, arranca con un ajuste ligero, adapta la calidad al tiempo de cada fotograma mientras corre y se lo
 dice al jugador una vez por partida. Todo sigue siendo una opción que el jugador puede cambiar.
 
@@ -89,8 +89,8 @@ aspecto de serie; las pruebas automáticas y `--low-performance` mantienen su pr
 
 Opciones › Gráficos tiene una fila **Ajuste gráfico** (`graphics_preset`: rendimiento, equilibrado, calidad;
 «personalizado» si las opciones no coinciden con ninguno) que pone todas las opciones gráficas a la vez y las guarda
-como elección del jugador, y una fila **Dibuja con** que muestra el modo (tarjeta gráfica, tarjeta en modo compatible,
-procesador); su descripción nombra el dispositivo y, mientras la calidad automática elige, por qué
+como elección del jugador, y una fila **Modo gráfico** que muestra el modo con las palabras del lanzador (tarjeta gráfica, gráficos
+compatibles, sin tarjeta gráfica); su descripción nombra el dispositivo y, mientras la calidad automática elige, por qué
 (`graphics.auto_reason`: software, integrated, compatible, slow).
 
 | Ajuste | Escala | Sombras | Texturas de modelos | Escenario | Iluminación, colores vivos | Antialiasing |

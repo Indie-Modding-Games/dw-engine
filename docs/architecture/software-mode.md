@@ -1,7 +1,7 @@
 # Software mode
 
 When no graphics card can run the game, the launcher starts it on lavapipe, Mesa's Vulkan driver that draws with the
-processor ([launcher: compatibility mode](../modules/apps/launcher.md#computer-requirements)). The game notices it on
+processor ([launcher: without a graphics card](../modules/apps/launcher.md#computer-requirements)). The game notices it on
 its own, starts from a cheap preset, adjusts the quality to the frame time while it runs and tells the player once per
 run. Everything stays an option the player can change.
 
@@ -88,8 +88,8 @@ lighter, waits 3 s and never steps back up. A discrete card on the Vulkan 1.3 or
 with the default look; autotests and `--low-performance` keep their own start.
 
 Options › Graphics has a **Preset** row (`graphics_preset`: performance, balanced, quality; "custom" when the options
-match none) that sets every graphics option at once and saves them as the player's choice, and a **Drawing with**
-row that shows the mode (graphics card, graphics card in compatible mode, processor); its description names the
+match none) that sets every graphics option at once and saves them as the player's choice, and a **Graphics mode**
+row that shows the mode with the launcher's words (graphics card, compatible graphics, no graphics card); its description names the
 device and, while automatic quality is choosing, why (`graphics.auto_reason`: software, integrated, compatible,
 slow).
 

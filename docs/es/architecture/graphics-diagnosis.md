@@ -24,7 +24,10 @@ real: la razón sale entonces de la comprobación del launcher, hecha antes de l
 ## Razones
 
 Primero los bloqueos, luego los avisos y al final la información. Dentro de cada grupo va primero lo que el jugador
-puede arreglar; «Vulkan demasiado antiguo» o «faltan funciones» bajan cuando no se arreglan con un controlador.
+puede arreglar; «Vulkan demasiado antiguo» o «faltan funciones» bajan cuando no se arreglan con un controlador. El
+lanzador deja fuera una razón que otra anterior ya cubre: un Vulkan más antiguo o el modo compatible bajo «controlador
+demasiado antiguo» de la misma tarjeta, «sin tarjeta gráfica» bajo un adaptador con nombre, «tarjeta integrada» bajo
+«tarjeta dedicada sin usar» (`covers` en `diagnosis.rs`).
 
 | Código | Cuándo | Arreglo | Pasos |
 |---|---|---|---|

@@ -304,7 +304,7 @@ Ajustes › General › Requisitos del equipo.
 | Qué | Cómo se comprueba | Qué ve el jugador |
 |---|---|---|
 | Espacio libre | El del disco donde está `<datos>` (la carpeta existente más cercana): `statvfs` en Linux y macOS, `GetDiskFreeSpaceExW` en Windows. Leer el disco necesita unos 3 GB (la copia parcial, el archivo descomprimido y la descarga del juego); jugar, unos 200 MB. | Si falta, «Falta espacio en el disco» en el inicio con cuánto hace falta, dónde y cuánto hay, y los botones «Comprobar de nuevo» y «Elegir otra carpeta». Leer el disco y «Jugar» se niegan con `no-space` en vez de fallar a medias. |
-| Tarjeta gráfica | `dwe-game --check-system` del juego instalado (abajo), primero con los controladores del equipo. | Si sirve, la tarjeta, su controlador y la versión de Vulkan que informa (`api`); el juego mismo elige la ruta 1.3 o 1.4 al arrancar. Si la tarjeta solo sirve en el modo compatible 1.2 (un controlador antiguo), el juego usa ese modo por su cuenta: un aviso «Modo gráfico compatible» que dice que no hay que cambiar nada y ofrece la página de controladores del fabricante, y una etiqueta «Gráficos compatibles» arriba. Si ninguna tarjeta sirve, el juego arranca igual en **modo de compatibilidad** (abajo): un aviso que se cierra con «Entendido», una etiqueta «Modo de compatibilidad» arriba y el botón del controlador del fabricante. |
+| Tarjeta gráfica | `dwe-game --check-system` del juego instalado (abajo), primero con los controladores del equipo. | Si sirve, la tarjeta, su controlador y la versión de Vulkan que informa (`api`); el juego mismo elige la ruta 1.3 o 1.4 al arrancar. Si la tarjeta solo sirve en el modo compatible 1.2 (un controlador antiguo), el juego usa ese modo por su cuenta: un aviso «Modo gráfico compatible» que dice que no hay que cambiar nada y ofrece la página de controladores del fabricante, y una etiqueta «Gráficos compatibles» arriba. Si ninguna tarjeta sirve, el juego arranca igual **sin tarjeta gráfica** (abajo): un aviso que se cierra con «Entendido», una etiqueta «Sin tarjeta gráfica» arriba y el botón del controlador del fabricante. |
 | Nada puede mover el juego | Ni las tarjetas del equipo ni el controlador por software del paquete (o el paquete no lo trae: macOS por ahora). | «Tu tarjeta gráfica no puede mover el juego»: qué hacer, el botón de la página de controladores del fabricante (NVIDIA, AMD o Intel, según el `vendor` de la tarjeta; las tres si no se sabe), en Windows también «Abrir Windows Update», y «Comprobar de nuevo». Pulsar «Jugar» sigue intentando arrancar: el juego escribe el motivo en su registro y el lanzador muestra el final. |
 
 **El porqué, en palabras del jugador.** Todos los avisos gráficos, la página de requisitos y el diálogo tras un
@@ -340,7 +340,7 @@ vez con ese, como el propio juego cae a él: `result=ok` con `floor=1.2` (y el f
 la tarjeta sirve en el modo compatible. Para un juego anterior a ese respaldo el lanzador prueba `--compatible` por su
 cuenta y, si pasa, añade el flag a «Jugar»: la tarjeta en modo 1.2 va antes que el controlador por software.
 
-**Modo de compatibilidad.** El paquete trae el cargador de Vulkan (en Linux, `lib/libvulkan.so.1`, que el juego
+**Sin tarjeta gráfica.** El paquete trae el cargador de Vulkan (en Linux, `lib/libvulkan.so.1`, que el juego
 busca primero; en Windows, `bin/vulkan-1.dll`) y el controlador de Vulkan por software de Mesa, lavapipe, en
 `lib/lavapipe/` ([guía de la beta en Linux](../../guides/beta-linux.md), [guía de Windows y
 macOS](../../guides/beta-windows-macos.md)). Si la primera comprobación no encuentra GPU que sirva, el lanzador
@@ -382,18 +382,18 @@ busca los controladores del equipo; el lanzador las quita del entorno de `--chec
 (`outside_appimage`).
 
 **.deb.** Recomienda `mesa-vulkan-drivers | vulkan-icd`, que apt instala por defecto: en un equipo con tarjeta AMD o
-Intel sin el controlador de Vulkan de Mesa, así se juega con la tarjeta y no en modo de compatibilidad. La AppImage no
-puede instalar nada y se apoya en el modo de compatibilidad.
+Intel sin el controlador de Vulkan de Mesa, así se juega con la tarjeta y no sin ella. La AppImage no
+puede instalar nada y se apoya en jugar sin tarjeta gráfica.
 
 **Windows.** El instalador trae WebView2 y el paquete del juego `vulkan-1.dll`; los controladores de las tarjetas no
 se pueden instalar con seguridad desde el lanzador. El paquete trae lavapipe en `lib/lavapipe/`, así que sin una
-tarjeta que sirva se juega en modo de compatibilidad (más lento) y se ve el aviso de arriba. Actualizar el
+tarjeta que sirva se juega sin tarjeta gráfica (más lento) y se ve el aviso de arriba. Actualizar el
 controlador de la tarjeta (o Windows) devuelve el rendimiento. No se reparte `dzn`: la compilación disponible no
 ofrece `descriptorIndexing` ni `bufferDeviceAddress`, que el juego exige incluso en ese modo.
 
 `DWE_LAUNCHER_FREE_BYTES=<bytes>` finge el espacio libre, para ver las pantallas de espacio sin llenar un disco; con
-`VK_DRIVER_FILES=/no/existe.json` en el entorno del lanzador la primera comprobación no encuentra GPU (modo de
-compatibilidad si el juego trae `lib/lavapipe`; si no, aviso e intento de arranque, o arranque directo con el modo
+`VK_DRIVER_FILES=/no/existe.json` en el entorno del lanzador la primera comprobación no encuentra GPU (sin tarjeta
+gráfica si el juego trae `lib/lavapipe`; si no, aviso e intento de arranque, o arranque directo con el modo
 manual «Sin comprobar»).
 
 ## Carpetas

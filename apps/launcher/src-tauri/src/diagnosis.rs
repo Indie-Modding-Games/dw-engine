@@ -258,10 +258,30 @@ pub fn advise(reason: &Reason, os: &str) -> Advice {
     }
 }
 
-/// The reasons to show, most actionable first (the game already sorted them); the info-only ones
-/// stay out of a failure's dialog.
+/// Whether `shown` already tells the player what `other` would: the same fix for the same card,
+/// or `other` is only what `shown` leads to.
+fn covers(shown: &Reason, other: &Reason) -> bool {
+    let same_gpu = shown.gpu.is_some() && shown.gpu == other.gpu;
+    match other.code.as_str() {
+        "vulkan-too-old" | "missing-features" | "compatible-path" => {
+            same_gpu && matches!(shown.code.as_str(), "driver-too-old" | "vulkan-too-old" | "missing-features")
+        }
+        "no-gpu" => matches!(shown.code.as_str(), "no-loader" | "basic-display-adapter" | "no-vendor-driver" | "hardware-no-vulkan" | "dedicated-gpu-unused"),
+        "integrated-gpu" => shown.code == "dedicated-gpu-unused",
+        _ => false,
+    }
+}
+
+/// The reasons to show, most actionable first (the game already sorted them), without the ones an
+/// earlier reason already covers; the info-only ones stay out of a failure's dialog.
 pub fn advise_all(reasons: &[Reason], os: &str, failure: bool) -> Vec<Advice> {
-    reasons.iter().filter(|r| !failure || r.severity != "info").map(|r| advise(r, os)).collect()
+    let mut shown: Vec<&Reason> = Vec::new();
+    for reason in reasons.iter().filter(|r| !failure || r.severity != "info") {
+        if !shown.iter().any(|s| covers(s, reason)) {
+            shown.push(reason);
+        }
+    }
+    shown.into_iter().map(|r| advise(r, os)).collect()
 }
 
 /// The environment value of the first reason (REASON_ENV): the separators never appear in a value.
@@ -415,9 +435,28 @@ mod tests {
 
     #[test]
     fn a_failure_leaves_out_the_info_reasons() {
-        let reasons = vec![with("dedicated-gpu-unused", "driver", &[]), reason("integrated-gpu", "info", "hardware", &[])];
+        let reasons = vec![with("driver-too-old", "driver", &[]), reason("integrated-gpu", "info", "hardware", &[])];
         assert_eq!(advise_all(&reasons, "windows", true).len(), 1);
         assert_eq!(advise_all(&reasons, "windows", false).len(), 2);
+    }
+
+    #[test]
+    fn a_reason_the_first_one_already_covers_is_left_out() {
+        let on = |mut r: Reason, gpu: usize| {
+            r.gpu = Some(gpu);
+            r
+        };
+        let codes = |reasons: &[Reason]| advise_all(reasons, "windows", false).into_iter().map(|a| a.code).collect::<Vec<_>>();
+        let diagnosis = parse(GTX1060).unwrap();
+        assert_eq!(codes(&diagnosis.reasons), vec!["driver-too-old"]);
+        let two_cards = vec![on(with("driver-too-old", "driver", &[]), 0), on(with("vulkan-too-old", "driver", &[]), 1)];
+        assert_eq!(codes(&two_cards), vec!["driver-too-old", "vulkan-too-old"]);
+        let laptop = vec![on(with("dedicated-gpu-unused", "driver", &[]), 0), on(reason("integrated-gpu", "info", "hardware", &[]), 0)];
+        assert_eq!(codes(&laptop), vec!["dedicated-gpu-unused"]);
+        let no_driver = vec![with("basic-display-adapter", "driver", &[]), with("no-gpu", "unknown", &[])];
+        assert_eq!(codes(&no_driver), vec!["basic-display-adapter"]);
+        let overlays = vec![with("implicit-layers", "settings", &[]), with("instance-failed", "driver", &[])];
+        assert_eq!(codes(&overlays), vec!["implicit-layers", "instance-failed"]);
     }
 
     #[test]

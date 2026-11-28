@@ -24,7 +24,9 @@ more: the reason then comes from the launcher's own check, made before narrowing
 ## Reasons
 
 Blockers come first, then warnings, then information. Within each, the one the player can act on comes first; a
-"Vulkan too old" or "missing features" reason whose fix is not a driver moves down.
+"Vulkan too old" or "missing features" reason whose fix is not a driver moves down. The launcher leaves out a reason an
+earlier one already covers: an older Vulkan or the compatible path under "driver too old" for the same card, "no
+graphics card" under a named adapter, "integrated card" under "dedicated card unused" (`covers` in `diagnosis.rs`).
 
 | Code | When | Fix | Steps |
 |---|---|---|---|
