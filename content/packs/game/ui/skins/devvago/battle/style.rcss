@@ -208,7 +208,8 @@
 	display: block;
 }
 
-#fight.long-finisher-key #finisher-ready {
+#fight.long-finisher-key #finisher-ready,
+#fight.finisher-crowded #finisher-ready {
 	top: 111dp;
 }
 

@@ -401,13 +401,13 @@ local function lay_out_strip(document)
   for _, each in ipairs(rows) do
     local left = inner_left + pad + (widest - each.width) / 2
     for _, item in ipairs(each) do
-      set_property(document, item.id, "left", string.format("%.0fpx", left + item.x))
-      set_property(document, item.id, "top", string.format("%.0fpx", inner_top + top))
+      set_property(document, item.id, "left", string.format("%.0fdp", left + item.x))
+      set_property(document, item.id, "top", string.format("%.0fdp", inner_top + top))
     end
     top = top + each.height + pad
   end
-  set_property(document, "command-row", "width", string.format("%.0fpx", widest + pad * 2))
-  set_property(document, "command-row", "height", string.format("%.0fpx", top))
+  set_property(document, "command-row", "width", string.format("%.0fdp", widest + pad * 2))
+  set_property(document, "command-row", "height", string.format("%.0fdp", top))
 end
 
 -- The cursor round the hovered icon, and its blink; nothing while the battle opens. The game says
@@ -493,12 +493,12 @@ local function draw_command_name(document)
         local _, row_top, _, row_height = lookup(document, "command-row"):rect()
         local _, _, own = lookup(document, "command-name"):rect()
         local x = left + width / 2 - own / 2 - from_left
-        set_property(document, "command-name", "left", string.format("%.0fpx", math.max(0, x)))
+        set_property(document, "command-name", "left", string.format("%.0fdp", math.max(0, x)))
         set_property(
           document,
           "command-name",
           "top",
-          string.format("%.0fpx", row_top + row_height - from_top + 4)
+          string.format("%.0fdp", row_top + row_height - from_top + 4)
         )
       end
     end
@@ -613,6 +613,14 @@ local function draw_finisher(document)
     lookup(document, "finisher-word-dim"):set_text(string.sub(word, stop))
   end
   lookup(document, "finisher"):set_class("ready", ready)
+  -- A long word in a skin that writes it would run under the ready box: the box drops below it.
+  local crowded = false
+  if ready then
+    local word_left, _, word_width = lookup(document, "finisher-word"):rect()
+    local ready_left = lookup(document, "finisher-ready"):rect()
+    crowded = word_width > 0 and ready_left > 0 and word_left + word_width + 6 > ready_left
+  end
+  lookup(document, "fight"):set_class("finisher-crowded", crowded)
   local filled_percent = math.floor(percent(progress, goal))
   local shown_percent = ready and t("battle.finisher_ready")
     or (filled_percent > 0 and string.format("%d%%", filled_percent) or "")
@@ -1063,11 +1071,11 @@ local function hud_zones(document)
   return { width = width, height = height, zones = zones }
 end
 
--- An anchor in percent of the window, moved out of the zones; the thing spans `dx`..`dx + w` and
--- `dy`..`dy + h` dp from it.
+-- An anchor in percent of the window, moved out of the zones by the shorter way out, sideways or
+-- up/down; the thing spans `dx`..`dx + w` and `dy`..`dy + h` dp from it. Returns top, then left.
 local function clear_of_hud(hud, x_percent, y_percent, dx, dy, w, h)
   if hud.width <= 0 or hud.height <= 0 then
-    return y_percent
+    return y_percent, x_percent
   end
   local x = x_percent * hud.width / 100 + dx
   local y = y_percent * hud.height / 100 + dy
@@ -1075,33 +1083,68 @@ local function clear_of_hud(hud, x_percent, y_percent, dx, dy, w, h)
     local across = x + w >= zone.left - zone_gap and x <= zone.right + zone_gap
     local within = y + h >= zone.top - zone_gap and y <= zone.bottom + zone_gap
     if across and within then
-      if zone.top + zone.bottom < hud.height then
-        y = zone.bottom + zone_gap
+      local to_y = zone.top + zone.bottom < hud.height and zone.bottom + zone_gap
+        or zone.top - zone_gap - h
+      local to_x = zone.left + zone.right > hud.width and zone.left - zone_gap - w
+        or zone.right + zone_gap
+      if to_x >= 0 and to_x + w <= hud.width and math.abs(to_x - x) < math.abs(to_y - y) then
+        x = to_x
       else
-        y = zone.top - zone_gap - h
+        y = to_y
       end
     end
   end
-  return (y - dy) * 100 / hud.height
+  return (y - dy) * 100 / hud.height, (x - dx) * 100 / hud.width
 end
 
--- Close foes' bars would overlap: a later bar moves above the ones already placed.
+-- A world bar's parts as drawn last frame, from its anchor: dx, dy, w, h in dp.
+local function bar_extent(document, id, fallback)
+  local at_x, at_y = lookup(document, id):rect()
+  local left, top, right, bottom = math.huge, math.huge, -math.huge, -math.huge
+  for _, part in ipairs({ "-frame", "-value", "-tag" }) do
+    local x, y, w, h = lookup(document, id .. part):rect()
+    if w > 0 and h > 0 then
+      left, top = math.min(left, x - at_x), math.min(top, y - at_y)
+      right, bottom = math.max(right, x + w - at_x), math.max(bottom, y + h - at_y)
+    end
+  end
+  if right < left then
+    return fallback[1], fallback[2], fallback[3], fallback[4]
+  end
+  return left, top, right - left, bottom - top
+end
+
+local function hits(boxes, x, y, w, h)
+  for _, box in ipairs(boxes) do
+    local across = x + w >= box.left - zone_gap and x <= box.right + zone_gap
+    local within = y + h >= box.top - zone_gap and y <= box.bottom + zone_gap
+    if across and within then
+      return box
+    end
+  end
+  return nil
+end
+
+-- Close foes' bars would overlap: a later bar moves above the ones already placed, or below them
+-- when above would run into the HUD.
 local function clear_of_bars(hud, placed, x_percent, y_percent, dx, dy, w, h)
   if hud.width <= 0 or hud.height <= 0 then
     return y_percent
   end
   local x = x_percent * hud.width / 100 + dx
-  local y = y_percent * hud.height / 100 + dy
-  local moved = true
-  while moved do
-    moved = false
-    for _, box in ipairs(placed) do
-      local across = x + w >= box.left - zone_gap and x <= box.right + zone_gap
-      local within = y + h >= box.top - zone_gap and y <= box.bottom + zone_gap
-      if across and within then
-        y = box.top - zone_gap - h - 1
-        moved = true
-      end
+  local start = y_percent * hud.height / 100 + dy
+  local y = start
+  local box = hits(placed, x, y, w, h)
+  while box do
+    y = box.top - zone_gap - h - 1
+    box = hits(placed, x, y, w, h)
+  end
+  if y < 0 or hits(hud.zones, x, y, w, h) then
+    y = start
+    box = hits(placed, x, y, w, h)
+    while box do
+      y = box.bottom + zone_gap + 1
+      box = hits(placed, x, y, w, h)
     end
   end
   placed[#placed + 1] = { left = x, top = y, right = x + w, bottom = y + h }
@@ -1124,8 +1167,9 @@ local function draw_damage(document)
     if index < count then
       local shown = list[index + 1]
       local width = (#tostring(shown.value or "") + 1) * 24
-      local top = clear_of_hud(hud, shown.x, shown.y, shown.dx * 3 - 24, shown.dy * 3, width, 24)
-      set_property(document, id, "left", shown.x .. "%")
+      local top, left =
+        clear_of_hud(hud, shown.x, shown.y, shown.dx * 3 - 24, shown.dy * 3, width, 24)
+      set_property(document, id, "left", left .. "%")
       set_property(document, id, "top", top .. "%")
       set_property(
         document,
@@ -1277,9 +1321,10 @@ local function draw_hp_bars(document)
     if bar ~= nil then
       local x, y = bar.left, bar.top
       hud = hud or hud_zones(document)
-      local top = clear_of_hud(hud, bar.x, bar.y, x * 3, (y - 9) * 3, 132, 42)
-      top = clear_of_bars(hud, placed, bar.x, top, x * 3 - 36, (y - 9) * 3, 168, 42)
-      set_property(document, id, "left", bar.x .. "%")
+      local ex, ey, ew, eh = bar_extent(document, id, { x * 3 - 36, (y - 9) * 3, 220, 42 })
+      local top, left = clear_of_hud(hud, bar.x, bar.y, ex, ey, ew, eh)
+      top = clear_of_bars(hud, placed, left, top, ex, ey, ew, eh)
+      set_property(document, id, "left", left .. "%")
       set_property(document, id, "top", top .. "%")
       set_property(document, id .. "-frame", "left", pixels(x))
       set_property(document, id .. "-frame", "top", pixels(y))
@@ -1380,7 +1425,7 @@ local function draw_shout(document)
     x = shout_edge - half
   end
   local y = shout.line + shout.hop
-  local top = clear_of_hud(
+  local top, left = clear_of_hud(
     hud_zones(document),
     shout.x,
     shout.y,
@@ -1389,7 +1434,7 @@ local function draw_shout(document)
     half * 6,
     48
   )
-  set_property(document, "shout", "left", shout.x .. "%")
+  set_property(document, "shout", "left", left .. "%")
   set_property(document, "shout", "top", top .. "%")
   set_property(
     document,
