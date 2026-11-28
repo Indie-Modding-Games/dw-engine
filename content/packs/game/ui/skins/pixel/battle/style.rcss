@@ -562,3 +562,12 @@
 .folder-step.now { background-color: #4fa3ff; }
 .folder-chip { border-color: #4a79a8; }
 .command-frame.kind-stance { image-color: #9cc2ff; }
+
+/* A co-op guest's next item flies to this ally. */
+.ally.throw-target {
+	border: 2dp #ffe64a;
+}
+
+.ally.throw-target .fighter-name {
+	color: #ffe64a;
+}

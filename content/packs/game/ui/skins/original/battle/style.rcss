@@ -1491,3 +1491,12 @@
 #fight.folder .fighter.enemy .fighter-name {
 	font-size: 22dp;
 }
+
+/* A co-op guest's next item flies to this ally. */
+.ally.throw-target {
+	border: 2dp #f8e050;
+}
+
+.ally.throw-target .fighter-name {
+	color: #f8e050;
+}

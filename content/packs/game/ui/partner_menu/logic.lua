@@ -736,6 +736,15 @@ local function draw_prompts(document)
   document:get("tech-cancel-icon"):set_prompt("cancel")
   document:get("tech-help-key"):set_prompt("extra")
   document:get("tech-help-cancel-key"):set_prompt("confirm")
+  document:get("throw-previous-key"):set_prompt("tab_previous")
+  document:get("throw-next-key"):set_prompt("tab_next")
+end
+
+-- A co-op guest's battle bag: Q and E pick the partner its item flies to (bag.throw_pick).
+local function draw_throw_hint(document)
+  document
+    :get("throw-hint")
+    :set_class("hidden", not (in_battle() and setting("bag.throw_pick", false)))
 end
 
 local function draw(document)
@@ -743,6 +752,7 @@ local function draw(document)
   draw_tech(document)
   draw_tech_choices(document)
   draw_bag(document)
+  draw_throw_hint(document)
   draw_description(document)
   draw_care(document)
 end
@@ -1165,6 +1175,7 @@ function on_setting(document, name)
     or name == "favorite_food"
     or name == "bag.revision"
     or name == "bag.result"
+    or name == "bag.throw_pick"
     or name == "partner.care_result"
     or name == "partner.technique.result"
   then

@@ -47,6 +47,7 @@ care.praise: "Похвалить"
 care.scold: "Отругать"
 care.feed_hint: "Чтобы покормить напарника, используй еду из сумки."
 care.training_hint: "Тренироваться можно на тренировочных площадках на карте."
+throw_target_hint: "Выбрать партнёра"
 care_result.praised: "Ты похвалил напарника."
 care_result.scolded: "Ты отругал напарника."
 

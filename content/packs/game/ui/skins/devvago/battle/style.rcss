@@ -1539,3 +1539,9 @@ body #partner-panel { border-color: #72c7ff; background-color: #0b1c2df2; }
 #fight.folder .fighter.enemy .fighter-name {
 	font-size: 22dp;
 }
+
+/* A co-op guest's next item flies to this ally. */
+.partner.ally.throw-target {
+	border: 2dp #ffd23f;
+	background-color: #2a2410f2;
+}

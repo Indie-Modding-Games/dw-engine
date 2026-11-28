@@ -78,6 +78,9 @@ struct CoopBattleViewSource {
 // host's own HUD shows; none at the end box, which is the coop_battle document's.
 [[nodiscard]] std::optional<std::string_view> coopHudPhaseOf(game::coop::BattlePhase phase);
 
+// Whether the bag shown is a guest's battle bag whose tab keys pick the partner an item flies to.
+inline constexpr std::string_view BagThrowPickSetting = "bag.throw_pick";
+
 // Opens this player's bag over its battle HUD as BattleScreen::openBag opens the host's: the HUD
 // learns the bag is open before the bag shows, so the battle document leaves the focus to it.
 void showCoopHudBag(ui::Ui& ui, const screens::ScreenSettings& bag, const screens::BattleView& hud);

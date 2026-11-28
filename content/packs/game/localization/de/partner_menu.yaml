@@ -64,6 +64,7 @@ care.praise: "Loben"
 care.scold: "Schimpfen"
 care.feed_hint: "Gib deinem Partner Essen aus der Tasche, um ihn zu füttern."
 care.training_hint: "Trainiert wird an den Trainingsorten draußen."
+throw_target_hint: "Partner wählen"
 care_result.praised: "Du hast deinen Partner gelobt."
 care_result.scolded: "Du hast mit deinem Partner geschimpft."
 

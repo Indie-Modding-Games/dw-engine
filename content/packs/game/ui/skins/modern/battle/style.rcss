@@ -1028,3 +1028,12 @@
 #folder-active.alone {
 	width: 100%;
 }
+
+/* A co-op guest's next item flies to this ally. */
+.ally.throw-target {
+	border: 2dp #f0a43a;
+}
+
+.ally.throw-target .fighter-name {
+	color: #f0a43a;
+}

@@ -47,6 +47,7 @@ care.praise: "Féliciter"
 care.scold: "Gronder"
 care.feed_hint: "Pour nourrir ton partenaire, utilise de la nourriture du sac."
 care.training_hint: "L'entraînement se fait aux lieux d'entraînement sur le terrain."
+throw_target_hint: "Choisir le partenaire"
 care_result.praised: "Tu as félicité ton partenaire."
 care_result.scolded: "Tu as grondé ton partenaire."
 

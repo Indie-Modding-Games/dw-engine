@@ -67,7 +67,7 @@ puede moverse entre versiones del juego.
 
 | Versión | Cambios |
 |---|---|
-| 0.35.0 | El aliado al que vuela el próximo objeto de un invitado en cooperativo: `battle.ally.<n>.throw_target` y `throw_target` en `battle.allies()` (Q y E lo eligen con la bolsa de combate del invitado abierta) |
+| 0.35.0 | El aliado al que vuela el próximo objeto de un invitado en cooperativo: `battle.ally.<n>.throw_target` y `throw_target` en `battle.allies()` (las skins iluminan su tarjeta con la clase `throw-target`), y `bag.throw_pick`, activo mientras la bolsa es la de combate de un invitado, cuyas Q y E lo eligen (la bolsa enseña esa pista) |
 | 0.34.0 | La razón del aviso gráfico: `software_notice.kind`, `software_notice.reason` y sus valores `software_notice.<valor>` ([diagnóstico gráfico](../architecture/graphics-diagnosis.md)) |
 | 0.33.0 | El panel de órdenes del combate Folder: `battle.folder()` y sus ajustes `battle.folder.*` (la orden activa, su fase, las órdenes en espera, el objetivo, el enemigo de cada orden en espera, la barra de defensa y la ruptura, la postura, el punto de compromiso, las letras de los enemigos y a qué enemigos apuntan las órdenes, la técnica que reemplazó una orden), la opción `battle_system` y la opción de layout `strip` de las skins ([Combate Folder](../architecture/folder-battle.md)); la orden en curso de cada aliado en cooperativo (`order_key` en `battle.allies()`) |
 | 0.32.0 | Modo software ([modo software](../architecture/software-mode.md)): las opciones `auto_quality`, `render_scale` y `frame_limit`, y el aviso `software_notice` con el ajuste `software_mode` |
@@ -546,6 +546,7 @@ Versión de la API de la interfaz: **0.32.0**.
 | `bag.slot.<n>.<id>` | ajuste | número o texto | Un hueco: empty, name, description, description_species, count, dimmed, usable, discardable, item_color, icon, icon_rect, favorite. |
 | `bag.result` | ajuste | texto | La clave del mensaje de la última acción de la bolsa. |
 | `bag.result_item` | ajuste | texto | El objeto de la última acción de la bolsa. |
+| `bag.throw_pick` | ajuste | sí/no | Si esta bolsa es la de combate de un invitado en cooperativo, cuyas tab_previous y tab_next eligen el compañero al que vuela su objeto. |
 | `field.player_x` | ajuste | número | La posición del jugador en la ventana en porcentaje, desde donde crecen las cajas. |
 | `field.player_y` | ajuste | número | La posición del jugador en la ventana en porcentaje, desde donde crecen las cajas. |
 | `partner_menu.portrait` | estado | sí/no | Si el juego dibuja en 3D al compañero sobre la página de estado (una mejora). |

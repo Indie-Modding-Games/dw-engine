@@ -67,7 +67,7 @@ between game versions.
 
 | Version | Changes |
 |---|---|
-| 0.35.0 | The ally a co-op guest's next item flies to: `battle.ally.<n>.throw_target` and `throw_target` in `battle.allies()` (Q and E pick it while the guest's battle bag is open) |
+| 0.35.0 | The ally a co-op guest's next item flies to: `battle.ally.<n>.throw_target` and `throw_target` in `battle.allies()` (the skins light that ally's card with the class `throw-target`), and `bag.throw_pick`, set while the bag is a guest's battle bag whose Q and E pick it (the bag shows that hint) |
 | 0.34.0 | The graphics notice's reason: `software_notice.kind`, `software_notice.reason` and its values `software_notice.<value>` ([graphics diagnosis](../architecture/graphics-diagnosis.md)) |
 | 0.33.0 | The Folder battle's order panel: `battle.folder()` and its `battle.folder.*` settings (the active order, its phase, the waiting orders, the target, each waiting order's foe, the defense bar and the break, the stance, the commit point, the foes' letters and which foes the orders aim at, the move that replaced an order), and the `battle_system` option and the `strip` skin layout option ([Folder battle](../architecture/folder-battle.md)); each co-op ally's current order (`order_key` in `battle.allies()`) |
 | 0.32.0 | Software mode ([software mode](../architecture/software-mode.md)): the options `auto_quality`, `render_scale` and `frame_limit`, and the `software_notice` notice with the `software_mode` setting |
@@ -112,7 +112,7 @@ versus, the online rooms, the co-op game's tag and notices and the story boxes (
 ## Reference
 
 <!-- ui-api:generated -->
-UI API version: **0.34.0**.
+UI API version: **0.35.0**.
 
 ### `ui`
 
@@ -633,6 +633,7 @@ UI API version: **0.34.0**.
 | `bag.slot.<n>.<id>` | setting | number or text | A slot: empty, name, description, description_species, count, dimmed, usable, discardable, item_color, icon, icon_rect, favorite. |
 | `bag.result` | setting | text | The text key of the last bag action's message. |
 | `bag.result_item` | setting | text | The item of the last bag action. |
+| `bag.throw_pick` | setting | yes/no | Whether this bag is a co-op guest's battle bag, whose tab_previous and tab_next pick the partner its item flies to. |
 | `field.player_x` | setting | number | The player's position in the window as a percentage, from where the boxes grow. |
 | `field.player_y` | setting | number | The player's position in the window as a percentage, from where the boxes grow. |
 | `partner_menu.portrait` | report | yes/no | Whether the game draws the partner in 3D over the status page (an improvement). |

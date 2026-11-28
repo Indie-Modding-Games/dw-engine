@@ -190,6 +190,8 @@ local function draw_ally(document, index, ally)
     )
   end
   lookup(document, prefix):set_class("fainted", ally.fainted)
+  -- A co-op guest's next item flies to this ally (Q and E pick it in its bag).
+  lookup(document, prefix):set_class("throw-target", ally.throw_target == true)
   local order = (ally.fainted or ally.order_key == "") and "" or text(ally.order_key)
   set_text_once(document, prefix .. "-order", order)
   -- A fallen ally's revive countdown, as the partner's own over its body.

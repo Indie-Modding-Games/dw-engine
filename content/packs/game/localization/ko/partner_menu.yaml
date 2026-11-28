@@ -64,6 +64,7 @@ care.praise: "칭찬"
 care.scold: "꾸중"
 care.feed_hint: "파트너에게 먹이려면 가방의 음식을 사용하세요."
 care.training_hint: "훈련은 필드의 훈련 장소에서 해요."
+throw_target_hint: "파트너 선택"
 care_result.praised: "파트너를 칭찬했어요."
 care_result.scolded: "파트너를 꾸중했어요."
 

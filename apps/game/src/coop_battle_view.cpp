@@ -515,6 +515,7 @@ void showCoopHudBag(ui::Ui& ui, const screens::ScreenSettings& bag,
   ui.setSetting(screens::BagResultSetting, std::string{});
   ui.setSetting(PartnerMenuStartPageSetting, std::string{PartnerMenuItemsPage});
   ui.setSetting(PartnerMenuContextSetting, std::string{PartnerMenuBattleContext});
+  ui.setSetting(BagThrowPickSetting, !hud.allies.empty());
   ui.show(PartnerMenuDocument, true);
 }
 

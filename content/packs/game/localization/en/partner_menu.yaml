@@ -64,6 +64,7 @@ care.praise: "Praise"
 care.scold: "Scold"
 care.feed_hint: "To feed your partner, use food from the bag."
 care.training_hint: "Training is done at the training spots in the field."
+throw_target_hint: "Pick the partner"
 care_result.praised: "You praised your partner."
 care_result.scolded: "You scolded your partner."
 

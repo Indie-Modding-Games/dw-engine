@@ -775,3 +775,20 @@ button:focus .original-look, button.original-look:focus {
 #scrim.favorite-food.status-extras #panel:not(.skin-original) #status-mistakes,
 #scrim.favorite-food.status-extras #panel:not(.skin-original) #status-battles { top: 142dp; }
 #scrim.favorite-food.status-extras #panel:not(.skin-original) #conditions { top: 168dp; }
+
+/* A co-op guest's battle bag: the keys that pick the partner its item flies to. */
+#throw-hint {
+	display: block;
+	position: relative;
+	margin: 6dp 0 0 0;
+	font-size: 18dp;
+	color: #c8d3dc;
+}
+
+#throw-hint.hidden {
+	display: none;
+}
+
+#throw-hint .key {
+	margin-right: 6dp;
+}

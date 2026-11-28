@@ -196,6 +196,7 @@
 					<span class="original-look" id="bag-result"></span>
 					<span class="original-look" id="bag-money"></span>
 				</div>
+				<div id="throw-hint" class="hidden"><span class="key" id="throw-previous-key"></span><span class="key" id="throw-next-key"></span><span text-key="partner_menu.throw_target_hint"></span></div>
 			</div>
 
 			<div id="page-care" class="page hidden">

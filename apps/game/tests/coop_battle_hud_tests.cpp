@@ -387,6 +387,14 @@ TEST_CASE("a guest's bag opens over its battle HUD with the focus, as the host's
   CHECK(screen.ui->focusedElementId(dwe::app::BattleDocument).empty());
   CHECK_FALSE(screen.ui->focusedElementId(dwe::app::PartnerMenuDocument).empty());
   CHECK(std::get<bool>(screen.ui->setting(dwe::screens::BagOpenSetting)));
+  // Q and E pick the partner its item flies to, and the picked ally's card lights up.
+  CHECK(screen.ui->elementShown(dwe::app::PartnerMenuDocument, "throw-hint"));
+  CHECK_FALSE(screen.ui->elementHasClass(dwe::app::BattleDocument, "ally-0", "throw-target"));
+  BattleView picked = guest.see(battle, ally, names, dwe::game::battle::PartnerId);
+  picked.bagOpen = true;
+  screen.showHud(picked);
+  screen.frames(2);
+  CHECK(screen.ui->elementHasClass(dwe::app::BattleDocument, "ally-0", "throw-target"));
 }
 
 TEST_CASE("the host's battle closes a guest's field bag, never the bag of its battle HUD") {

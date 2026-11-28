@@ -762,6 +762,10 @@ constexpr auto Contract =
         entry(PartnerMenu, Setting, "bag.result",
               Text, "The text key of the last bag action's message."),
         entry(PartnerMenu, Setting, "bag.result_item", Text, "The item of the last bag action."),
+        entry(
+            PartnerMenu, Setting, "bag.throw_pick", Boolean,
+            "Whether this bag is a co-op guest's battle bag, whose tab_previous and tab_next pick "
+            "the partner its item flies to."),
         entry(PartnerMenu, Setting, "field.player_x", Number,
               "The player's position in the window as a percentage, from where the boxes grow."),
         entry(PartnerMenu, Setting, "field.player_y", Number,

@@ -1,5 +1,5 @@
 {
-  "version": "0.34.0",
+  "version": "0.35.0",
   "screens": {
     "ui": [
       {"name": "ui.setting", "kind": "function", "value": "any", "summary": "The value of a setting the game publishes; nil if it does not publish it.", "signature": "(name: string): any"},
@@ -463,6 +463,7 @@
       {"name": "bag.slot.<n>.<id>", "kind": "setting", "value": "any", "summary": "A slot: empty, name, description, description_species, count, dimmed, usable, discardable, item_color, icon, icon_rect, favorite."},
       {"name": "bag.result", "kind": "setting", "value": "text", "summary": "The text key of the last bag action's message."},
       {"name": "bag.result_item", "kind": "setting", "value": "text", "summary": "The item of the last bag action."},
+      {"name": "bag.throw_pick", "kind": "setting", "value": "boolean", "summary": "Whether this bag is a co-op guest's battle bag, whose tab_previous and tab_next pick the partner its item flies to."},
       {"name": "field.player_x", "kind": "setting", "value": "number", "summary": "The player's position in the window as a percentage, from where the boxes grow."},
       {"name": "field.player_y", "kind": "setting", "value": "number", "summary": "The player's position in the window as a percentage, from where the boxes grow."},
       {"name": "partner_menu.portrait", "kind": "report", "value": "boolean", "summary": "Whether the game draws the partner in 3D over the status page (an improvement)."},

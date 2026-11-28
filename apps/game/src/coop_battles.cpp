@@ -1253,6 +1253,7 @@ void CoopBattles::stepHud() {
   if (hudBag_ && !ui_->isVisible(PartnerMenuDocument)) {
     hudBag_ = false;
     ui_->setSetting(PartnerMenuContextSetting, std::string{});
+    ui_->setSetting(BagThrowPickSetting, false);
     if (play_ != nullptr) {
       publishHud(*play_);
     }
@@ -1272,6 +1273,7 @@ void CoopBattles::hideHud() {
   if (hudBag_) {
     hudBag_ = false;
     ui_->setSetting(PartnerMenuContextSetting, std::string{});
+    ui_->setSetting(BagThrowPickSetting, false);
     ui_->hide(PartnerMenuDocument);
   }
   hudFoes_.clear();
@@ -1304,6 +1306,7 @@ bool CoopBattles::handleHud(const ui::UiCommand& command) {
   if (command.name == BattleThrowCommand || command.name == BagUseCommand) {
     hudBag_ = false;
     ui_->setSetting(PartnerMenuContextSetting, std::string{});
+    ui_->setSetting(BagThrowPickSetting, false);
     ui_->hide(PartnerMenuDocument);
     session::InventoryAdapter* inventory = play_ != nullptr ? play_->coopInventory() : nullptr;
     if (play_ != nullptr) {

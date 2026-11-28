@@ -47,6 +47,7 @@ care.praise: "表扬"
 care.scold: "责骂"
 care.feed_hint: "要喂伙伴吃东西，请使用背包里的食物。"
 care.training_hint: "训练要到野外的训练场所进行。"
+throw_target_hint: "选择伙伴"
 care_result.praised: "你表扬了伙伴。"
 care_result.scolded: "你责骂了伙伴。"
 
