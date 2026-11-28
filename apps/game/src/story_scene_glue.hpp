@@ -121,8 +121,7 @@ public:
   };
   void handBattlesOver(bool on) { handOver_ = on; }
   [[nodiscard]] bool handsBattlesOver() const { return handOver_; }
-  // A co-op player's partner dies or waits to be reborn: with this on, a battle the story asks for
-  // ends as not started, as the original starts none while its death script holds the player.
+  // On while a partner dies: the original starts no battle while its death script holds the player.
   void holdBattles(bool on) { holdBattles_ = on; }
   [[nodiscard]] std::optional<HandedBattle> takeHandedBattle() {
     return std::exchange(handed_, std::nullopt);

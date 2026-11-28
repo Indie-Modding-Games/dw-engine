@@ -312,7 +312,7 @@ TEST_CASE("gym.md clip: the speed course lets the run clip carry the partner, ne
 }
 
 TEST_CASE("gym.md co-op hour: a session cut short holds its actors until the world ran its hour") {
-  // #411: in co-op the partner pays the session's hour, so the course lasts it.
+  // In co-op the partner pays the session's hour, so the course lasts it.
   const GymRules gym = gymRules();
   FakePorts ports;
   ports.hourLeft = true;

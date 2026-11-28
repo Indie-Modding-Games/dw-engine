@@ -130,15 +130,13 @@
 namespace dwe::app {
 namespace {
 
-// The launcher reads this line from the game's log to tell the player why the graphics failed
-// (docs/architecture/graphics-diagnosis.md).
+// The launcher reads this log line (docs/architecture/graphics-diagnosis.md).
 void logDiagnosis(std::optional<rhi::StartFailure> failure) {
   const rhi::SystemFacts facts = rhi::gatherSystemFacts(std::move(failure));
   core::logInfo("{}{}", rhi::DiagnosisLogPrefix, rhi::diagnosisJson(facts, rhi::diagnose(facts)));
 }
 
-// Why the graphics notice shows: the launcher's first reason, else, in the compatible mode, the
-// game's own diagnosis.
+// The launcher's first reason, else in the compatible mode the game's own diagnosis.
 std::optional<NoticeReason> noticeReason(bool compatible) {
   // NOLINTNEXTLINE(concurrency-mt-unsafe): read once at start; nothing sets it.
   if (const char* passed = std::getenv(GraphicsReasonVariable.data()); passed != nullptr) {
@@ -183,7 +181,6 @@ core::Result<game::save::SaveFile> readSaveSlot(const assets::VirtualFileSystem&
 // Smaller changes of the map change's fade are not worth telling the UI.
 constexpr double FadeEpsilon = 1e-4;
 
-// The most a closing game waits for its co-op goodbyes and the room's last notice.
 constexpr double CoopShutdownSeconds = 1.5;
 constexpr double CoopSleepWaitSeconds = 8.0;
 
@@ -735,9 +732,7 @@ int runGame(const Options& requested) {
                   gpu.name, threads, level, startGraphics.renderScale, startGraphics.frameLimit,
                   startGraphics.autoQuality ? "on" : "off");
   }
-  // A weak graphics card (integrated, or on the compatible Vulkan 1.2 path) starts the options the
-  // player has not chosen from the balanced preset and lets the automatic quality step them down
-  // when frames are slow; a strong card starts as always.
+  // Weak cards (integrated, Compatible12) start unchosen options balanced, auto quality on.
   const bool compatiblePath = (*device)->vulkanPath() == rhi::VulkanPath::Compatible12;
   const bool weakGpu = !softwareMode && autotest == nullptr && !options.lowPerformance &&
                        (gpu.kind == rhi::GpuKind::Integrated || compatiblePath);
@@ -959,8 +954,7 @@ int runGame(const Options& requested) {
   if (softwareMode || compatibleNotice) {
     showGraphicsNotice(**ui, compatibleNotice, noticeReason(compatibleNotice));
   }
-  // The pipelines built while the first field loads are kept even if the game does not close
-  // normally.
+  // Seconds to an early cache save, so the first field's pipelines survive a crash.
   double pipelineCacheSaveLeft = 15.0;
   FrameLimiter frameLimiter;
   double limiterWaited = 0.0;
@@ -1080,8 +1074,7 @@ int runGame(const Options& requested) {
   (*scripts)->bindCommand(ShopJobModeSetting, [&consoleShopJobMode](std::string_view mode) {
     consoleShopJobMode = std::string{mode};
   });
-  // The console's and routes' battle_system("classic"|"folder"), applied between frames like the
-  // options row.
+  // The console's and routes' battle_system(), applied between frames like the options row.
   std::optional<std::string> consoleBattleSystem;
   (*scripts)->bindCommand(BattleSystemSetting, [&consoleBattleSystem](std::string_view name) {
     consoleBattleSystem = std::string{name};
@@ -1240,9 +1233,7 @@ int runGame(const Options& requested) {
   CoopTrades coopTrades{**ui};
   // The world's clock and who trains (#365).
   CoopTraining coopTraining;
-  // Which NPC each player's event holds (#417).
   CoopEvents coopEvents;
-  // Whether this guest was told its sleep waits for the world's morning (#424).
   bool coopSleepWaitShown = false;
   // The host's room went while the guest played: its game ends after this frame's ticks.
   bool coopHostLeft = false;
@@ -1985,8 +1976,7 @@ int runGame(const Options& requested) {
       if (!(*ui)->isVisible(MenuDocument)) {
         optionsDirect = false;
       }
-      // Other players share this world (co-op): this player's menus and pause hold only its own
-      // input, the world goes on (#415, shared_pause.hpp).
+      // Co-op: menus and pause hold only this player's input; the world goes on (shared_pause.hpp).
       const bool coopShared =
           flow.playing() != nullptr && flow.playing()->coopGame() && coop.connected();
       if (PlaySession* shared = flow.playing()) {
@@ -2313,7 +2303,6 @@ int runGame(const Options& requested) {
       // the others must still hear from the host in between.
       if (play != nullptr && coop.isHost()) {
         for (CoopPeer& peer : coopPeers) {
-          // A guest's partner that evolved is drawn in its new form (#412).
           if (const game::coop::PlayerRecord* record =
                   coopHostWorld ? coopHostWorld->authority().find(peer.id) : nullptr;
               record != nullptr && !record->partnerSpecies.empty() &&
@@ -3333,8 +3322,7 @@ int runGame(const Options& requested) {
   if (PlaySession* play = flow.playing()) {
     bringGuestHome(*play, true);
   }
-  // Closing the window ends a co-op room as leaving it does: the others hear it at once instead
-  // of waiting on a link kept alive by the transport, and a public room leaves the list.
+  // Leaves the room at once: the others do not wait on the transport's keep-alive.
   coop.shutDown([&] { return platform->nowSeconds(); }, CoopShutdownSeconds);
   if (!autotest) {
     // The locals go in reverse order: the scene and the UI release their textures into the renderer

@@ -226,9 +226,8 @@ public:
 
   // One tick of the game loop, of real seconds (the menu, which pauses the game, does not tick).
   void tick(double realSeconds);
-  // A tick a screen of the player's own runs instead of the field (a shop, the fishing, a care
-  // scene). Alone and on a guest nothing runs, as before. On the co-op host the world's clock runs
-  // on for the others and its partner lives that time once let go (coop-training.md T9).
+  // A tick a screen of the player's own runs instead of the field (a shop, fishing, care).
+  // On the co-op host the world's clock runs on; its partner lives it later (coop-training.md T9).
   void tickHeldPlayer(double realSeconds);
   // Counts play time, once per tick of the whole game while a game is played and not paused: the
   // field, the menus, the battles and the scenes alike (clock.c: tickPlaytime, the object addClock
@@ -336,8 +335,7 @@ public:
   [[nodiscard]] ClockShare clockShare() const { return clockShare_; }
   // A guest: the host's clock as it heard it. Its own clock follows it from then on.
   void hearWorldClock(const WorldTime& time);
-  // A guest whose own clock is far past the world's (its partner slept): its sleep waits for the
-  // world's morning instead of going back to the night (#424).
+  // A guest's own clock is far past the world's (its partner slept): its sleep waits for the world.
   [[nodiscard]] bool aheadOfWorld() const;
   // How many real seconds such a guest still waits for the world; none while the world stands.
   [[nodiscard]] std::optional<double> secondsAheadOfWorld() const;
@@ -348,8 +346,7 @@ public:
   // original's clock stands still for it.
   void holdForCourse(bool held);
   [[nodiscard]] bool heldForCourse() const { return courseHeld_; }
-  // Co-op: a held course whose session the world's clock has not yet run an hour for (#411). Its
-  // partner was charged that hour, so the course lasts it; never alone.
+  // Co-op: the partner paid this held course's hour, which the world's clock has not run yet.
   [[nodiscard]] bool courseHourRuns() const;
 
   // After a system's command changed the partner (an item, an evolution): routes the partner's
@@ -396,8 +393,7 @@ public:
   [[nodiscard]] const game::randomizer::Randomizer& randomizer() const;
   // The species of the partner's raise rows, by id: what a randomized run picks wild enemies from.
   [[nodiscard]] std::vector<std::string> roster() const;
-  // ClassicBattle or FolderBattle: the new game's or the loaded save's; the next battle plays the
-  // one set.
+  // ClassicBattle or FolderBattle; the next battle plays the one set.
   [[nodiscard]] const std::string& battleSystem() const;
   core::Result<void> setBattleSystem(std::string_view battle);
   // The game events mods handle (game_hooks.hpp); they fire once ModScripts bound them.
@@ -443,14 +439,12 @@ private:
   void followRules();
   core::Result<void> registerSaveSections();
   void advanceGameTime(double realSeconds);
-  // The co-op host's player is held by a script of its own (a talk, the gym's menu), not by a map
-  // change, which takes every player.
+  // Held by a script of its own (a talk, the gym's menu), not by a map change (which holds all).
   [[nodiscard]] bool hostHeldByOwnScript() const;
   // The co-op host's world clock runs while its own player is held; its partner stands.
   void runWorldPastHeldPlayer(double realSeconds);
-  // The host's partner lives the time it stood, as a guest's catches up with the world: whole hours
-  // as a time skip, the rest frame by frame. What the clock crossed in those frames, for the
-  // systems.
+  // The host's partner lives the time it stood: whole hours as a time skip, the rest frame by
+  // frame. Returns what the clock crossed in those frames.
   ruleset::ClockAdvance liveStoodTime();
   // A guest's step after the world's clock; the partner's skipped hours, when the world skipped
   // some, are paid here.

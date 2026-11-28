@@ -89,8 +89,7 @@ struct NpcBody {
 };
 
 // The other characters an NPC can bump into.
-// Where an NPC stands and how it moves, by slot: what a co-op host's field tells the guests' about
-// its NPCs.
+// What a co-op host's field tells the guests' about its NPCs, by slot.
 struct NpcPose {
   std::size_t slot = 0;
   glm::vec3 position{};
@@ -166,11 +165,9 @@ public:
   // The slot of the NPC on an entity, or nothing.
   [[nodiscard]] std::optional<std::size_t> slotOf(scene::Entity entity) const;
 
-  // The NPCs on the map, by slot.
   [[nodiscard]] std::vector<NpcPose> poses() const;
-  // Another game's field says where an NPC stands (a co-op guest shows the host's): its path and
-  // its reaction to the player stop and it stands so until let go. A script's hold or animation
-  // still comes first. False when no NPC is in the pose's slot.
+  // A co-op guest shows the host's pose: path and reactions stop until let go; a script's hold or
+  // animation still comes first. False when no NPC is in the pose's slot.
   bool mirror(const NpcPose& pose);
   bool releaseMirror(std::size_t slot);
   void releaseMirrors();

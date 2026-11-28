@@ -416,7 +416,6 @@ TEST_CASE("a guest's held partner stands where its owner says and plays its owne
   REQUIRE(field.addPartner(GuestPlayerId, "models/guest_partner", 120.0F));
   const auto entity = *field.partnerEntity(GuestPlayerId);
 
-  // The owner's gym course put it on the equipment and plays its push there (#420).
   const glm::vec3 equipment{700.0F, 0.0F, 600.0F};
   REQUIRE(field.drivePartner(GuestPlayerId,
                              dwe::game::field::CharacterState{
@@ -427,7 +426,6 @@ TEST_CASE("a guest's held partner stands where its owner says and plays its owne
   CHECK(field.scriptedClipOf(entity) == PlayedClip{.clip = 41, .starts = 3});
   CHECK(world.registry().get<dwe::scene::Transform>(entity).position == equipment);
 
-  // Let go: no clip left on it, and it follows its player again from the equipment.
   field.showOwnerClip(entity, std::nullopt);
   REQUIRE(field.drivePartner(GuestPlayerId, std::nullopt));
   CHECK_FALSE(world.registry().all_of<dwe::game::field::ScriptedActor>(entity));
@@ -2683,13 +2681,11 @@ TEST_CASE("an NPC another game's field places stands as told instead of walking 
   REQUIRE(poses.size() == 1);
   CHECK(poses.front() == told);
 
-  // A script's hold still comes first.
   REQUIRE(field.npcs().hold(7, true));
   CHECK(field.npcs().mirror({.slot = slot, .position = {0.0F, 0.0F, 900.0F}}));
   CHECK(field.npcs().poses().front().position == told.position);
   REQUIRE(field.npcs().hold(7, false));
 
-  // Let go, it walks its own path again.
   CHECK(field.npcs().releaseMirror(slot));
   CHECK_FALSE(field.npcs().mirrored(slot));
   run(field, 3.0F);

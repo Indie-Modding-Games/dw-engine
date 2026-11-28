@@ -526,7 +526,6 @@ public:
   // models/partner's animations, which are the same ids for every partner; nothing changes if it is
   // drawn so already. On a failure the partner keeps its model.
   core::Result<void> showPartnerSpecies(std::string_view species);
-  // The species whose model draws a partner of this species (attachDrawnSpecies).
   [[nodiscard]] std::string drawnSpeciesOf(std::string_view species) const {
     return drawnSpecies_ ? drawnSpecies_(species) : std::string{species};
   }
@@ -541,9 +540,7 @@ public:
   void attachSpeciesClips(std::function<ClipStandIns(std::string_view)> clips) {
     speciesClips_ = std::move(clips);
   }
-  // The species whose model draws a partner of this one (EvolutionAdapter::drawnSpecies): a form
-  // with no model of its own (WereGarurumon) is drawn as the one it comes from. Without it every
-  // species is drawn as itself.
+  // Unset, each species draws as itself; a form with no model (WereGarurumon) as its origin.
   void attachDrawnSpecies(std::function<std::string(std::string_view)> drawn) {
     drawnSpecies_ = std::move(drawn);
   }
@@ -774,12 +771,12 @@ public:
                                        std::string_view partnerSpecies = {},
                                        std::optional<game::field::PlayedClip> playerClip = {},
                                        std::optional<game::field::PlayedClip> partnerClip = {});
-  // The species co-op player `id`'s partner is drawn as; empty while it has none.
+  // Empty while that player has no partner.
   [[nodiscard]] std::string_view coopPartnerSpecies(game::field::PlayerId id) const;
   // A co-op guest's own player, put where the host says (a PlayerCorrection, #354): on this map at
   // once; on another through a map change that arrives at `at` (the exit, if any, is the one the
   // host came in by, for the change's look; the place is `at` either way). `reload` loads this map
-  // again as well, as the host's game did (a room a script's warp reset).
+  // again too (a script's warp reset the room on the host).
   void moveCoopSelf(const std::string& mapId, std::optional<std::int32_t> exit,
                     assets::SpawnPoint at, bool reload = false);
   // Whether the field still goes to the map moveCoopSelf asked for.

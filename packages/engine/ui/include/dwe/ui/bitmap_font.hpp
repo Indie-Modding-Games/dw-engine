@@ -25,8 +25,7 @@ struct TextRun {
   bool bitmap = false;
 };
 
-// The most blank columns a glyph leaves after its ink, as the i and the l do. The original's widths
-// leave 4 after the j, the 1 and the narrow capitals, which reads as a space inside a word.
+// The original leaves 4 after the j, the 1 and the narrow capitals, which reads as a space.
 inline constexpr int MaxBlankAfterInk = 3;
 
 // Whether a character is a space: the ASCII one or the full-width one the original's text uses.
@@ -78,8 +77,7 @@ private:
   // Adds the composed glyphs whose base glyphs the font has, in new cells under the atlas's.
   void addComposedGlyphs();
 
-  // Narrows the advance of each glyph that leaves more than MaxBlankAfterInk after its ink. Digits
-  // keep theirs so that numbers line up in columns.
+  // Digits keep their advance so numbers line up in columns.
   void trimBlankAfterInk();
 
   assets::Image atlas_;

@@ -147,14 +147,12 @@ TEST_CASE("a co-op guest follows the host to another zone under the sickness not
   CHECK(screen.holdsField(false));
   CHECK(screen.active());
 
-  // The host warps: the notice goes, so the guest's field runs its map change.
   CHECK_FALSE(screen.holdsField(true));
   CHECK_FALSE(screen.active());
   notice.ui->update();
   CHECK_FALSE(notice.ui->isVisible(AwardNoticeDocument));
   CHECK_FALSE(screen.holdsField(true));
 
-  // Arrived and walking freely again: the same notice opens.
   screen.tick();
   REQUIRE(screen.holdsField(false));
   notice.ui->update();

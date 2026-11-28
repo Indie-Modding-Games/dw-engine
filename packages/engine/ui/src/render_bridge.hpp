@@ -46,9 +46,7 @@ public:
   void SetScissorRegion(Rml::Rectanglei region) override;
   void SetTransform(const Rml::Matrix4f* transform) override;
 
-  // Whether a texture draws with sharp texel edges (rml.slang: sharpUv): one LoadTexture read from
-  // a source TextureSources::isPixelArt names, or the next generated one after generateNextSharp
-  // (the bitmap font's atlas). Other generated textures (font atlases, minimaps) never do.
+  // rml.slang sharpUv: pixel-art sources and the texture after generateNextSharp (the font atlas).
   [[nodiscard]] bool drawsSharp(Rml::TextureHandle texture) const {
     return sharpTextures_.contains(texture);
   }

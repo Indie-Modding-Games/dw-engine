@@ -40,8 +40,7 @@ struct GameMode {
   // The rulesets the new game's rules screen may choose from for this mode; `ruleset` is one. With
   // only one, the screen is not shown.
   std::vector<std::string> rulesets;
-  // A new game's battle system and the ones its player may switch to (`battle` among them);
-  // default: Classic.
+  // A new game's battle system and the ones its player may switch to (`battle` among them).
   std::string battle{DefaultBattle};
   std::vector<std::string> battles{std::string{DefaultBattle}};
   // Where the mode goes in the list: lower first, then by id.

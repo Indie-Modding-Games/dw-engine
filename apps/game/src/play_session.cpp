@@ -434,7 +434,6 @@ core::Result<std::unique_ptr<PlaySession>> PlaySession::create(const PlayContext
                                        : session::ClockShare::Own);
   // Co-op (#357): a guest's chest or ground take waits for the host's word.
   play->fieldItemsScreen_.setCoop(start.coop(), start.coopGuest());
-  // Co-op: the poop piles are the host's; a guest's partner leaves and eats them through it.
   play->fieldPoop_.setCoopGuest(start.coopGuest());
   if (cleared) {
     // main.c: main, MAIN_STATE 2: a game saved after the ending plays ED2 before its field.
@@ -1047,8 +1046,7 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent, const Fishi
   if (sleepScreen_.active() || bracketScreen_.playing() || storyScenes_.tournamentIntro()) {
     return;
   }
-  // A screen or a scene of the player's own runs instead of the field and the game time. On the
-  // co-op host the world's clock runs on for the others meanwhile (GameSession::tickHeldPlayer).
+  // On the co-op host the world's clock runs on meanwhile (GameSession::tickHeldPlayer).
   session::GameSession& session = *game_.session;
   if (shopScreen_.active() || devMenu_.isOpen() || itemKeeperScreen_.active() ||
       discardScreen_.active() || jukeboxScreen_.active() || tradeScreen_.active() ||
@@ -1094,7 +1092,7 @@ void PlaySession::tickSystems(const game::field::FieldInput& intent, const Fishi
       return;
     }
   }
-  // A battle another player started takes this player's screen: its game menu closes (#415).
+  // A battle another player started takes this player's screen: its game menu closes.
   if (worldShared_ && (battleScreen_.active() || coopBattleHold_) && ui.isVisible(MenuDocument)) {
     context_.ui->hide(MenuDocument);
   }

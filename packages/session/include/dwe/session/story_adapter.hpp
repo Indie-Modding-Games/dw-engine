@@ -170,7 +170,7 @@ public:
   // co-op game the NPCs of `leftBe` (script ids) are in another player's event: their contacts go.
   void runNpcContacts(std::span<const game::field::NpcContact> contacts,
                       std::span<const std::int32_t> leftBe = {});
-  // The script id of the NPC whose event the running script is, while it runs (#417).
+  // The script id of the NPC whose event the running script is, while it runs.
   [[nodiscard]] std::optional<std::int32_t> eventNpc() const {
     return scriptRunning() ? eventNpc_ : std::nullopt;
   }

@@ -33,8 +33,7 @@ using content::UserDataApplication;
 using content::UserDataOrganization;
 // The exit code when the GPU stops responding (a lost device): the launcher shows the crash report.
 inline constexpr int DeviceLostExitCode = 113;
-// The exit code when no GPU path could make the device, the 1.2 compatible mode included: the
-// launcher then starts the next run on the next graphics step.
+// No GPU path made the device, 1.2 compatible included: the launcher retries on its next step.
 inline constexpr int GraphicsStartExitCode = 114;
 
 // How long to sleep per loop while there is nothing to draw, about one display refresh.

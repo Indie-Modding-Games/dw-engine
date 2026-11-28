@@ -347,7 +347,6 @@ TEST_CASE("the developer's evolve refuses a form with no model and keeps the par
   auto session = sessionWithEvolution(packs, fixture, adapter);
   const std::string before = session->partner().state().species;
   CHECK_FALSE(std::ranges::contains(adapter->cheatTargets(), "mtet"));
-  // A partner saved as one before is drawn as the form it comes from.
   CHECK(adapter->drawnSpecies("mtet") == "ggdr");
   CHECK(adapter->drawnSpecies("agum") == "agum");
   CHECK(adapter->drawnSpecies("nobody") == "nobody");

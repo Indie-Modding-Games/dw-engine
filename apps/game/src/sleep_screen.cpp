@@ -306,8 +306,7 @@ void SleepScreen::setPhase(Phase phase) {
 }
 
 void SleepScreen::startFadeIn() {
-  // In co-op the night is the world's: a guest's partner sleeps until the world's clock reaches its
-  // morning, or the host's sleep takes the world there (docs/architecture/coop-training.md §5).
+  // A guest's partner sleeps until the world's morning (docs/architecture/coop-training.md §5).
   if (asleep_ && phase_ != Phase::WaitingWorld && session_->aheadOfWorld()) {
     setPhase(Phase::WaitingWorld);
     return;

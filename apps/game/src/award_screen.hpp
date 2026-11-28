@@ -41,12 +41,10 @@ public:
   // Takes the notice's answer; false for any other command.
   bool handle(const ui::UiCommand& command);
 
-  // Another screen takes the player's (a co-op guest's battle): the notice goes unanswered and
-  // opens again on a later tick.
+  // A co-op guest's battle takes the screen: the notice opens again on a later tick.
   void putAway();
 
-  // Whether the notice holds the field this tick. A co-op guest following the host to another
-  // zone (`coopMove`) puts it away instead: it opens again once the guest arrives.
+  // `coopMove`: a guest following the host to another zone puts the notice away until it arrives.
   [[nodiscard]] bool holdsField(bool coopMove);
 
 private:

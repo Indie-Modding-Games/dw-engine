@@ -234,9 +234,8 @@ public:
   // as usual. Nothing undoes it until the player is placed again (placeOtherPlayersNearHost) or
   // driven with nothing. False when there is no such guest.
   bool drivePlayer(PlayerId id, std::optional<CharacterState> state);
-  // The same for a guest's partner while its owner's game holds it (a gym course, a scene): placed
-  // where the owner says on every tick instead of following its player; driven with nothing it
-  // follows again from where it stands. False when that guest has no partner.
+  // The same for a guest's partner held by its owner's game (a gym course, a scene); nothing lets
+  // it follow again from where it stands. False when that guest has no partner.
   bool drivePartner(PlayerId id, std::optional<CharacterState> state);
   // The clip a script plays on a character now (ScriptedActor), nothing while its motion picks it.
   [[nodiscard]] std::optional<PlayedClip> scriptedClipOf(scene::Entity entity) const;
@@ -614,8 +613,7 @@ public:
   // starts). It lets go as above, but nothing moves them off it: no release check and no making
   // room, as the original's characters stand where its trace starts.
   void placeAt(scene::Entity entity, glm::vec3 position, float yaw);
-  // Moves the player to a spot of this map and its partner next to it, as a map entry does (a
-  // co-op host placing its guest). A partner a script plays stays.
+  // Moves the player and its partner next to it as a map entry does; a scripted partner stays.
   void placePlayerWithPartner(assets::SpawnPoint spot);
   // The release rule now, the engine's (the original has none): the partner in a wall cell or deep
   // in another's collision square (overlaps), or the player in a wall cell, goes to the nearest
@@ -676,7 +674,6 @@ private:
     std::optional<OtherPartner> partner;
     // Where the owner says the body is (drivePlayer): placed there instead of walking.
     std::optional<CharacterState> driven;
-    // Where the owner says its held partner is (drivePartner): placed there instead of following.
     std::optional<CharacterState> drivenPartner;
   };
   [[nodiscard]] static PlayerId playerIdOf(const PlayerRuntime& player) {

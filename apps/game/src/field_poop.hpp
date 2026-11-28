@@ -27,8 +27,7 @@ public:
 
   [[nodiscard]] bool active() const { return step_ != Step::None; }
 
-  // A co-op guest's piles are the host's: what its partner leaves goes to the host too, and an eat
-  // waits for the host's word (pileShare()).
+  // A guest's piles are the host's: its partner's go to the host, an eat waits for its word.
   void setCoopGuest(bool guest) { coopGuest_ = guest; }
   [[nodiscard]] FieldPileShare& pileShare() { return share_; }
 

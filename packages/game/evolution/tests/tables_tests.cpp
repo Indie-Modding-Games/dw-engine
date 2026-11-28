@@ -81,9 +81,7 @@ TEST_CASE("the developer's evolve skips a form with a row of its own but no mode
 }
 
 TEST_CASE("a form with no model is no chart's target and is drawn as the form it comes from") {
-  // A tester's partner became WereGarurumon (no bones, no model) and the field kept drawing the
-  // form before. No chart leads to such a form, and a partner already saved as one is drawn as the
-  // form its chart comes from whose name ends its own (WereGarurumon: Garurumon).
+  // WereGarurumon has no model: no chart leads to it and a saved one is drawn as Garurumon.
   TableFixture fixture;
   fixture.form("mtet").boneCount = 0;
   fixture.form("mtet").name = "WereGarurumon";

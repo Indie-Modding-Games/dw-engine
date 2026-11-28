@@ -434,14 +434,11 @@ public:
   // to it, shown once it stands still (coop_npc_presence.hpp).
   void followCoopFacts(std::span<const CoopFactChange> facts,
                        std::span<const CoopFactChange> ownFacts = {});
-  // A guest's map NPCs where the host's snapshots (`world`, as drawn `now`) put them; with none,
-  // or in a co-op battle, they walk on their own (coop_npc_mirror.hpp).
+  // NPCs where the host's snapshots put them; with none or in a co-op battle they walk alone.
   void mirrorCoopNpcs(const PresentedCoopWorld* world, net::Millis now);
   [[nodiscard]] std::string_view partnerSpecies() const {
     return game_.session->partner().state().species;
   }
-  // The species whose model draws the partner (FieldScene::drawnSpeciesOf): its own, or for a form
-  // with no model the one it comes from.
   [[nodiscard]] std::string drawnPartnerSpecies() const {
     return scene_->drawnSpeciesOf(partnerSpecies());
   }
@@ -494,9 +491,7 @@ public:
                                         bool predefined);
   // The guest: the battles its story asks for go to the host (StorySceneGlue::handBattlesOver).
   void handBattlesToHost(bool on) { storyScenes_.handBattlesOver(on); }
-  // Whether this player's partner dies or waits to be reborn (a death's scene runs or waits).
   [[nodiscard]] bool partnerDying() const { return deathScene_.active(); }
-  // While on, the battles the story asks for do not start (StorySceneGlue::holdBattles).
   void holdCoopBattles(bool on) { storyScenes_.holdBattles(on); }
   [[nodiscard]] std::optional<StorySceneGlue::HandedBattle> takeHandedBattle() {
     return storyScenes_.takeHandedBattle();
@@ -510,10 +505,8 @@ public:
   [[nodiscard]] session::VisitingPartner coopFighter() const;
   [[nodiscard]] std::optional<game::battle::Fighter> coopBattleFighter() const;
   [[nodiscard]] const game::battle::MoveCatalog* coopMoves() const;
-  // Co-op events (#417, coop_events.hpp): the NPCs the other players' events hold on this map,
-  // whose contacts this game drops, and the NPC whose event this game plays now.
+  // The NPCs the other players' events hold here (coop_events.hpp): their contacts are dropped.
   void leaveNpcsBe(std::vector<std::int32_t> npcs) { npcsLeftBe_ = std::move(npcs); }
-  // A co-op guest's sleep waits in the dark for the world's morning (#424).
   [[nodiscard]] bool sleepWaitsForWorld() const { return sleepScreen_.waitsForWorld(); }
   [[nodiscard]] std::optional<std::int32_t> eventNpc() const;
   [[nodiscard]] const std::string& modeId() const;
@@ -522,8 +515,7 @@ public:
   // The guest: the field holds while the host's battle runs (its figures are the host's).
   // A field bag or notice open then goes; the notice opens again once the battle is over.
   void holdForCoopBattle(bool on);
-  // Other players share this game's world now (co-op, #415): this player's menus and pause no
-  // longer stop it (shared_pause.hpp).
+  // Co-op: this player's menus and pause no longer stop the world (shared_pause.hpp).
   void shareWorld(bool shared) { worldShared_ = shared; }
   [[nodiscard]] bool worldShared() const { return worldShared_; }
   [[nodiscard]] bool heldForCoopBattle() const { return coopBattleHold_; }

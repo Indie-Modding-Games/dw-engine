@@ -39,8 +39,7 @@ public:
   // The context's pixels per dp, which sets how many times larger the bitmap font draws.
   void setDpRatio(float ratio) { dpRatio_ = ratio; }
   void setFallbacks(std::vector<FallbackChain> chains);
-  // Runs right before the bitmap font's atlas becomes a texture, so the renderer can draw it with
-  // sharp texel edges: filtered, a glyph at a fractional offset picks up its neighbour cell's ink.
+  // Lets the renderer sample the bitmap atlas sharp: filtered, a fractional offset bleeds ink.
   void setBeforeBitmapAtlas(std::function<void()> hook) { beforeBitmapAtlas_ = std::move(hook); }
   bool setLanguage(std::string_view language);
   [[nodiscard]] bool covers(std::string_view text) const;

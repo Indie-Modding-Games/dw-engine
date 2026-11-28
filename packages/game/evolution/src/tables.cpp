@@ -145,8 +145,6 @@ Requirement requirementFrom(const assets::EvolutionRequirementEntry& row, TableR
           .battlesAreMaximum = (row.flags & BattlesAreMaximumFlag) != 0};
 }
 
-// The form a species without a model is drawn as: of the forms its chart comes from (with a
-// model), the one whose name ends its own, else the first.
 std::optional<Species> modelStandIn(const assets::DigimonTable& digimon, Species species,
                                     std::span<const Species> sources) {
   if (sources.empty()) {

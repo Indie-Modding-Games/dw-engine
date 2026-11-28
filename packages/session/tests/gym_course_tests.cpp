@@ -320,10 +320,7 @@ TEST_CASE("training check: the dump's meditation lets the clip carry the partner
 
 namespace {
 
-// A whole session of the town gym's boulder as the game plays it: the story's script holds the
-// field around the course (StoryFieldLink), and the session ticks with the field. The clock's
-// frames from before the course to after its last box. A skipped session is cancelled on its first
-// frame, as a player who skips the animation.
+// Frames the clock ran over a whole town gym boulder session; a skipped one cancels on frame one.
 std::int64_t clockOverCourse(dwe::session::ClockShare share, bool skipped) {
   const TestPacks packs;
   auto gym = std::make_unique<dwe::session::GymAdapter>();
@@ -372,9 +369,7 @@ TEST_CASE("training check: alone a course stands the clock still and its award j
 }
 
 TEST_CASE("training check: in co-op a course lasts at least the world's hour it costs") {
-  // #411: the world's clock runs through the course, and a skipped session waits for the rest of
-  // its hour instead of charging the partner an hour the world never ran. A whole session of the
-  // boulder (1200 frames, a minute of play) is already an hour and waits for nothing.
+  // A skipped session waits for the rest of its hour; a whole one (1200 frames) is already an hour.
   for (const auto share : {dwe::session::ClockShare::Host, dwe::session::ClockShare::Guest}) {
     for (const bool skipped : {false, true}) {
       CAPTURE(static_cast<int>(share));

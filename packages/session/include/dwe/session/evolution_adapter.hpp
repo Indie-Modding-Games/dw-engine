@@ -94,8 +94,7 @@ public:
   // (EvolutionTables::cheatTargets), in the tables' order; empty before the rules are read.
   [[nodiscard]] std::vector<std::string> cheatTargets() const;
 
-  // The species whose model draws this one (EvolutionTables::drawnAs): itself, or for a form
-  // without a model (WereGarurumon) the one it comes from. An unknown species is returned as it is.
+  // EvolutionTables::drawnAs by name; an unknown species is returned as it is.
   [[nodiscard]] std::string drawnSpecies(std::string_view species) const;
 
   // The level of a form of the tables; Level::None for an unknown one.

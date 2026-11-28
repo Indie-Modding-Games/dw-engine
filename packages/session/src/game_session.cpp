@@ -33,7 +33,6 @@ using game::partner::PartnerEvent;
 using game::save::AutosaveReason;
 using messages::formatMessage;
 
-// Two runs of the clock, one after the other, as one.
 ruleset::ClockAdvance joined(const ruleset::ClockAdvance& first,
                              const ruleset::ClockAdvance& second) {
   return {.frames = first.frames + second.frames,
