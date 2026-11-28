@@ -10,6 +10,7 @@ pub mod content;
 pub mod custom_images;
 pub mod disc;
 pub mod failure;
+pub mod graphics_step;
 pub mod launch;
 pub mod links;
 pub mod log;
@@ -183,6 +184,7 @@ pub fn run() {
             commands::set_update_channel,
             commands::set_graphics_switch,
             commands::set_launch_options,
+            commands::reset_graphics_step,
             commands::check_system,
             commands::open_driver_page,
             addon_commands::addons_list,

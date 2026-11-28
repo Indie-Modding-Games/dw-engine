@@ -141,8 +141,9 @@ QualityDecision decideQuality(std::span<const double> busySeconds, double target
                       static_cast<double>(busySeconds.size());
   if (mean > budget * DownMargin) {
     if (level > LowestQuality) {
-      decision.level = level - 1;
-      decision.ceiling = std::min(ceiling, level - 1);
+      const int steps = mean > budget * FarDownMargin ? 2 : 1;
+      decision.level = std::max(LowestQuality, level - steps);
+      decision.ceiling = std::min(ceiling, decision.level);
     }
     return decision;
   }

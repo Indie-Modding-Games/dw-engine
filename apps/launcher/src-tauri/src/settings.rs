@@ -10,6 +10,7 @@ use std::path::{Path, PathBuf};
 
 use crate::auto_update::LastCheck;
 use crate::failure::Result;
+use crate::graphics_step::GraphicsStep;
 use crate::launch::GraphicsFlags;
 use crate::releases::UpdateChannel;
 use crate::store::write_atomically;
@@ -91,6 +92,12 @@ fn lenient_launch_mode<'de, D: Deserializer<'de>>(deserializer: D) -> std::resul
     Ok(value.as_str().and_then(LaunchMode::parse).unwrap_or_default())
 }
 
+/// An unknown step reads as the card, so a hand-edited file never keeps the game off it.
+fn lenient_graphics_step<'de, D: Deserializer<'de>>(deserializer: D) -> std::result::Result<GraphicsStep, D::Error> {
+    let value = Value::deserialize(deserializer)?;
+    Ok(serde_json::from_value(value).unwrap_or_default())
+}
+
 fn valid_env_name(name: &str) -> bool {
     let mut bytes = name.bytes();
     bytes.next().is_some_and(|b| b.is_ascii_alphabetic() || b == b'_')
@@ -131,6 +138,11 @@ pub struct Settings {
     pub low_performance_mode: bool,
     #[serde(deserialize_with = "lenient_launch_mode")]
     pub launch_mode: LaunchMode,
+    /// Where an early graphics failure left the automatic start (graphics_step.rs), and the GPU and
+    /// driver it happened on.
+    #[serde(deserialize_with = "lenient_graphics_step")]
+    pub graphics_step: GraphicsStep,
+    pub graphics_step_gpu: String,
     /// The player's own game arguments (whitespace-separated) and environment (NAME=value lines),
     /// kept as typed; game_args and game_env read them.
     pub extra_args: String,
@@ -167,6 +179,8 @@ impl Default for Settings {
             compatibility_mode: false,
             low_performance_mode: false,
             launch_mode: LaunchMode::Auto,
+            graphics_step: GraphicsStep::Card,
+            graphics_step_gpu: String::new(),
             extra_args: String::new(),
             extra_env: String::new(),
             old_beta_key_removed: false,
@@ -232,6 +246,7 @@ impl Settings {
         GraphicsFlags {
             compatibility: self.compatibility_mode,
             low_performance: self.low_performance_mode,
+            vulkan13: false,
         }
     }
 
@@ -358,6 +373,21 @@ mod tests {
         let many = Settings { extra_args: "x ".repeat(40), extra_env: "A=1\n".repeat(40), ..Settings::default() };
         assert_eq!(many.game_args().len(), 32);
         assert_eq!(many.game_env().len(), 32);
+    }
+
+    #[test]
+    fn the_graphics_step_is_kept_and_an_unknown_one_reads_as_the_card() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("settings.json");
+        let saved = Settings { graphics_step: GraphicsStep::Compatible, graphics_step_gpu: "GPU | 1.0".into(), ..Settings::default() };
+        saved.save_to(&file).unwrap();
+        let read = Settings::load_from(&file);
+        assert_eq!(read.graphics_step, GraphicsStep::Compatible);
+        assert_eq!(read.graphics_step_gpu, "GPU | 1.0");
+        fs::write(&file, r#"{"graphics_step": "quantum", "language": "es"}"#).unwrap();
+        let read = Settings::load_from(&file);
+        assert_eq!(read.graphics_step, GraphicsStep::Card);
+        assert_eq!(read.language, "es", "the rest is still read");
     }
 
     #[test]

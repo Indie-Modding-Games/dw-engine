@@ -17,6 +17,7 @@ dwe_add_module(rhi
         src/texture.cpp
         src/upload_ring.cpp
         src/vma.cpp
+        src/vulkan_calls.cpp
         src/vulkan_path.cpp
         src/vulkan_util.cpp
     DEPS core platform

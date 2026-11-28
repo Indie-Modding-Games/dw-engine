@@ -5,7 +5,6 @@
 #include <RmlUi/Core/StringUtilities.h>
 
 #include <algorithm>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -59,11 +58,6 @@ void addCharacters(assets::YamlReader& reader, const core::YamlNode& entry,
 
 } // namespace
 
-float onGlyphGrid(float offset, int scale) {
-  const auto grid = static_cast<float>(GlyphGrid * std::max(scale, 1));
-  return std::floor(offset / grid) * grid;
-}
-
 bool isSpace(char32_t character) {
   return character == U' ' || character == U'\u3000';
 }
@@ -112,6 +106,7 @@ core::Result<BitmapFont> BitmapFont::parse(std::string_view meta, assets::Image 
   font.atlas_ = std::move(atlas);
   if (reader.ok()) {
     font.addComposedGlyphs();
+    font.trimBlankAfterInk();
   }
   return reader.finish(std::move(font), messages::BitmapFontContext);
 }
@@ -152,6 +147,30 @@ int BitmapFont::inkTop(const BitmapGlyph& glyph) const {
     }
   }
   return cellHeight_;
+}
+
+int BitmapFont::inkRight(const BitmapGlyph& glyph) const {
+  for (int column = cellWidth_ - 1; column >= 0; --column) {
+    for (int row = 0; row < cellHeight_; ++row) {
+      if (isInk(atlas_, static_cast<std::size_t>(glyph.x) + static_cast<std::size_t>(column),
+                static_cast<std::size_t>(glyph.y) + static_cast<std::size_t>(row))) {
+        return column;
+      }
+    }
+  }
+  return -1;
+}
+
+void BitmapFont::trimBlankAfterInk() {
+  const auto isDigit = [](char32_t character) {
+    return (character >= U'0' && character <= U'9') || (character >= U'０' && character <= U'９');
+  };
+  for (auto& [character, glyph] : glyphs_) {
+    const int right = inkRight(glyph);
+    if (right >= 0 && !isDigit(character)) {
+      glyph.advance = std::min(glyph.advance, right + 1 + MaxBlankAfterInk);
+    }
+  }
 }
 
 assets::Image BitmapFont::inkAtlas(int scale) const {

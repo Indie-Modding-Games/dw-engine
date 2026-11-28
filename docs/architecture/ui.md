@@ -919,10 +919,12 @@ color 1 of its CLUT, `0x6B5A`). Any document can use it for other text with that
   (`Ａ`) and to its ASCII equivalent (`A`), the ink is white and is tinted by the RCSS `color`, and it grows in integer multiples
   (at 720 high, `round(size / 11)`, at least 1; at another height that multiple times the pixels per dp,
   rounded down, so the text does not grow more than its boxes) with pixels at integer coordinates, so it looks sharp at any
-  resolution. Each glyph falls on the original's 4-pixel grid from the start of its text (`font.c: drawGlyph`
-  puts the glyph into the 4-bit text area at `x / 4`), rounding down, while the pen advances as much as each
-  glyph says: after a 5-pixel one (`,` `.` `!`) the next one falls up to 3 pixels earlier. That only moves the drawing; the
-  widths the layout measures do not change.
+  resolution. Each glyph is drawn where the pen is. The original snaps it to a 4-pixel grid (`font.c: drawGlyph`
+  puts the glyph into the 4-bit text area at `x / 4`) while the pen moves by each glyph's width, so after a 5-pixel
+  sign (`,` `.` `;`) the next glyph fell up to 3 pixels back and swallowed the space, and the letters after a `j` moved
+  apart; dwe does not snap (an improvement over the original). A glyph also leaves at most 3 blank columns after its ink
+  (`MaxBlankAfterInk`, as the `i` does): the original's table gives the `j`, the `I` and the `+ - =` one more, which
+  read as a space inside a word. Digits keep their width so numbers line up.
 - **Accented letters and the signs the original lacks** are composed when loading the font
   (`src/composed_glyphs.cpp`) with its own glyphs, in new cells below those of the atlas: the base letter with a mark
   (acute, grave, circumflex, diaeresis, tilde, cedilla) one pixel thick centered over its ink with one free row
@@ -984,7 +986,9 @@ edge blends the two texels (`rml.slang: sharpUv`). With plain linear sampling, e
 at a ratio that is not an integer (3dp per original pixel, at 1.5 or 2 pixels per dp, draw a texel of the ×4
 copy at 1.125 or 1.5 pixels) the texels come out one or two pixels wide in turns and the image shakes when moving or when the
 bubble grows. It was checked with captures at 1920 × 1080 (1.5) and 2560 × 1440 (2), kept outside the repository because they carry art
-from the disc; the rest of the UI images are still filtered.
+from the disc; the rest of the UI images are still filtered. The bitmap font's atlas is sampled sharp too
+(`FontEngine::setBeforeBitmapAtlas` asks `RenderBridge::generateNextSharp`): filtered, a glyph at a fractional offset
+picked up a column of its neighbour cell's ink, a faint bar after the last letter of a large title.
 
 | Screen | What it draws | Source |
 |---|---|---|

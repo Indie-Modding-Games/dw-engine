@@ -377,6 +377,15 @@ TEST_CASE(
       bridge.GenerateTexture(atlas, {static_cast<int>(Side), static_cast<int>(Side)});
   REQUIRE(font != 0);
   CHECK_FALSE(bridge.drawsSharp(font));
+  // The bitmap font's atlas asks for sharp edges right before it is generated, and only it gets
+  // them.
+  bridge.generateNextSharp();
+  const Rml::TextureHandle bitmapFont =
+      bridge.GenerateTexture(atlas, {static_cast<int>(Side), static_cast<int>(Side)});
+  CHECK(bridge.drawsSharp(bitmapFont));
+  const Rml::TextureHandle nextAtlas =
+      bridge.GenerateTexture(atlas, {static_cast<int>(Side), static_cast<int>(Side)});
+  CHECK_FALSE(bridge.drawsSharp(nextAtlas));
 
   bridge.ReleaseTexture(sprite);
   CHECK_FALSE(bridge.drawsSharp(sprite));

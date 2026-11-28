@@ -595,7 +595,7 @@ int runGame(const Options& requested) {
                                               .forceVulkan13 = options.forceVulkan13});
   if (!device) {
     core::logError("{}", device.error().message);
-    return EXIT_FAILURE;
+    return GraphicsStartExitCode;
   }
   core::logInfo("game: validation layer {}, vsync {}",
                 validationState((*device)->validationEnabled()), display.vsync ? "on" : "off");
@@ -3180,7 +3180,7 @@ int runGame(const Options& requested) {
             showingMovie ? 1.0F : static_cast<float>(graphics.options().renderScale) / 100.0F,
     });
     phases.mark(FramePhases::Render, platform->nowSeconds());
-    if (softwareNoticeLeft > 0.0) {
+    if (softwareNoticeLeft > 0.0 && !showingMovie) {
       softwareNoticeLeft -= std::clamp(frameSeconds, 0.0, MaxFrameSeconds);
       if (softwareNoticeLeft <= 0.0) {
         (*ui)->hide(SoftwareNoticeDocument);

@@ -21,6 +21,7 @@
 
 #include "renderer_requirements.hpp"
 #include "transition.hpp"
+#include "vulkan_calls.hpp"
 
 namespace dwe::rhi {
 namespace {
@@ -110,7 +111,7 @@ void logVulkanPath(const VulkanChoice& choice, const VulkanSupport& support,
                    const DeviceDesc& desc) {
   std::string why;
   if (desc.compatibleMode) {
-    why = "compatible mode";
+    why = "compatible mode, the extensions of 1.3";
   } else if (desc.forceVulkan13) {
     why = "1.4 turned off by --vulkan13";
   } else if (choice.path == VulkanPath::Core14) {
@@ -163,7 +164,7 @@ void transitionImage(VkCommandBuffer commands, VkImage image, VkImageLayout from
   dependency.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
   dependency.imageMemoryBarrierCount = 1;
   dependency.pImageMemoryBarriers = &barrier;
-  vkCmdPipelineBarrier2(commands, &dependency);
+  sync2().pipelineBarrier2(commands, &dependency);
 }
 
 struct Device::Impl {
@@ -200,6 +201,9 @@ struct Device::Impl {
   std::uint64_t submittedFrames = 0;
   // Ordered by lastFrame, which never decreases.
   std::deque<Retired> retired;
+  // The device uses the extension entry points of synchronization2 and dynamic rendering
+  // (vulkan_calls.hpp), put back to the core ones when it is destroyed.
+  bool extensionCalls = false;
 
   core::Result<void> createSwapchain();
   void destroySwapchainViews();
@@ -345,6 +349,9 @@ Device::Impl::~Impl() {
     vkb::destroy_swapchain(swapchain);
     vkb::destroy_device(device);
   }
+  if (extensionCalls) {
+    useCoreSync2();
+  }
   if (surface != VK_NULL_HANDLE) {
     vkb::destroy_surface(instance, surface);
   }
@@ -355,6 +362,30 @@ Device::Impl::~Impl() {
 
 core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& window,
                                                      const DeviceDesc& desc) {
+  VulkanAttempt attempt{.compatibleMode = desc.compatibleMode, .forceVulkan13 = desc.forceVulkan13};
+  while (true) {
+    DeviceDesc tried = desc;
+    tried.compatibleMode = attempt.compatibleMode;
+    tried.forceVulkan13 = attempt.forceVulkan13;
+    std::optional<VulkanPath> reached;
+    auto created = createOnce(window, tried, reached);
+    if (created) {
+      return created;
+    }
+    const std::optional<VulkanAttempt> next = nextVulkanAttempt(attempt, reached);
+    if (!next) {
+      return created;
+    }
+    core::logWarning("vulkan: {}; trying {}", created.error().message,
+                     next->compatibleMode ? "the Vulkan 1.2 compatible mode"
+                                          : "the Vulkan 1.3 path");
+    attempt = *next;
+  }
+}
+
+core::Result<std::unique_ptr<Device>> Device::createOnce(const platform::Window& window,
+                                                         const DeviceDesc& desc,
+                                                         std::optional<VulkanPath>& reached) {
   auto impl = std::make_unique<Impl>();
   impl->window = &window;
   impl->vsync = desc.vsync;
@@ -370,7 +401,7 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
   const bool instance14 = wantsVulkan14(loaderVersion, desc.compatibleMode, desc.forceVulkan13);
   vkb::InstanceBuilder instanceBuilder{vulkanEntry()};
   instanceBuilder.set_app_name("dwe").set_engine_name("dwe").require_api_version(
-      instance14 ? VK_API_VERSION_1_4 : VK_API_VERSION_1_3);
+      instanceVersionFor(desc.compatibleMode, instance14));
   for (Uint32 i = 0; i < extensionCount; ++i) {
     instanceBuilder.enable_extension(extensions[i]);
   }
@@ -421,6 +452,7 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
 
   const VulkanSupport support = querySupport(impl->physicalDevice, loaderVersion, instance14);
   impl->vulkan = chooseVulkanPath(support, desc.compatibleMode, desc.forceVulkan13);
+  reached = impl->vulkan.path;
   VkPhysicalDeviceVulkan14Features features14{};
   features14.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES;
   features14.hostImageCopy = impl->vulkan.hostImageCopy ? VK_TRUE : VK_FALSE;
@@ -442,6 +474,13 @@ core::Result<std::unique_ptr<Device>> Device::create(const platform::Window& win
   }
   impl->queue = queue.value();
   impl->queueFamily = queueFamily.value();
+  if (impl->vulkan.path == VulkanPath::Compatible12) {
+    impl->extensionCalls = true;
+    if (!useExtensionSync2(impl->device)) {
+      return core::fail("the GPU lists dynamic rendering and synchronization2 but has no entry "
+                        "points for them");
+    }
+  }
   if (impl->vulkan.hostImageCopy) {
     impl->hostCopy = {.transitionLayout = reinterpret_cast<PFN_vkTransitionImageLayout>(
                           vkGetDeviceProcAddr(impl->device, "vkTransitionImageLayout")),
@@ -568,12 +607,12 @@ void Device::beginRendering(const Frame& frame, ClearColor clear) {
   rendering.layerCount = 1;
   rendering.colorAttachmentCount = 1;
   rendering.pColorAttachments = &color;
-  vkCmdBeginRendering(frame.commands, &rendering);
+  sync2().beginRendering(frame.commands, &rendering);
 }
 
 void Device::endRendering(const Frame& frame) {
   DWE_ASSERT(frame.commands == impl_->frames[impl_->frameIndex].commands);
-  vkCmdEndRendering(frame.commands);
+  sync2().endRendering(frame.commands);
 }
 
 void Device::endFrame(const Frame& frame) {
@@ -613,7 +652,7 @@ void Device::endFrame(const Frame& frame) {
   submit.pCommandBufferInfos = &commands;
   submit.signalSemaphoreInfoCount = 1;
   submit.pSignalSemaphoreInfos = &signal;
-  gpuCheck("vkQueueSubmit2 (frame)", vkQueueSubmit2(impl.queue, 1, &submit, slot.finished));
+  gpuCheck("vkQueueSubmit2 (frame)", sync2().queueSubmit2(impl.queue, 1, &submit, slot.finished));
   slot.submittedFrame = ++impl.submittedFrames;
 
   VkSwapchainKHR swapchain = impl.swapchain;

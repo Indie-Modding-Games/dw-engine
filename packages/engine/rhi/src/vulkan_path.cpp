@@ -17,9 +17,7 @@ bool wantsVulkan14(std::uint32_t loaderVersion, bool compatibleMode, bool forceV
 VulkanChoice chooseVulkanPath(const VulkanSupport& support, bool compatibleMode,
                               bool forceVulkan13) {
   if (compatibleMode) {
-    return {.path = versionAtLeast(support.deviceVersion, 1, 3) ? VulkanPath::Core13
-                                                                : VulkanPath::Compatible12,
-            .hostImageCopy = false};
+    return {.path = VulkanPath::Compatible12, .hostImageCopy = false};
   }
   if (!wantsVulkan14(support.instanceVersion, compatibleMode, forceVulkan13) ||
       !versionAtLeast(support.deviceVersion, 1, 4)) {
@@ -29,13 +27,39 @@ VulkanChoice chooseVulkanPath(const VulkanSupport& support, bool compatibleMode,
           .hostImageCopy = support.hostImageCopy && support.hostCopyToShaderRead};
 }
 
+std::optional<VulkanAttempt> nextVulkanAttempt(VulkanAttempt failed,
+                                               std::optional<VulkanPath> reached) {
+  if (failed.compatibleMode) {
+    return std::nullopt;
+  }
+  if (reached == VulkanPath::Core14 && !failed.forceVulkan13) {
+    return VulkanAttempt{.compatibleMode = false, .forceVulkan13 = true};
+  }
+  return VulkanAttempt{.compatibleMode = true, .forceVulkan13 = true};
+}
+
+std::uint32_t instanceVersionFor(bool compatibleMode, bool vulkan14) {
+  if (compatibleMode) {
+    return VK_API_VERSION_1_2;
+  }
+  return vulkan14 ? VK_API_VERSION_1_4 : VK_API_VERSION_1_3;
+}
+
 bool hostCopyFormatUsable(bool hostTransferFeature, bool imageFormatSupported,
                           bool optimalDeviceAccess) {
   return hostTransferFeature && imageFormatSupported && optimalDeviceAccess;
 }
 
 std::uint32_t apiVersionOf(VulkanPath path) {
-  return path == VulkanPath::Core14 ? VK_API_VERSION_1_4 : VK_API_VERSION_1_3;
+  switch (path) {
+  case VulkanPath::Compatible12:
+    return VK_API_VERSION_1_2;
+  case VulkanPath::Core13:
+    return VK_API_VERSION_1_3;
+  case VulkanPath::Core14:
+    return VK_API_VERSION_1_4;
+  }
+  return VK_API_VERSION_1_3;
 }
 
 std::string_view vulkanPathName(VulkanPath path) {

@@ -109,6 +109,16 @@ TEST_CASE("the quality goes down when the frames miss the budget and never back 
   CHECK(decideQuality(fast, Fps, HighestQuality, HighestQuality).level == HighestQuality);
 }
 
+TEST_CASE("frames far over the budget drop two levels at once") {
+  constexpr double Fps = 30.0;
+  const auto crawling = frames(60, 0.070);
+  CHECK(decideQuality(crawling, Fps, 3, HighestQuality) ==
+        QualityDecision{.level = 1, .ceiling = 1});
+  CHECK(decideQuality(crawling, Fps, 1, HighestQuality) ==
+        QualityDecision{.level = LowestQuality, .ceiling = LowestQuality});
+  CHECK(decideQuality(frames(60, 0.050), Fps, 3, HighestQuality).level == 2);
+}
+
 TEST_CASE("between the two thresholds the quality stays") {
   constexpr double Fps = 30.0;
   const double budget = 1.0 / Fps;

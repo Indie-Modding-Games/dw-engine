@@ -163,6 +163,7 @@ function renderNotice() {
 // ---- What this computer needs (check_system) -------------------------------------------------
 
 const MAKERS = { nvidia: "NVIDIA", amd: "AMD", intel: "Intel" };
+const STEP_MODES = { vulkan13: "req.stepVulkan13", compatible: "req.stepCompatible", software: "req.stepSoftware" };
 const LAUNCH_MODES = { auto: "s.launchModeAuto", skip: "s.launchModeSkip", software: "s.launchModeSoftware" };
 
 function switchRow(id, label, hint, checked, onchange, disabled = false) {
@@ -172,8 +173,9 @@ function switchRow(id, label, hint, checked, onchange, disabled = false) {
   return el("div", { class: "row between" }, el("label", { for: id, class: "row-label" }, el("span", { text: label }), el("span", { class: "muted small", text: hint })), input);
 }
 
-// The computer's drivers fail the Vulkan 1.3 check but pass it with --compatible, still off.
-const compatRescues = (graphics, s) => Boolean(graphics?.compat_rescues && !s?.compatibility_mode);
+// The computer's drivers fail the Vulkan 1.3 check but pass it with --compatible, still off, and
+// nothing put the game on the card that way (an older check could leave the software driver on).
+const compatRescues = (graphics, s) => Boolean(graphics?.compat_rescues && !s?.compatibility_mode && graphics?.graphics !== "compatible");
 
 async function setCompatibility(on) {
   await settingCall(() => api.setGraphicsSwitch("compatibility", on));
@@ -255,6 +257,19 @@ function requirementNotice() {
       actions: el("div", { class: "row" }, ...(rescue ? [compatButton(), againButton()] : [againButton(true)]), ...driverButtons(req)),
     };
   }
+  if (graphics?.graphics === "compatible" && !state.compatSeen) {
+    return {
+      title: t("req.compatCardTitle"),
+      body: t("req.compatCardBody", { gpu: gpuName(graphics) }),
+      actions: el(
+        "div",
+        { class: "row" },
+        el("button", { class: "button primary", type: "button", text: t("req.compatOk"), onclick: () => { state.compatSeen = true; renderAll(); } }),
+        ...driverButtons(req),
+        againButton(),
+      ),
+    };
+  }
   if ((graphics?.graphics === "fallback" || graphics?.graphics === "software") && !state.compatSeen) {
     const rescue = compatRescues(graphics, s);
     const body = t(graphics.graphics === "fallback" ? "req.compatBody" : "req.compatSoftwareBody", { gpu: gpuName(graphics) });
@@ -297,12 +312,12 @@ function renderPills() {
   );
   if (s.game_running) pills.push(statusPill("is-running", el("span", { class: "dot is-live" }), el("span", { text: t("pill.running") })));
   const graphics = state.requirements?.graphics?.graphics;
-  if (graphics === "fallback" || graphics === "software") {
+  if (graphics === "fallback" || graphics === "software" || graphics === "compatible") {
     pills.push(
       el("li", { class: "status-pill is-compat" },
         el("button", { type: "button", class: "pill-button", onclick: () => { state.compatSeen = false; renderAll(); } },
           el("span", { class: "dot is-warn" }),
-          el("span", { text: t("pill.compat") }))),
+          el("span", { text: t(graphics === "compatible" ? "pill.compatCard" : "pill.compat") }))),
     );
   }
   const task = state.task;
@@ -572,25 +587,53 @@ function showFailure(failure) {
 
 function exitText(exit) {
   const path = (...keys) => keys.map((key) => t(key)).join(" › ");
+  const where = path("nav.settings", "st.general", "req.title");
+  if (exit.next_step) {
+    const lost = exit.reason === "device-lost" || exit.reason === "windows-hang";
+    const lines = [t(lost ? "gameLostEarlyBody" : "gameStartBody"), t("gameNextStep", { mode: t(STEP_MODES[exit.next_step]), where })];
+    return [t(lost ? "gameLostTitle" : "gameStartTitle"), lines.join(" ")];
+  }
+  if (exit.reason === "graphics-start") {
+    const lines = [t("gameStartBody"), t("gameStartLast")];
+    return [t("gameStartTitle"), lines.join(" ")];
+  }
   if (exit.reason === "device-lost") {
     const lines = [t("gameLostBody")];
     if (exit.offer_compatible) lines.push(t("gameLostCompatible", { mode: t("req.vulkan12Title"), where: path("nav.settings", "st.general", "req.title") }));
     if (exit.offer_software) lines.push(t("gameLostSoftware", { mode: t("s.launchModeSoftware"), where: path("nav.settings", "st.advanced", "s.launchTitle") }));
-    if (exit.log.length > 0) lines.push(t("gameLogLines"));
     return [t("gameLostTitle"), lines.join(" ")];
   }
-  if (exit.reason === "windows-hang") return [t("gameHangTitle"), exit.log.length > 0 ? `${t("gameHangBody")} ${t("gameLogLines")}` : t("gameHangBody")];
+  if (exit.reason === "windows-hang") return [t("gameHangTitle"), t("gameHangBody")];
   return [t("gameFailedTitle"), exit.code == null ? t("gameFailedSignal") : t("gameFailedBody", { code: exit.code })];
+}
+
+// Copies a failure's details for a bug report; the selection fallback covers a webview without
+// the clipboard API.
+async function copyText(text, node) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    $("messageDetails").open = true;
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    document.execCommand("copy");
+  }
+  $("messageCopy").textContent = t("copied");
 }
 
 function showMessage(title, body, log = null) {
   $("messageTitle").textContent = title;
   $("messageBody").textContent = body;
-  $("messageLog").hidden = !log;
+  $("messageDetails").hidden = !log;
+  $("messageDetails").open = false;
   $("messageLog").textContent = log ?? "";
+  $("messageCopy").hidden = !log;
+  $("messageCopy").textContent = t("copyDetails");
   const dialog = $("messageDialog");
   if (!dialog.open) dialog.showModal();
-  $("messageLog").scrollTop = $("messageLog").scrollHeight;
   $("messageDismiss").focus();
 }
 
@@ -868,16 +911,23 @@ function registerBuiltIns() {
       const gpu = graphics?.gpu;
       const text = {
         hardware: t("req.gpuHardware", { name: gpu?.name ?? "", driver: gpu?.api ? `${gpu.driver}, Vulkan ${gpu.api}` : gpu?.driver ?? "" }),
+        compatible: t("req.gpuCompatible", { name: gpu?.name ?? "", driver: gpu?.api ? `${gpu.driver}, Vulkan ${gpu.api}` : gpu?.driver ?? "" }),
         software: t("req.gpuSoftware", { gpu: gpuName(graphics) }),
         fallback: t("req.gpuFallback", { gpu: gpuName(graphics) }),
         blocked: t("req.gpuBlocked", { gpu: gpuName(graphics) }),
         unknown: graphics ? t("req.gpuNoAnswer") : t("req.gpuUnknown"),
       }[kind];
       lines.push(el("p", { class: `status-line ${kind === "hardware" ? "accent" : kind === "unknown" ? "muted" : "warning"}`, role: "status", text }));
-      if (kind === "fallback" || kind === "software" || kind === "blocked") lines.push(el("div", { class: "row" }, ...driverButtons(req)));
+      if (kind === "fallback" || kind === "software" || kind === "blocked" || kind === "compatible") lines.push(el("div", { class: "row" }, ...driverButtons(req)));
       if (compatRescues(graphics, s)) {
         lines.push(el("p", { class: "muted small", text: t("req.vulkan12Rescue") }), el("div", { class: "row" }, compatButton()));
       }
+    }
+    if (s?.graphics_step && s.graphics_step !== "card" && s.launch_mode === "auto") {
+      lines.push(
+        el("p", { class: "status-line warning", role: "status", text: t("req.stepLine", { mode: t(STEP_MODES[s.graphics_step]) }) }),
+        el("div", { class: "row" }, el("button", { class: "button", type: "button", text: t("req.stepReset"), onclick: () => settingCall(() => api.resetGraphicsStep()) })),
+      );
     }
     if (s) {
       const graphicsSwitch = (what) => (on) => settingCall(() => api.setGraphicsSwitch(what, on));
@@ -1144,6 +1194,10 @@ function renderAll() {
 function wireControls() {
   $("aboutButton").addEventListener("click", showAbout);
   $("messageDismiss").addEventListener("click", () => $("messageDialog").close());
+  $("messageDetails").addEventListener("toggle", () => {
+    if ($("messageDetails").open) $("messageLog").scrollTop = $("messageLog").scrollHeight;
+  });
+  $("messageCopy").addEventListener("click", () => copyText(`${$("messageTitle").textContent}\n${$("messageBody").textContent}\n\n${$("messageLog").textContent}`, $("messageLog")));
   $("stopButton").addEventListener("click", () => api.cancel());
   $("configureButton").addEventListener("click", () => togglePopup("configure"));
   $("configureButton").addEventListener("keydown", (e) => {

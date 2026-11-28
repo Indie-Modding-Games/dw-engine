@@ -28,6 +28,8 @@ export const api = {
   setGraphicsSwitch: (what, enabled) => call("set_graphics_switch", { switch: what, enabled }),
   // mode: "auto", "skip" or "software"; args and env as the player typed them.
   setLaunchOptions: (mode, args, env) => call("set_launch_options", { mode, args, env }),
+  // Back to the graphics card after an early failure moved the start down (graphics_step.rs).
+  resetGraphicsStep: () => call("reset_graphics_step"),
   // "stable" or "testing"; the release found by the last check is dropped.
   setUpdateChannel: (channel) => call("set_update_channel", { channel }),
   // Free space and the GPU check (src-tauri/src/system_check.rs); again: check once more.

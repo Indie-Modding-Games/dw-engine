@@ -77,6 +77,8 @@ struct NativeHandles {
 // and the swapchain is rebuilt on its own when the window changes size.
 class Device {
 public:
+  // When a GPU cannot make the device on its path, the next one is tried in the same call: 1.4,
+  // then 1.3, then the 1.2 compatible mode (nextVulkanAttempt).
   static core::Result<std::unique_ptr<Device>> create(const platform::Window& window,
                                                       const DeviceDesc& desc);
 
@@ -145,6 +147,12 @@ public:
 
 private:
   struct Impl;
+
+  // One attempt of create with the floor and path `desc` asks for; `reached` is the path it had
+  // chosen when it failed after selecting a GPU.
+  static core::Result<std::unique_ptr<Device>> createOnce(const platform::Window& window,
+                                                          const DeviceDesc& desc,
+                                                          std::optional<VulkanPath>& reached);
 
   explicit Device(std::unique_ptr<Impl> impl);
 
