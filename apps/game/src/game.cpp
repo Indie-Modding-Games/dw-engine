@@ -2442,10 +2442,14 @@ int runGame(const Options& requested) {
                                       std::string{play->partnerSpecies()});
             outgoing = coopHostWorld->tick(play->scene().field(), play->scene().mapSerial(),
                                            play->scene().mapArrival().exit, coopNow);
+            const auto away = coopHostWorld->away(play->scene().field().mapId());
+            for (const game::field::PlayerId id : play->scene().coopPlayers()) {
+              play->scene().showCoopGuest(id, !std::ranges::contains(away, id));
+            }
           } else if (coopGuestWorld) {
             if (auto state = coopGuestWorld->report(
-                    play->scene().field(),
-                    play->scene().movingCoopSelf() || play->ownDeathHoldsMap(), ticksRun)) {
+                    play->scene().field(), play->scene().movingCoopSelf(), ticksRun,
+                    play->ownDeathHoldsMap() || !play->scene().stage().showsOtherPlayers())) {
               outgoing.push_back({.to = game::coop::HostPlayerId, .message = std::move(*state)});
             }
             if (auto form = coopGuestWorld->partnerForm(play->partnerSpecies(), ticksRun)) {
@@ -2598,8 +2602,10 @@ int runGame(const Options& requested) {
         if (coopLinked && coop.isHost() && ticksRun % 3 == 0) {
           // One capture of the world for every guest, each told the newest of its own commands
           // the host took.
-          auto snapshot = makeCoopSnapshot(play->scene().field(), play->scene().field().mapId(),
-                                           ++coopWorldTick, 0);
+          const std::string& mapId = play->scene().field().mapId();
+          auto snapshot = makeCoopSnapshot(play->scene().field(), mapId, ++coopWorldTick, 0,
+                                           coopHostWorld ? coopHostWorld->away(mapId)
+                                                         : std::vector<game::coop::PlayerId>{});
           if (snapshot) {
             for (CoopPeer& peer : coopPeers) {
               snapshot->acknowledgedCommand = peer.controller->latestSequence().value_or(0);
@@ -3044,12 +3050,13 @@ int runGame(const Options& requested) {
       std::vector<CoopTagView> coopTags;
       for (const auto& [id, label] : coopOthers) {
         const std::optional<glm::vec2> head = play->scene().coopHeadInWindow(id);
-        coopTags.push_back(coopTagViewOf(
-            label,
-            head ? std::optional{screens::WindowFraction{.x = head->x, .y = head->y}}
-                 : std::nullopt,
-            play->fieldRunning(), coopTrades.askNearest(*play, id) && !coopTraining.training(id),
-            coopTraining.training(id)));
+        coopTags.push_back(
+            coopTagViewOf(label,
+                          head ? std::optional{screens::WindowFraction{.x = head->x, .y = head->y}}
+                               : std::nullopt,
+                          play->fieldRunning() && !play->localMenusOpen(),
+                          coopTrades.askNearest(*play, id) && !coopTraining.training(id),
+                          coopTraining.training(id)));
       }
       coopHud.showTags(coopTags);
       screenFade->setDarkness(play->fadeLevel());
@@ -3070,7 +3077,9 @@ int runGame(const Options& requested) {
       sessionCommands.drop(autotest.get());
       coopHud.showTag({});
     }
-    coopHud.advance(frameSeconds);
+    // Its notices last the game's time, the ticks that ran: a stall or the control channel's
+    // pause does not eat them.
+    coopHud.advance(ticks * TickSeconds / ticksPerTick);
     phases.mark(FramePhases::Update, platform->nowSeconds());
     if (consoleUiSkin) {
       uiSkinChanger.change(*std::exchange(consoleUiSkin, std::nullopt));

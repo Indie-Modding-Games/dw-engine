@@ -82,6 +82,9 @@ public:
   // guests' poop piles left and eaten (an eat answered).
   [[nodiscard]] CoopWorldShare share(CoopWorldView& view);
   [[nodiscard]] const game::coop::WorldLedger& ledger() const { return ledger_; }
+  // Guests not to draw on map `mapId`: in a scene of their own (PlayerState::away) or reporting
+  // another map.
+  [[nodiscard]] std::vector<game::coop::PlayerId> away(std::string_view mapId) const;
 
 private:
   struct OwnerHeld;
@@ -126,6 +129,12 @@ private:
   std::optional<std::uint32_t> mapSerial_;
   std::uint32_t rosterSent_ = 0;
   std::map<game::coop::PlayerId, game::coop::StateVerdict> verdicts_;
+  struct Whereabouts {
+    std::uint32_t sequence = 0;
+    std::string mapId;
+    bool away = false;
+  };
+  std::map<game::coop::PlayerId, Whereabouts> whereabouts_;
 };
 
 // A guest's side of the shared world: it follows the host's corrections of its own player, keeps
@@ -162,9 +171,10 @@ public:
   }
   [[nodiscard]] bool leadingToZone() const { return zoneLead_.has_value(); }
   // After the field tick `tick` (it counts the guest's ticks): the state to report, every few
-  // ticks, while the player stands on the map the host put it on.
+  // ticks, while the player stands on the map the host put it on. `away`: the player is in a scene
+  // of its own (PlayerState::away), reported without a pose.
   [[nodiscard]] std::optional<game::coop::PlayerState>
-  report(const game::field::Field& field, bool moving, std::uint64_t tick) const;
+  report(const game::field::Field& field, bool moving, std::uint64_t tick, bool away = false) const;
   // Told at most once a second while the host's roster lists another, so a lost form is retold.
   [[nodiscard]] std::optional<game::coop::PartnerForm> partnerForm(std::string_view species,
                                                                    std::uint64_t tick);

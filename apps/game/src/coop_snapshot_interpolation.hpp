@@ -28,6 +28,8 @@ struct PresentedCoopWorld {
   std::uint32_t worldTick = 0;
   std::uint32_t acknowledgedCommand = 0;
   std::vector<PresentedCoopEntity> entities;
+  // Snapshot::npcsWhole.
+  bool npcsWhole = false;
 };
 
 // The host's snapshots as a guest draws them (#354): every entity on a track of its own

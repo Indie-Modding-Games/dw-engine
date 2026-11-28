@@ -359,6 +359,14 @@ void CoopBattles::hostTick(PlaySession& play) {
     sendAll(beginOf(play, coop::HostPlayerId, 0));
   }
   // Each guest's frame shows its own partner's strip, bag and finisher.
+  if (referee_.running() && screen.active()) {
+    for (const coop::PlayerId guest : referee_.guests()) {
+      if (referee_.roleOf(guest) == coop::BattleRole::Ally &&
+          !std::ranges::contains(here_, guest)) {
+        screen.withdrawAlly(guest);
+      }
+    }
+  }
   if (referee_.running() && screen.active() && ticks_ % FrameTicks == 0) {
     ++frames_;
     for (const Peer& peer : peers_) {
@@ -461,7 +469,7 @@ void CoopBattles::offerAllies(PlaySession& play) {
 void CoopBattles::guestLeft(coop::PlayerId guest) {
   referee_.guestLeft(guest);
   if (play_ != nullptr) {
-    play_->battleScreen().releaseAlly(guest);
+    play_->battleScreen().withdrawAlly(guest);
   }
 }
 
@@ -664,6 +672,9 @@ void CoopBattles::guestTick(PlaySession& play, CoopGameplayBridge& bridge) {
   for (coop::BattleAction& action : std::exchange(actions_, {})) {
     send(&bridge, std::move(action));
   }
+  if (mirror_.running() && watching_ && !ownBattle_ && play.scene().field().mapChangePending()) {
+    walkAway(play);
+  }
   if (mirror_.running() && watching_) {
     showFrame(play);
     stepHud();
@@ -700,7 +711,7 @@ void CoopBattles::sendOffer(PlaySession& play, CoopGameplayBridge& bridge) {
     return;
   }
   const bool available = mirror_.partnerFree(!play.coopBattleBlocked()) &&
-                         !play.heldForCoopBattle() &&
+                         !play.heldForCoopBattle() && !play.localScreensBusy() &&
                          coopPlayerHere(play.scene().field(), here_, coop::HostPlayerId);
   if (auto offer = mirror_.offer(available, profileOf(play.coopFighter()), play.partnerDying())) {
     send(&bridge, std::move(*offer));
@@ -935,6 +946,23 @@ void CoopBattles::stopShowing(PlaySession& play, const coop::BattleEnd& end) {
   hideDocument();
 }
 
+// This player's map changes under the host's battle (a warp, a script): it stops watching and goes;
+// the host's battle makes its partner run off (withdrawAlly) and its end still brings the result.
+void CoopBattles::walkAway(PlaySession& play) {
+  core::logInfo("coop: this player left the host's battle for another map");
+  stopThrows(play);
+  play.scene().releaseFighters(shownFixedFight_);
+  lookBack(play);
+  play.holdForCoopBattle(false);
+  play.scene().setBattlePartner(std::nullopt);
+  watching_ = false;
+  shownFrame_.reset();
+  fighters_.clear();
+  target_.reset();
+  actions_.clear();
+  hideDocument();
+}
+
 // What the battle left this player's partner, when it fought (its own battle, or beside the host's
 // partner): the host's world kept the bits and the drops.
 void CoopBattles::applySpoils(PlaySession& play, const coop::BattleEnd& end) {
@@ -1153,11 +1181,7 @@ void CoopBattles::publish(const PlaySession& play) {
   }
   std::size_t orders = 0;
   if (commands && frame) {
-    for (unsigned number = 1; number <= static_cast<unsigned>(game::battle::Command::Finisher);
-         ++number) {
-      if ((frame->menu & (1U << number)) == 0) {
-        continue;
-      }
+    for (const std::uint8_t number : frame->menu) {
       const auto command = static_cast<game::battle::Command>(number);
       settings.push_back({.name = screens::listEntryName("coop_battle.order", orders, "command"),
                           .value = static_cast<double>(number)});

@@ -271,3 +271,27 @@ TEST_CASE("coop clock: a guest asleep ahead of the world knows how long it still
   follower.hear({.elapsedFrames = Start, .running = false, .speed = 1.0});
   CHECK_FALSE(follower.waitSeconds(Start + waits + 200, FramesPerSecond, FramesPerMinute));
 }
+
+TEST_CASE("coop clock: a guest's clock taking the world's time in one step is told once") {
+  TestPacks packs;
+  MemorySaveStorage storage;
+  const auto guest = newGame(packs, &storage);
+  guest->shareClock(ClockShare::Guest);
+  const std::int64_t world = guest->clock().elapsedFrames();
+  guest->tick(Tick);
+  CHECK_FALSE(guest->takeWorldJump());
+  guest->hearWorldClock(
+      {.elapsedFrames = world + (11 * FramesPerHour), .running = true, .speed = 1.0});
+  guest->tick(Tick);
+  CHECK(guest->clock().time().hour == 19);
+  CHECK(guest->takeWorldJump());
+  CHECK_FALSE(guest->takeWorldJump());
+  guest->hearWorldClock(
+      {.elapsedFrames = world + (11 * FramesPerHour) + 10, .running = true, .speed = 1.0});
+  guest->tick(Tick);
+  CHECK_FALSE(guest->takeWorldJump());
+  guest->hearWorldClock(
+      {.elapsedFrames = world + (14 * FramesPerHour), .running = true, .speed = 1.0});
+  guest->tick(Tick);
+  CHECK(guest->takeWorldJump());
+}

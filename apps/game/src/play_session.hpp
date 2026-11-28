@@ -522,6 +522,10 @@ public:
   void shareWorld(bool shared) { worldShared_ = shared; }
   [[nodiscard]] bool worldShared() const { return worldShared_; }
   [[nodiscard]] bool heldForCoopBattle() const { return coopBattleHold_; }
+  // A menu, partner page or dialog of this player's is open (localScreensBusy).
+  [[nodiscard]] bool localScreensBusy() const;
+  // A menu or partner page of this player's covers the field (localMenusOpen).
+  [[nodiscard]] bool localMenusOpen() const;
   // The guest: what the host's battle left its partner, given as its own battle's result.
   core::Result<void> applyCoopSpoils(const game::battle::BattleResult& result);
   void useCoopBattleSounds(std::span<const std::string> enemies,
@@ -548,6 +552,7 @@ private:
   void tickWater();
   [[nodiscard]] bool paused() const;
   [[nodiscard]] LocalScreens localScreens() const;
+  void putAwayFieldMenus();
   // How the field animates: running, resting behind the game menu, in a battle or frozen
   // (field_clock.hpp).
   [[nodiscard]] FieldClock fieldClock() const;

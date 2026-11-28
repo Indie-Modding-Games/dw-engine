@@ -652,7 +652,8 @@ link is still connecting (`online.member.<n>.arriving`).
 **Play.** On the host every guest has its own gameplay bridge, controller and body: its commands move its own player
 (`GuestFieldIntent`), its states reach the authority under its id, corrections and rosters go only to it, and each
 gets the snapshots with its own command acknowledgement. A guest draws everyone from the snapshots and tags each other
-player (`coop_hud.tag.<n>.*`). Every guest's link carries its own battle messages: any guest can start a battle, and
+player (`coop_hud.tag.<n>.*`); the tags hide while this player's game menu or partner pages are open, and the HUD's
+notices last their seconds of the game's ticks, not of the window's frames. Every guest's link carries its own battle messages: any guest can start a battle, and
 every free player on that map fights in it ([co-op combat](coop-combat.md) §12). A bridge drops the messages no part of
 the play reads (a lobby's ready, a save's chunks) instead of queueing them, so a peer that keeps sending them grows
 nothing on the other side.

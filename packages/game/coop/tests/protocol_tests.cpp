@@ -78,6 +78,7 @@ TEST_CASE("cooperative control and state messages round trip") {
                                .confirm = true,
                                .moveTarget = std::pair{-123456, 789012}}});
   roundTrip(Commands{.sequence = 12, .field = {}});
+  roundTrip(Snapshot{.mapId = "m", .worldTick = 1, .entities = {}, .npcsWhole = true});
   roundTrip(Snapshot{.mapId = "city/field",
                      .worldTick = 456,
                      .acknowledgedCommand = 78,
@@ -120,6 +121,7 @@ TEST_CASE("cooperative control and state messages round trip") {
                         .z = MaxWorldCoordinate,
                         .yaw = 65535,
                         .motion = Motion::Walk});
+  roundTrip(PlayerState{.player = 2, .sequence = 7, .epoch = 1, .mapId = "start", .away = true});
   roundTrip(PlayerCorrection{.player = 2,
                              .epoch = 4,
                              .mapId = "mayo02",

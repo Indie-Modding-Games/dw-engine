@@ -138,6 +138,52 @@ TEST_CASE("the host drives the guest's body from its valid states, smoothed and 
   CHECK(session.field.player(coop::GuestPlayerId)->position.x >= 1050.0F);
 }
 
+TEST_CASE("a guest in a scene of its own or on another map is not drawn by the others") {
+  HostSession session;
+  session.host.receive(coop::GuestPlayerId, stateOf(coop::GuestPlayerId, 3, 1, 500, 0), Millis{50});
+  CHECK(session.host.away("room").empty());
+  coop::PlayerState away = stateOf(coop::GuestPlayerId, 6, 1, 0, 0);
+  away.away = true;
+  session.host.receive(coop::GuestPlayerId, away, Millis{100});
+  CHECK(session.host.away("room") == std::vector<coop::PlayerId>{coop::GuestPlayerId});
+  // Its pose is not taken while it is away.
+  CHECK(session.host.authority().find(coop::GuestPlayerId)->pose->x == 500);
+  // A late state does not bring it back.
+  session.host.receive(coop::GuestPlayerId, stateOf(coop::GuestPlayerId, 5, 1, 500, 0),
+                       Millis{110});
+  CHECK_FALSE(session.host.away("room").empty());
+  session.host.receive(coop::GuestPlayerId, stateOf(coop::GuestPlayerId, 9, 1, 520, 0),
+                       Millis{150});
+  CHECK(session.host.away("room").empty());
+  session.host.receive(coop::GuestPlayerId, stateOf(coop::GuestPlayerId, 12, 1, 0, 0, "wake"),
+                       Millis{200});
+  CHECK(session.host.away("room") == std::vector<coop::PlayerId>{coop::GuestPlayerId});
+  session.host.leave(coop::GuestPlayerId);
+  CHECK(session.host.away("room").empty());
+}
+
+TEST_CASE("a guest in a scene of its own reports only that, without a pose") {
+  dwe::scene::World world;
+  Field field{world, originalRules()};
+  field.enterMapAt(roomMap("room"), at(0.0F, 0.0F));
+  CoopGuestWorld guest{coop::GuestPlayerId};
+  guest.receive(coop::PlayerCorrection{.player = coop::GuestPlayerId,
+                                       .epoch = 1,
+                                       .mapId = "room",
+                                       .exit = std::nullopt,
+                                       .x = 0,
+                                       .y = 0,
+                                       .z = 0,
+                                       .yaw = 0});
+  CHECK_FALSE(guest.apply(field, false));
+  const auto state = guest.report(field, true, 6, true);
+  REQUIRE(state);
+  CHECK(state->away);
+  CHECK(state->mapId == "room");
+  CHECK_FALSE(state->partner);
+  CHECK_FALSE(guest.report(field, true, 6, false));
+}
+
 TEST_CASE("a guest that keeps sending impossible states is put back on both sides") {
   HostSession session;
   session.host.receive(coop::GuestPlayerId, stateOf(coop::GuestPlayerId, 3, 1, 550, 0), Millis{50});

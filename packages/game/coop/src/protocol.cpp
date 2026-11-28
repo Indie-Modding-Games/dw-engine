@@ -568,6 +568,7 @@ net::Bytes encode(const Message& message) {
           for (const EntityState& entity : body.entities) {
             put(out, entity);
           }
+          out.put(body.npcsWhole);
         } else if constexpr (std::is_same_v<T, ViewState>) {
           out.put(ViewStateKind).put(body.player).put(body.sequence);
           out.put(std::string_view{body.mapId});
@@ -583,6 +584,7 @@ net::Bytes encode(const Message& message) {
             out.put(body.partner->yaw);
             putMotion(out, body.partner->motion, body.partner->action);
           }
+          out.put(body.away);
         } else if constexpr (std::is_same_v<T, PlayerCorrection>) {
           out.put(PlayerCorrectionKind).put(body.player).put(body.epoch);
           out.put(std::string_view{body.mapId}).put(body.exit.has_value());
@@ -678,7 +680,11 @@ net::Bytes encode(const Message& message) {
           out.put(BattleRefusedKind).put(body.ask).put(body.reason);
         } else if constexpr (std::is_same_v<T, BattleFrame>) {
           out.put(BattleFrameKind).put(body.battle).put(body.frame).put(body.phase);
-          out.put(body.command).put(body.menu).put(body.bagAvailable).put(body.finisherCharging);
+          out.put(body.command).put(static_cast<std::uint8_t>(body.menu.size()));
+          for (const std::uint8_t command : body.menu) {
+            out.put(command);
+          }
+          out.put(body.bagAvailable).put(body.finisherCharging);
           out.put(static_cast<std::uint8_t>(body.fighters.size()));
           for (const BattleFighterState& fighter : body.fighters) {
             out.put(fighter.hp).put(fighter.mp).put(fighter.maxHp).put(fighter.maxMp);
@@ -870,7 +876,7 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
       }
       snapshot.entities.push_back(*entity);
     }
-    if (snapshot.mapId.empty()) {
+    if (!getFlag(in, snapshot.npcsWhole) || snapshot.mapId.empty()) {
       return core::fail("cooperative snapshot has no map id");
     }
     if (bytes.size() + 1 > net::MaxDatagram) {
@@ -984,7 +990,17 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
     frame.frame = in.get<std::uint32_t>();
     const auto phase = in.get<std::uint8_t>();
     frame.command = in.get<std::uint8_t>();
-    frame.menu = in.get<std::uint16_t>();
+    const std::uint8_t menu = in.get<std::uint8_t>();
+    if (!in.ok() || menu > LastBattleCommand) {
+      return core::fail("invalid cooperative battle frame menu");
+    }
+    for (std::uint8_t i = 0; i < menu; ++i) {
+      const auto command = in.get<std::uint8_t>();
+      if (!in.ok() || command == 0 || command > LastBattleCommand) {
+        return core::fail("invalid cooperative battle frame menu");
+      }
+      frame.menu.push_back(command);
+    }
     if (!getFlag(in, frame.bagAvailable) || !getFlag(in, frame.finisherCharging) ||
         frame.battle == 0 || phase > static_cast<std::uint8_t>(BattlePhase::Closing) ||
         frame.command > LastBattleCommand) {
@@ -1133,8 +1149,8 @@ core::Result<std::optional<Message>> decode(std::span<const std::uint8_t> bytes)
                     validCoordinate(partner.z, MaxWorldCoordinate);
       state.partner = partner;
     }
-    if (!in.ok() || !validGuest(state.player) || state.mapId.empty() || !motionKnown ||
-        !validCoordinate(state.x, MaxWorldCoordinate) ||
+    if (!getFlag(in, state.away) || !in.ok() || !validGuest(state.player) || state.mapId.empty() ||
+        !motionKnown || !validCoordinate(state.x, MaxWorldCoordinate) ||
         !validCoordinate(state.y, MaxWorldCoordinate) ||
         !validCoordinate(state.z, MaxWorldCoordinate)) {
       return core::fail("invalid cooperative player state");

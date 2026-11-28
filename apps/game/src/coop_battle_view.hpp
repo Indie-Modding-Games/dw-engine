@@ -85,6 +85,10 @@ void closeCoopHudBag(ui::Ui& ui, CoopThrowPick& throwTarget);
 // The host's battle takes this screen: the field bag's Use would feed the field partner.
 void closeFieldBag(ui::Ui& ui);
 
+// An ally whose player left its battle (its link went, or it changed maps) runs off: the battle
+// counts it as fled. In a battle with no fleeing it fights on its own call.
+void withdrawCoopAlly(game::battle::Battle& battle, game::battle::FighterId ally);
+
 // The partner the guest's items fly to (a fighter's number; nullopt: its own, or the fighting
 // one). The bag's Use comes once the bag closed (partner_menu/logic.lua): closing darkens the card
 // and keeps the pick for that Use.

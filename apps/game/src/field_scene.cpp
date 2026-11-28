@@ -233,6 +233,18 @@ void FieldScene::removeCoopPlayer(game::field::PlayerId id) {
   coopBodies_.erase(found);
 }
 
+void FieldScene::showCoopGuest(game::field::PlayerId id, bool shown) {
+  const auto found = coopBodies_.find(id);
+  if (found == coopBodies_.end() || !found->second.fieldBody || !found->second.player) {
+    return;
+  }
+  CoopBody& body = found->second;
+  body.shown = shown;
+  if (body.partner.actor && !body.partner.actor->fighter) {
+    body.partner.shown = shown;
+  }
+}
+
 core::Result<void> FieldScene::loadCoopPartner(CoopPartner& partner, scene::Entity entity,
                                                std::string_view species) {
   const std::string drawn = drawnSpeciesOf(species);
@@ -1086,6 +1098,16 @@ void FieldScene::followClock() {
     mapRenderer_->setVariant(map_.backgroundVariant(time_, false));
     lightingDelay_ = render::TimeOfDayFadeSeconds;
   }
+}
+
+void FieldScene::matchClock() {
+  clockHour_ = clock_->time().hour;
+  time_ = render::timeOfDayAt(clockHour_, schedule_);
+  if (!fixedTime_) {
+    mapRenderer_->setVariant(map_.backgroundVariant(time_, false), 0.0);
+  }
+  lightingDelay_ = 0.0;
+  applyLighting();
 }
 
 bool FieldScene::daytimeFadeRunning() const {

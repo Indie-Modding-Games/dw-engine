@@ -305,6 +305,9 @@ public:
   [[nodiscard]] bool daytimeFadeRunning() const;
   // A co-op game's clock is the world's (timeOfDayTurn).
   void shareClock(bool on) { sharedClock_ = on; }
+  // The clock's time of day at once, its fade and lights done: a co-op guest's clock that took the
+  // world's time, or a battle beginning while the field still fades.
+  void matchClock();
   // The player turns to the partner (Field::playerFacePartner).
   void playerFacePartner();
   // Starts a logic tick of every character on the field without moving it (Field::settle): each
@@ -780,6 +783,9 @@ public:
   // Takes another player of a co-op game and its partner out of this scene, its field body too
   // (the player left the session): nothing of it stays drawn.
   void removeCoopPlayer(game::field::PlayerId id);
+  // Hides or shows guest `id`'s field body and its partner (CoopHostWorld::away); a partner the
+  // battle holds stays the battle's.
+  void showCoopGuest(game::field::PlayerId id, bool shown);
   // Presents another player `id` of a co-op game and its partner (of `partnerSpecies`) as the host
   // reported them, already smoothed for this frame. Render-only: no collision, triggers or world
   // simulation of this instance takes them in; a missing state hides that body.

@@ -75,7 +75,7 @@ BattleFrame frame(std::uint32_t battle, std::uint32_t number) {
           .frame = number,
           .phase = BattlePhase::Fight,
           .command = 3,
-          .menu = 0x0FFE,
+          .menu = {11, 1, 7, 6, 5, 4, 2, 10, 9, 8, 3},
           .bagAvailable = true,
           .finisherCharging = false,
           .fighters = {{.hp = 1000, .mp = 500, .maxHp = 1200, .maxMp = 800},
