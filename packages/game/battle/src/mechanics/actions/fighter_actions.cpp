@@ -5,11 +5,11 @@
 #include <utility>
 #include <vector>
 
+#include "core/battle_system.hpp"
 #include "mechanics/actions/actions.hpp"
 #include "mechanics/animation/animation.hpp"
 #include "mechanics/attacks/attacks.hpp"
 #include "mechanics/decisions/decisions.hpp"
-#include "mechanics/decisions/usability.hpp"
 #include "mechanics/movement/movement.hpp"
 #include "mechanics/status/status.hpp"
 
@@ -600,11 +600,8 @@ void beginAttack(BattleContext& context, FighterId id) {
     }
   }
   if (context.state->commanded(id)) {
-    const bool unwell = context.state->isPlayerSide(id) &&
-                        (context.conditionOf(id).sick || context.conditionOf(id).injured);
     if (!move.finisher) {
-      fighter.pendingMp += partnerMpCost(*context.rules, move.mpCost, fighter.stats.brain, unwell,
-                                         MpCostUse::Payment);
+      fighter.pendingMp += context.system->commandedMpCost(context, id, ref);
     }
   } else {
     const bool free =

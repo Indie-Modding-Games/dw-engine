@@ -7,6 +7,7 @@
 #include <dwe/game/battle/coop_scaling.hpp>
 #include <dwe/game/battle/events.hpp>
 #include <dwe/game/battle/flights.hpp>
+#include <dwe/game/battle/folder/formulas.hpp>
 #include <dwe/game/battle/folder/state.hpp>
 #include <dwe/game/battle/ground.hpp>
 #include <dwe/game/battle/hit_particles.hpp>
@@ -224,6 +225,10 @@ public:
   [[nodiscard]] const FolderFighter* folderOf(FighterId fighter) const;
   // The defense bar's capacity of a fighter now (6 x its current DEF); 0 in the Classic battle.
   [[nodiscard]] std::int32_t defenseBarCapacity(FighterId fighter) const;
+  // The technique in `slot` of `side` as the Folder battle plays it: its functions, area, friendly
+  // fire, reach and MP cost (§3.10, costo-mp.md); none in the Classic battle or for an empty slot.
+  [[nodiscard]] std::optional<folder::Technique> folderTechnique(std::size_t slot,
+                                                                 FighterId side = PartnerId) const;
 
   // A press of the finisher charge buttons during the partner's finisher aura (command_menu.c:
   // BTL_tickFinisherChargeup); at most one counts per frame. In a co-op battle it charges any
@@ -287,8 +292,8 @@ public:
   // damage (battle_main.c: BTL_renderEnemyHPBars).
   [[nodiscard]] bool hpBarShown(FighterId fighter) const;
   // The MP the partner pays now for the move in its technique `slot` (battle_main.c:
-  // BTL_setupMoveExecution: the brain's discount and the sick or injured surcharge), or none for an
-  // empty slot.
+  // BTL_setupMoveExecution: the brain's discount and the sick or injured surcharge; in the Folder
+  // battle costo-mp.md's cost with the surcharge), or none for an empty slot.
   [[nodiscard]] std::optional<std::int32_t> partnerMoveCost(std::size_t slot) const;
   // The same for a co-op ally (or the partner).
   [[nodiscard]] std::optional<std::int32_t> partnerMoveCost(std::size_t slot, FighterId id) const;

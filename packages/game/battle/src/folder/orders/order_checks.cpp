@@ -7,7 +7,6 @@
 #include "folder/folder.hpp"
 #include "folder/orders/orders.hpp"
 #include "mechanics/decisions/decisions.hpp"
-#include "mechanics/decisions/usability.hpp"
 
 namespace dwe::game::battle {
 
@@ -95,8 +94,7 @@ OrderProblem folderSlotProblem(const BattleState& state, const MoveCatalog& move
     return fighter.finisherProgress < fighter.finisherGoal ? OrderProblem::FinisherNotReady
                                                            : OrderProblem::None;
   }
-  const std::int32_t cost = partnerMpCost(rules, move.mpCost, fighter.stats.brain,
-                                          condition.sick || condition.injured, MpCostUse::Check);
+  const std::int32_t cost = folderMpCost(rules, moves, *ref, condition);
   return fighter.mp - fighter.pendingMp < cost ? OrderProblem::NotEnoughMp : OrderProblem::None;
 }
 

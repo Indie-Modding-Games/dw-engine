@@ -1512,6 +1512,9 @@
         "beats",
         "cover_max_percent",
         "cover_defense_times",
+        "cover_near_bonus_percent",
+        "cover_far_bonus_percent",
+        "cover_far_pixels",
         "bar_defense_times",
         "bar_drain_frames",
         "bar_rest_frames",
@@ -1521,7 +1524,9 @@
         "stat_cut_cap_percent",
         "timings",
         "finisher_timing",
-        "techniques"
+        "techniques",
+        "mp_costs",
+        "catalog"
       ],
       "additionalProperties": false,
       "properties": {
@@ -1602,6 +1607,23 @@
         "cover_defense_times": {
           "type": "integer",
           "minimum": 0
+        },
+        "cover_near_bonus_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Cover chance points added when the attack comes from point-blank (combat-design.md §7.4)."
+        },
+        "cover_far_bonus_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Cover chance points added from cover_far_pixels on."
+        },
+        "cover_far_pixels": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The distance in pixels where the cover bonus reaches cover_far_bonus_percent."
         },
         "bar_defense_times": {
           "type": "integer",
@@ -1696,6 +1718,184 @@
                 "minimum": 0
               },
               "recovery_frames": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "mp_costs": {
+          "type": "object",
+          "description": "The MP cost formula of the trainer's techniques (costo-mp.md v0.2).",
+          "required": [
+            "power_percent",
+            "short_reach_up_to",
+            "medium_reach_up_to",
+            "small_area_up_to",
+            "medium_area_up_to",
+            "reach_costs",
+            "area_costs",
+            "status_costs",
+            "duration_percents",
+            "status_duration",
+            "light_buff_up_to",
+            "moderate_buff_up_to",
+            "single_buff_costs",
+            "several_buff_costs",
+            "buff_duration"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "power_percent": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "MP per 100 power."
+            },
+            "short_reach_up_to": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Pixels: a ranged technique up to this far is short."
+            },
+            "medium_reach_up_to": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Pixels: up to this far is medium, farther long."
+            },
+            "small_area_up_to": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Pixels: an area up to this radius is small."
+            },
+            "medium_area_up_to": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Pixels: up to this radius medium, wider large."
+            },
+            "reach_costs": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Personal, short, medium and long reach."
+            },
+            "area_costs": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Single target, small, medium and large area."
+            },
+            "status_costs": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Poison, confusion, stun and flattening, before chance and duration."
+            },
+            "duration_percents": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Short, medium and long effects."
+            },
+            "status_duration": {
+              "enum": [
+                "short",
+                "medium",
+                "long"
+              ]
+            },
+            "light_buff_up_to": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "moderate_buff_up_to": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "single_buff_costs": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Light, moderate and strong boost of one stat."
+            },
+            "several_buff_costs": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Light, moderate and strong boost of several stats."
+            },
+            "buff_duration": {
+              "enum": [
+                "short",
+                "medium",
+                "long"
+              ]
+            }
+          }
+        },
+        "catalog": {
+          "type": "object",
+          "description": "Per technique, by move id, what differs from the move table's reading (combat-design.md §3.10).",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "functions": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "offensive",
+                    "defensive",
+                    "support",
+                    "control"
+                  ]
+                }
+              },
+              "area": {
+                "enum": [
+                  "single",
+                  "around_self",
+                  "around_target",
+                  "global"
+                ]
+              },
+              "area_pixels": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "friendly_fire": {
+                "type": "boolean"
+              },
+              "effect_duration": {
+                "enum": [
+                  "short",
+                  "medium",
+                  "long"
+                ]
+              },
+              "mp_cost": {
                 "type": "integer",
                 "minimum": 0
               }

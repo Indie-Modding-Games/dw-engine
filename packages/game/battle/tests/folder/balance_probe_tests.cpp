@@ -37,7 +37,7 @@ TEST_CASE("folder balance probe" * doctest::skip()) {
   std::vector<Variant> variants{{"classic", BattleSystemId::Classic, originalRules()}};
   for (const int percent : {100, 150, 200, 300}) {
     variants.push_back({"folder atk " + std::to_string(percent), BattleSystemId::Folder,
-                        rulesOf(originalWith("attack_percent: 100",
+                        rulesOf(originalWith("attack_percent: 200",
                                              "attack_percent: " + std::to_string(percent)))});
   }
   for (const Matchup& matchup : matchups) {

@@ -1,5 +1,6 @@
 #include <dwe/game/battle/battle.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <type_traits>
@@ -105,17 +106,40 @@ void addFighter(Hasher& hash, const Fighter& fighter) {
   hash.add(fighter.shown.frame);
 }
 
-void addFolder(Hasher& hash, const FolderState& folder) {
+void addOrder(Hasher& hash, const Order& order) {
+  hash.add(order.slot);
+  hash.add(order.target);
+  hash.add(order.id);
+}
+
+void addFolder(Hasher& hash, const BattleState& state) {
+  const FolderState& folder = *state.folder;
   hash.add(folder.nextOrder);
-  for (const FolderFighter& own : folder.fighters) {
+  for (std::size_t id = 0; id < folder.fighters.size(); ++id) {
+    const FolderFighter& own = folder.fighters[id];
     hash.add(own.stance);
     hash.add(own.queue.size());
-    hash.add(own.active.has_value() ? own.active->id : 0U);
+    for (const Order& order : own.queue) {
+      addOrder(hash, order);
+    }
+    hash.add(own.active.has_value());
+    if (own.active) {
+      addOrder(hash, *own.active);
+    }
     hash.add(own.phase);
     hash.add(own.phaseFrames);
+    hash.add(own.phaseLength);
     hash.add(own.defenseBar);
+    hash.add(own.restFrames);
     hash.add(own.brokenFrames);
+    hash.add(own.brokenLength);
+    hash.add(own.held);
     hash.add(own.committed);
+    hash.add(own.lastEnd);
+    hash.add(own.lastProblem);
+    if (id < state.fighters.size()) {
+      hash.add(state.fighters[id].moveScalePercent);
+    }
   }
 }
 
@@ -153,7 +177,7 @@ std::uint64_t Battle::checksum() const {
     hash.add(state_.matchClock->frames);
   }
   if (state_.folder) {
-    addFolder(hash, *state_.folder);
+    addFolder(hash, state_);
   }
   return hash.value();
 }

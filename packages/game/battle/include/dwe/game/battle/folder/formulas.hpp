@@ -59,5 +59,36 @@ struct DamageInputs {
 [[nodiscard]] TechniqueTiming timingOf(const FolderRules& rules, const BattleMove& move);
 // §2.9: a stat during the break.
 [[nodiscard]] std::int32_t brokenStat(const FolderRules& rules, std::int32_t stat);
+// §7.4: the points the cover chance gains when the attack comes from `distance` pixels away.
+[[nodiscard]] std::int32_t coverDistanceBonus(const FolderRules& rules, std::int64_t distance);
+
+// §3.2, §3.10, §7.5 and costo-mp.md: a technique as Folder plays it.
+struct Technique {
+  TechniqueFunctions functions = 0;
+  AreaShape area = AreaShape::Single;
+  // The area's radius in pixels (none for Single or Global).
+  std::int32_t areaPixels = 0;
+  // §2.8: whether it also hits the user's own side.
+  bool friendlyFire = false;
+  ReachClass reach = ReachClass::Short;
+  AreaClass areaClass = AreaClass::Single;
+  // The trainer's cost, before a sick or injured partner's surcharge; 0 for a finisher.
+  std::int32_t mpCost = 0;
+
+  [[nodiscard]] bool serves(TechniqueFunction function) const {
+    return (functions & static_cast<TechniqueFunctions>(function)) != 0;
+  }
+  friend bool operator==(const Technique&, const Technique&) = default;
+};
+
+// The move `ref` as Folder plays it: the move table read by the design's rules (an area move is an
+// area around its user as wide as its distance, an offensive area hits allies too), then the
+// technique's `catalog` entry. A move's cost comes from its table entry, so a species variant
+// costs the same; a boosted move keeps the boost's discount.
+[[nodiscard]] Technique techniqueOf(const FolderRules& rules, const MoveCatalog& moves,
+                                    MoveRef ref);
+// costo-mp.md §2: the cost of a technique with these parts.
+[[nodiscard]] std::int32_t mpCostOf(const FolderRules& rules, const BattleMove& move,
+                                    const Technique& technique, EffectDuration effectDuration);
 
 } // namespace dwe::game::battle::folder
