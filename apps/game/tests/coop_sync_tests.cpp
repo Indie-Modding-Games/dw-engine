@@ -273,7 +273,6 @@ void runStarved(std::size_t players) {
   CHECK(divergences.front().persistent);
   CHECK(divergences.front().distance == doctest::Approx(1000.0F).epsilon(0.05));
   CHECK(logged(session, std::format("diverged: player {} holds player 0", cutOff)));
-  // Every line says when, on the host's clock and world tick.
   CHECK(logged(session, " ms, tick "));
   session.starved.clear();
   for (int step = 0; step < 120; ++step) {

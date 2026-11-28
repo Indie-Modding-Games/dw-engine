@@ -17,9 +17,8 @@ struct CoopRoomDesc {
   std::uint32_t seed = 1;
 };
 
-// A host and up to three guests in one process, as a room of four seats them: one simulated
-// network and one host CoopLink per guest, each host link giving its guest the id of its seat
-// (1 to 3). Nothing is sent before connect(); pump() moves every clock and polls every link.
+// A host and up to three guests in one process: one simulated network and one host CoopLink per
+// guest (seat ids 1 to 3). Nothing is sent before connect(); pump() moves clocks and polls links.
 class CoopRoom {
 public:
   struct Seat {
@@ -81,7 +80,6 @@ public:
     return sent;
   }
 
-  // Nothing travels to or from this guest from now on.
   void cut(PlayerId id) { seat(id).network->cut(); }
 
 private:

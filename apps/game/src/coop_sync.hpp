@@ -16,10 +16,8 @@
 
 namespace dwe::app {
 
-// The console command of the shared world's sync diagnostics (#359): coop_sync("on"), ("trace"),
-// ("off") or ("report"). The console is a developer tool (F1, behind userSettings.devTools as F2's
-// menu), and a build configured with DWE_COOP_SYNC off (a package's default) leaves the
-// diagnostics out: its host never watches and its guests never report.
+// coop_sync("on"), ("trace"), ("off") or ("report"); a build with DWE_COOP_SYNC off (a package's
+// default) leaves the diagnostics out.
 inline constexpr std::string_view CoopSyncCommand = "coop_sync";
 #ifdef DWE_NO_COOP_SYNC
 inline constexpr bool CoopSyncBuilt = false;
@@ -27,8 +25,7 @@ inline constexpr bool CoopSyncBuilt = false;
 inline constexpr bool CoopSyncBuilt = true;
 #endif
 
-// Every player's authoritative place: the host's own in its field, and each guest's newest valid
-// state as `authority` took it (where the host's field draws it, a little behind, without one).
+// The host's own place from its field; each guest's newest valid state as `authority` took it.
 [[nodiscard]] std::vector<game::coop::SyncHeld>
 coopSyncAuthority(const game::field::Field& field,
                   const game::coop::WorldAuthority* authority = nullptr);
@@ -59,8 +56,7 @@ public:
 
   explicit CoopSync(bool built = CoopSyncBuilt) : built_{built} {}
 
-  // The console's word: "on", "trace" (on, and every report logged), "off", else a report now
-  // (and on).
+  // "on", "trace" (on and logs every report), "off", else a report now (and on).
   void ask(std::string_view value);
   [[nodiscard]] bool watching() const { return on_; }
 

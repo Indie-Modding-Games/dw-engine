@@ -5,7 +5,7 @@
 
 namespace dwe::app {
 
-// A script's clip on the wire and back (clips past 16 bits are not sent).
+// Clips past 16 bits are not sent.
 [[nodiscard]] std::optional<game::coop::ActionClip>
 coopActionOf(std::optional<game::field::PlayedClip> clip);
 [[nodiscard]] std::optional<game::field::PlayedClip>

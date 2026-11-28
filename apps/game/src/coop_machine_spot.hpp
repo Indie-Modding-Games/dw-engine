@@ -11,10 +11,8 @@ namespace dwe::app {
 // How far apart two partners on one training machine are drawn (coop-training.md T8).
 inline constexpr float MachineSpotStep = 300.0F;
 
-// Each game runs the gym on its own copy of the map, so two players' partners can train on the
-// same machine at once. On one screen the second is drawn beside the first: the spot `at`, or the
-// nearest free one to either side of the way it faces (`yaw`), one step apart. A spot is taken by
-// a partner in `taken` closer than a step.
+// Two partners can share a machine (each game runs its own gym copy): the second is drawn
+// at the nearest spot beside `at` along `yaw`; one in `taken` within a step occupies it.
 [[nodiscard]] inline glm::vec3 machineSpotBeside(glm::vec3 at, float yaw,
                                                  std::span<const glm::vec3> taken,
                                                  float step = MachineSpotStep) {
@@ -48,8 +46,7 @@ struct MachinePair {
   glm::vec3 partner;
 };
 
-// A player and its partner on a course: the partner beside the others (machineSpotBeside) and the
-// player moved as far, so two players at one machine stand apart too.
+// Moves the player as far as its partner, so two players at one machine stand apart too.
 [[nodiscard]] inline MachinePair machinePairBeside(glm::vec3 player, glm::vec3 partner, float yaw,
                                                    std::span<const glm::vec3> taken,
                                                    float step = MachineSpotStep) {

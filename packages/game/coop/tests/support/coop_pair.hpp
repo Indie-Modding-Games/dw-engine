@@ -34,7 +34,6 @@ public:
   [[nodiscard]] net::LoopbackNetwork& network() { return network_; }
   [[nodiscard]] net::Millis now() const { return network_.now(); }
 
-  // Moves the clock `steps` times by `step`, polling both links after each.
   void pump(int steps = 8, net::Millis step = net::Millis{1}) {
     for (int i = 0; i < steps; ++i) {
       network_.advance(step);
@@ -61,7 +60,6 @@ public:
     pump(steps);
   }
 
-  // Everything a side received so far, in order.
   static std::vector<Message> drain(CoopLink& link) {
     std::vector<Message> out;
     while (auto message = link.receive()) {

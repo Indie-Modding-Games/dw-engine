@@ -20,7 +20,6 @@ struct PresentedCoopEntity {
   glm::vec3 position{};
   float yaw = 0.0F;
   game::coop::Motion motion = game::coop::Motion::Idle;
-  // The clip a script plays on it, as the newest snapshot says.
   std::optional<game::coop::ActionClip> action = std::nullopt;
 };
 
@@ -34,16 +33,14 @@ struct PresentedCoopWorld {
 // The host's snapshots as a guest draws them (#354): every entity on a track of its own
 // (game::coop::PoseTrack) played a little behind the newest snapshot on the guest's clock, so the
 // motion is smooth whatever the network's jitter and the local frame rate. A late snapshot only
-// fills the tracks it still reaches in time, a repeated one is dropped, and a map change (a newer
-// snapshot on another map) starts every track over. It never touches the guest's field.
+// fills the tracks it still reaches in time; a map change starts every track over.
 class CoopSnapshotInterpolation {
 public:
   // The host stamps a snapshot every SnapshotTicks of its 60 Hz field: its world tick times this
   // is the host's clock the tracks play by.
   static constexpr net::Millis SnapshotPeriod{50};
 
-  // A snapshot received `now`. False for one not newer than the newest kept (a late one of the
-  // same map may still fill the tracks).
+  // False for one not newer than the newest kept; a late one of the same map still fills tracks.
   [[nodiscard]] bool push(game::coop::Snapshot snapshot, net::Millis now);
   // The entities of the newest snapshot, each where its track draws it at `now`.
   [[nodiscard]] std::optional<PresentedCoopWorld> sample(net::Millis now) const;

@@ -8,8 +8,7 @@
 
 #include "support/coop_pair.hpp"
 
-// What a player's own game does to its partner and its characters that the others must see the
-// same: the partner's form after it evolves (#412) and the clips a script plays on them (#420).
+// A player's partner form after it evolves and the clips a script plays on its characters.
 using namespace dwe::game::coop;
 using dwe::game::coop::test::CoopPair;
 

@@ -1,6 +1,4 @@
-// The partners' poop piles in co-op (multiplayer.md "Shared world interactions"): the host's world
-// holds every map's piles, every game shows the host's, and a guest's partner leaves and eats piles
-// through the host, over real links.
+// The partners' poop piles in co-op (multiplayer.md "Shared world interactions").
 
 #include <dwe/game/coop/protocol.hpp>
 #include <dwe/game/partner/care_rules.hpp>
@@ -39,7 +37,6 @@ dwe::game::partner::ToiletRules toilet() {
   return rules;
 }
 
-// One game of the session: its piles of every map and the map it stands on.
 struct PileGame {
   dwe::game::story::StoryState story;
   dwe::game::partner::PoopPiles piles{toilet()};
@@ -63,12 +60,11 @@ struct PileGame {
             .pileShare = guest ? &share : nullptr};
   }
 
-  // A guest's partner leaves a pile as FieldPoop does: on its screen at once, and for the host.
+  // As FieldPoop does: on its screen at once, and for the host.
   void leave(Tile tile, std::int32_t size) {
     const Tile placed = piles.placeAt(mapId, tile, size, random);
     share.left.push_back({.map = mapId, .tile = placed, .size = size});
   }
-  // A guest's partner finished its eat clip on a pile: the eat waits for the host.
   void eat(Tile tile) {
     share.eat = {.state = EatState::Asked, .mapId = mapId, .tile = tile, .number = 0, .size = 0};
   }
@@ -76,8 +72,7 @@ struct PileGame {
   [[nodiscard]] std::size_t count(const std::string& map) const { return piles.onMap(map).size(); }
 };
 
-// A host and its guests over a CoopRoom, each side's messages through its game's bridge as the game
-// loop routes them. A guest is in the host's session once joined.
+// Each side's messages go through its game's bridge as the game loop routes them.
 struct PileRoom {
   coop::test::CoopRoom room{{.guests = Guests}};
   std::array<NetworkFieldController, Guests * 2> controllers;
@@ -157,7 +152,6 @@ TEST_CASE("a pile the host's partner leaves shows in every game, on its map only
   session.ticks(2);
   CHECK(session.games[0].shows(pile));
   CHECK(session.games[0].count("room") == 1);
-  // The second guest stands on another map: none there, the host's one waits on its map.
   CHECK(session.games[1].count("lake") == 0);
   CHECK(session.games[1].piles.at("room", pile).has_value());
 }

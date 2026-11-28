@@ -99,7 +99,6 @@ public:
   void hostLeft(PlaySession* play);
   // No game is played any more: everything goes.
   void reset();
-  // The guest: the players whose partners fight in the host's battle it follows.
   [[nodiscard]] std::vector<game::coop::PlayerId> fighting() const { return mirror_.fighting(); }
 
 private:
@@ -179,9 +178,6 @@ private:
   // The guest's actions from its document, sent on the next tick.
   std::vector<game::coop::BattleAction> actions_;
   bool documentShown_ = false;
-  // The guest's battle HUD: the battle document as the host's own, its strip and partner bars,
-  // the bag open over it, this player's partner for the strip's techniques, and each foe's HP
-  // with the tick it last moved (its world bar shows a while after).
   struct FoeHp {
     std::int32_t hp = 0;
     std::optional<std::uint64_t> hitAt;

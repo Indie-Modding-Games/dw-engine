@@ -99,7 +99,6 @@ TEST_CASE("coop events: a guest's event holds its NPC in every other game until 
   CHECK(room.guests.at(0)->events.heldByOthers(1, "town").empty());
   CHECK(room.events.heldByOthers(coop::HostPlayerId, "forest").empty());
 
-  // The host's own event holds its NPC on the guests' games too.
   room.own = CoopEvent{.mapId = "town", .npc = 3};
   room.run();
   CHECK(room.guests.at(0)->events.heldByOthers(1, "town") == Held{3});

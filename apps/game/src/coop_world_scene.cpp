@@ -54,8 +54,7 @@ void presentCoopPlayers(FieldScene& scene, const PresentedCoopWorld* world,
       const PresentedCoopEntity* found = entityOf(owner, role);
       return found != nullptr ? playedClipOf(found->action) : std::nullopt;
     };
-    // Partners on a course stand on this screen's machines: another on the same one is drawn
-    // beside them (coop-training.md T8).
+    // Another partner on the same machine is drawn beside them (coop-training.md T8).
     std::vector<glm::vec3> taken;
     if (field.scriptedClipOf(field.partnerEntity())) {
       taken.push_back(field.partner().position);

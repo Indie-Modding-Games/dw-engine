@@ -172,7 +172,7 @@ public:
   std::vector<std::string> opened;
   // The host notices the directory took, as "<code> <state>".
   std::vector<std::string> notices;
-  // Whether the directory takes the «connected» notice (a server before #416 does not).
+  // Whether the directory takes the «connected» notice (an older server does not).
   bool takesConnected = true;
   // The guests a seated room's host said it holds: with each next seat, then by message.
   std::vector<int> seatsTaken;

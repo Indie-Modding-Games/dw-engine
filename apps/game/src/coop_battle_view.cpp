@@ -54,7 +54,7 @@ coop::BattleOrderShown orderShownOf(const game::battle::Order& order) {
   return {.slot = static_cast<std::uint8_t>(order.slot), .target = fighterByteOf(order.target)};
 }
 
-// A partner's current order as its ally row names it (screens' battleViewOf).
+// Mirrors screens' battleViewOf.
 void addOrderOf(coop::BattleFighterState& shown, const game::battle::Battle& battle, FighterId id) {
   const game::battle::BattleState& state = battle.state();
   if (!state.isPlayerSide(id)) {
@@ -102,7 +102,6 @@ coop::BattleFolderPlate plateOf(const game::battle::Battle& battle,
   return plate;
 }
 
-// The ally rows' fighters: the partners but the own one, in the frames' order.
 std::vector<std::size_t> allyRowsOf(const coop::BattleBegin& begin, std::size_t own) {
   const std::size_t enemies = begin.enemyNpcs.size();
   std::vector<std::size_t> rows;
@@ -140,7 +139,6 @@ screens::FighterView fighterViewOf(const CoopBattleViewSource& source, std::size
   return view;
 }
 
-// The name key of a partner's move by its place, from the begin's moves.
 std::string moveKeyOf(const CoopBattleViewSource& source, std::size_t fighter, std::size_t slot,
                       const screens::NameKeys& names) {
   const std::vector<coop::BattleMoveIds>& moves = source.begin->moves;
@@ -150,8 +148,7 @@ std::string moveKeyOf(const CoopBattleViewSource& source, std::size_t fighter, s
   return names.move(moves[fighter][slot]);
 }
 
-// An ally row's current order (screens' allyOrderKeyOf): its Folder order's move or its stance, or
-// its command.
+// Mirrors screens' allyOrderKeyOf.
 std::string allyOrderKeyOf(const CoopBattleViewSource& source, std::size_t index,
                            const screens::NameKeys& names) {
   if (index >= source.fighters.size()) {
@@ -197,8 +194,7 @@ screens::CommandEntry commandEntryOf(const CoopBattleViewSource& source, unsigne
   return entry;
 }
 
-// The guest's own partner's Folder plate as screens' battleViewOf reads it from its FolderFighter,
-// and the foes it aims at marked on their cards.
+// Mirrors screens' battleViewOf for the guest's own partner's Folder plate.
 void addFolderOf(screens::BattleView& view, const CoopBattleViewSource& source,
                  const coop::BattleFolderPlate& plate, std::size_t own,
                  const screens::NameKeys& names) {

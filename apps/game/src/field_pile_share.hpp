@@ -8,9 +8,8 @@
 
 namespace dwe::app {
 
-// A co-op guest's part in the shared poop piles (multiplayer.md "Shared world interactions"): the
-// piles its partner left, for the host's world, and its partner's eat of a pile, which waits for
-// the host's word (Asked, then Sent, then Granted or Refused) so two partners never eat one pile.
+// A guest's poop piles go through the host (multiplayer.md "Shared world interactions"); an eat
+// waits for the host's word so two partners never eat one pile.
 struct FieldPileShare {
   struct Eat {
     enum class State : std::uint8_t { None, Asked, Sent, Granted, Refused };

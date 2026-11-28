@@ -1,4 +1,4 @@
-// The host's map NPCs on a guest's screen (#419): where they stand and when they leave.
+// The host's map NPCs on a guest's screen: where they stand and when they leave.
 
 #include <dwe/game/field/field.hpp>
 #include <dwe/scene/world.hpp>
@@ -58,7 +58,6 @@ struct Side {
   }
 };
 
-// The host's snapshot as a guest draws it, with no delay.
 PresentedCoopWorld drawn(const Field& host) {
   const auto snapshot = makeCoopSnapshot(host, "room", 1, 0);
   REQUIRE(snapshot);
@@ -114,7 +113,6 @@ TEST_CASE("co-op NPCs: a guest's map NPCs walk where the host's do, not their ow
     CHECK(apart(*host.field.npcs().positionAt(slot), *guest.field.npcs().positionAt(slot)) < 1.0F);
   }
 
-  // No snapshot of this map: they walk on their own again.
   CHECK(mirror.show(guest.field.npcs(), {.world = nullptr}, Millis{100}) == 0);
   CHECK_FALSE(guest.field.npcs().mirrored(0));
   const glm::vec3 left = *guest.field.npcs().positionAt(0);
@@ -142,7 +140,6 @@ TEST_CASE("co-op NPCs: one the host took off leaves the guest's map a second lat
   CHECK_FALSE(guest.field.npcs().entityAt(1).has_value());
   CHECK(guest.field.npcs().entityAt(0).has_value());
 
-  // A snapshot that lists no NPC tells nothing of them.
   Side empty;
   Side other;
   REQUIRE(empty.field.npcs().unloadAt(0));
@@ -177,7 +174,6 @@ TEST_CASE("co-op NPCs: a battle of the guest's own keeps its NPCs where it put t
   CHECK(apart(own, *guest.field.npcs().positionAt(0)) < 1.0F);
   CHECK(guest.field.npcs().entityAt(1).has_value());
 
-  // Once it ends they stand where the host's are again.
   CHECK(mirror.show(guest.field.npcs(), {.world = &world, .mapSerial = 1, .ready = true},
                     Millis{3100}) == 0);
   CHECK(apart(*host.field.npcs().positionAt(0), *guest.field.npcs().positionAt(0)) < 1.0F);

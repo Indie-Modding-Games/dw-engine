@@ -92,7 +92,6 @@ BattleFrame frame(std::uint32_t battle, std::uint32_t number) {
           .throws = {}};
 }
 
-// A Folder plate with everything on it: an active order, a full queue, a target and a notice.
 BattleFolderPlate fullPlate() {
   return {.active = BattleOrderShown{.slot = 3, .target = 2},
           .phase = LastOrderPhase,

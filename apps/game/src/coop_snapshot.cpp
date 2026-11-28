@@ -116,8 +116,7 @@ core::Result<game::coop::Snapshot> makeCoopSnapshot(const game::field::Field& fi
       snapshot.entities.push_back(*state);
     }
   }
-  // The map's NPCs in the room left, by slot (#419); none when they do not all fit in one datagram,
-  // so a guest never takes one the host still has for gone.
+  // None when the NPCs don't all fit one datagram, so a guest never takes a listed one for gone.
   const std::size_t players = snapshot.entities.size();
   for (const game::field::NpcPose& pose : field.npcs().poses()) {
     if (snapshot.entities.size() >= game::coop::MaxSnapshotEntities ||

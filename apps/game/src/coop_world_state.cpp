@@ -432,8 +432,7 @@ CoopWorldShare CoopHostWorld::share(CoopWorldView& view) {
   if (!facts_.ready()) {
     facts_.reset(story);
   }
-  // A new load of the map, the same one reset by a script's warp included: what a guest's game did
-  // on the last load, and had not seen replaced, is overtaken.
+  // A new load, a script's warp reset included, overtakes what the guest did on the last load.
   const bool newMap = view.settled && syncSerial_ != view.mapSerial;
   if (newMap) {
     syncSerial_ = view.mapSerial;
@@ -449,8 +448,7 @@ CoopWorldShare CoopHostWorld::share(CoopWorldView& view) {
     append(share.out, toEveryGuest(authority_, change));
   }
 
-  // The host's own pick-ups of this tick are off the ground before any claim is judged; its
-  // partner's piles likewise.
+  // The host's own pick-ups and partner piles land before any claim is judged.
   if (auto ground = ground_.update(view)) {
     append(share.out, toEveryGuest(authority_, *ground));
   }

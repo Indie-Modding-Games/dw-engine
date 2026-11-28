@@ -1,6 +1,4 @@
-// What each player's own game does to its partner that the others' games must show the same: its
-// form after it evolves (#412), what a gym course plays on it and where (#420), and where it stands
-// (#411).
+// What each player's game does to its partner that the others' games must show the same.
 
 #include <dwe/game/field/field.hpp>
 #include <dwe/scene/world.hpp>
@@ -47,7 +45,6 @@ std::string partnerIn(const coop::Roster& roster, coop::PlayerId id) {
   return found != roster.players.end() ? found->partnerSpecies : std::string{};
 }
 
-// A host on "room" with guest 1 and its partner in its field, joined and placed.
 struct HostSession {
   dwe::scene::World world;
   Field field{world, originalRules()};
@@ -70,7 +67,6 @@ struct HostSession {
   }
 };
 
-// A guest's field on "room", placed by the host's first correction.
 struct GuestSession {
   dwe::scene::World world;
   Field field{world, originalRules()};
@@ -146,7 +142,6 @@ TEST_CASE("co-op evolution: a guest's new form is told to the host until its ros
 TEST_CASE("co-op training: a guest's course shows on the host where and as the guest plays it") {
   HostSession session;
   GuestSession guest{session.placed};
-  // The guest's gym course holds its field, puts its partner on the equipment and plays a push.
   const glm::vec3 equipment{900.0F, 0.0F, 700.0F};
   guest.field.holdForScript(true);
   guest.field.placeByScript(guest.field.partnerEntity(), equipment);
@@ -207,7 +202,6 @@ TEST_CASE("co-op training: a guest's course shows on the host where and as the g
 
 TEST_CASE("co-op training: a second partner on the same machine is drawn beside the first (T8)") {
   HostSession session;
-  // The host's own partner trains on the equipment.
   const glm::vec3 equipment{600.0F, 0.0F, 300.0F};
   session.field.holdForScript(true);
   session.field.placeByScript(session.field.partnerEntity(), equipment);

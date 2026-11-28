@@ -147,16 +147,14 @@ public:
     return !running_ && (gameFree || pending_.has_value());
   }
   // The offer of this guest's partner for the host's battles to send, when it changed since the
-  // last one sent (`available` with its fighter, and whether its partner dies); none when it did
-  // not.
+  // last one sent (`available` with its fighter, and whether its partner dies); none when not.
   [[nodiscard]] std::optional<BattleOffer> offer(bool available, BattleFighterProfile fighter,
                                                  bool partnerDying = false);
   // The running battle, its newest frame and this player's role in it.
   [[nodiscard]] const std::optional<BattleBegin>& running() const { return running_; }
   [[nodiscard]] const std::optional<BattleFrame>& frame() const { return frame_; }
   [[nodiscard]] std::optional<BattleRole> role() const;
-  // The players whose partners fight in the running battle: its starter, then its allies; none
-  // without one.
+  // Its starter, then its allies; none without a running battle.
   [[nodiscard]] std::vector<PlayerId> fighting() const;
   // The player whose end box this one waits on: the starter, once the battle's end box is up and
   // this player cannot close it.

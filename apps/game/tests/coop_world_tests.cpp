@@ -280,7 +280,7 @@ TEST_CASE("a guest follows the host's corrections and reports with their epoch")
                                        .y = 0,
                                        .z = 0,
                                        .yaw = 0});
-  // The zone notice comes first, and the move waits for its lead (#356 UX).
+  // The zone notice comes first, and the move waits for its lead.
   for (std::uint32_t tick = 0; tick < CoopGuestWorld::ZoneLeadTicks; ++tick) {
     REQUIRE_FALSE(guest.apply(field, false));
     CHECK(guest.leadingToZone());

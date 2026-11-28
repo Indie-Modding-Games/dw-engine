@@ -97,12 +97,10 @@ TEST_CASE("a guest pays for its thrown item only once the host's frames show the
   REQUIRE(purse.canAsk());
   purse.asked(10);
   CHECK_FALSE(purse.canAsk());
-  // Frames without its throw cost nothing; another player's throw is theirs.
   CHECK(purse.due({}, self, 11).empty());
   const std::vector<coop::BattleThrow> other{thrown(7, 3, coop::BattleThrowStage::Hand)};
   CHECK(purse.due(other, self, 12).empty());
   CHECK_FALSE(purse.canAsk());
-  // The host threw it: paid once, however many frames show it.
   const std::vector<coop::BattleThrow> mine{thrown(8, self, coop::BattleThrowStage::Hand)};
   CHECK(purse.due(mine, self, 13) == std::vector<std::string>{"meat"});
   CHECK(purse.canAsk());
@@ -115,7 +113,6 @@ TEST_CASE("a guest pays for its thrown item only once the host's frames show the
   CHECK_FALSE(purse.canAsk());
   CHECK(purse.due({}, self, 21 + CoopThrowPurse::WaitFrames).empty());
   CHECK(purse.canAsk());
-  // A new battle pays its own throws again, whatever their serials.
   purse.reset();
   CHECK(purse.due(mine, self, 1) == std::vector<std::string>{"meat"});
 }

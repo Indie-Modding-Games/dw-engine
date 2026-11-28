@@ -43,8 +43,7 @@ struct CoopConnectionDesc {
 // How long a guest that dropped out of a game under way keeps its seat: coming back within it, it
 // gets the same player id (its seat key says it is the same player, #356).
 inline constexpr net::Millis CoopRejoinGrace{5 * 60 * 1000};
-// How long a link that said goodbye keeps its transport, so its Leave reaches the other side
-// before the route closes.
+// Keeps a leaving link's transport so its Leave reaches the other side before the route closes.
 inline constexpr net::Millis CoopLeaveFlush{1000};
 
 // App-level host/join handshake. It owns the transports and CoopLinks for as long as the room is
@@ -135,7 +134,7 @@ public:
   [[nodiscard]] bool returning() const { return returning_; }
   // Moves the room's notices on, also once the lobby closed (tick() does it as well).
   void pollRoom();
-  // pollRoom(), and moves the goodbyes of the links that left on until they went out.
+  // pollRoom(), plus flushing the goodbyes of links that left.
   void settle(net::Millis now);
   // Nothing of a closed room is still on its way: its goodbyes and its notices to the directory.
   [[nodiscard]] bool settled() const;
@@ -242,7 +241,6 @@ private:
   std::string playerIcon_;
   std::optional<net::RoomSession> room_;
   std::vector<net::RoomSession> closing_;
-  // Links that said goodbye, kept until `until` so their Leave goes out.
   struct Leaving {
     std::unique_ptr<net::PeerLink> peer;
     std::unique_ptr<game::coop::CoopLink> link;

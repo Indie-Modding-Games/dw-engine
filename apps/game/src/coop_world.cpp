@@ -20,8 +20,7 @@ namespace coop = game::coop;
 constexpr std::uint64_t ReportTicks = 3;
 // The guest's ticks per second: its states' sequence counts them.
 constexpr std::int64_t GuestTicksPerSecond = 60;
-// How far from its player a guest's held partner may stand (a gym course's equipment is a few
-// cells away); a report beyond it is not drawn.
+// Gym equipment is a few cells away; a held partner reported farther from its player is not drawn.
 constexpr float HeldPartnerReach = 2000.0F;
 
 std::uint16_t yawUnitsOf(float yaw) {
@@ -389,8 +388,7 @@ std::optional<coop::PlayerState> CoopGuestWorld::report(const game::field::Field
     return std::nullopt;
   }
   const coop::PlayerPose pose = coopPoseOf(field.mapId(), field.player());
-  // The partner goes along on every report, with what a gym course or a script plays on it: the
-  // host draws it where this game has it, not on a follow of its own that drifts away (#411).
+  // The host draws the partner where this game has it, not on its own drifting follow.
   const coop::PlayerPose at = coopPoseOf(field.mapId(), field.partner());
   const coop::HeldPartner partner{.x = at.x,
                                   .y = at.y,

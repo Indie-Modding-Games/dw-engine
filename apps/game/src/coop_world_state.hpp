@@ -42,12 +42,10 @@ struct CoopWorldView {
   game::coop::WorldScope shared;
   // A guest's item notice's take waiting for the host (FieldItemsScreen::claim); none on the host.
   FieldItemClaim* claim = nullptr;
-  // The partners' poop piles of every map, and the dice that move a guest's pile a step aside on
-  // the host when its tile is taken.
+  // Every map's piles; `random` moves a guest's pile aside on the host when its tile is taken.
   game::partner::PoopPiles* piles = nullptr;
   ruleset::Random* random = nullptr;
-  // A guest's piles its partner left and its partner's eat waiting for the host
-  // (FieldPoop::pileShare); none on the host.
+  // A guest's pending piles and eat (FieldPoop::pileShare); null on the host.
   FieldPileShare* pileShare = nullptr;
 };
 
@@ -136,23 +134,19 @@ private:
   std::optional<std::uint32_t> shownSerial_;
 };
 
-// The piles of a map as the wire names them.
 [[nodiscard]] game::coop::PoopPiles pileList(const game::partner::PoopPiles& piles,
                                              std::string_view map);
 
-// Lays the host's list on this game's piles: that map's become the host's, and with `restart`
-// every other map's go first.
+// That map's piles become the host's; a `restart` list clears every other map's first.
 void applyPileList(game::partner::PoopPiles& piles, const game::coop::PoopPiles& list);
 
-// The host's piles as the guests last got them, by map: a map's list goes to every guest when its
-// piles change.
+// A map's list goes to every guest when its piles change.
 class CoopPileTracker {
 public:
   // The map's list when it differs from the one last sent.
   [[nodiscard]] std::optional<game::coop::PoopPiles> update(const game::partner::PoopPiles& piles,
                                                             std::string_view map);
-  // Every map's piles for a guest that joins or follows the host to a new map: the host's map's
-  // list first, restarting the guest's piles, then each other map that has some.
+  // For a guest that joins or moves to a new map: the host's map first (restarting), then the rest.
   [[nodiscard]] static std::vector<game::coop::PoopPiles>
   sync(const game::partner::PoopPiles& piles, std::string_view hostMap);
 

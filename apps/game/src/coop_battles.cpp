@@ -50,8 +50,7 @@ constexpr float YawSteps = 65536.0F;
 constexpr float PaceSteps = 16.0F;
 // A number the guest's document reads as none (no target picked, no countdown shown).
 constexpr double NoTarget = -1.0;
-// The guest's HUD: the model node the foes' bars point at (BattleScreen's), and how long a foe's
-// bar shows after its HP moved, in ticks.
+// The node the foes' bars point at (BattleScreen's), and a moved bar's show time in ticks.
 constexpr std::uint32_t HudHpBarNode = 1;
 constexpr std::uint64_t HudHpBarTicks = 180;
 
@@ -408,8 +407,7 @@ void CoopBattles::endBattle(PlaySession& play) {
   play.scene().setBattlePartner(std::nullopt);
 }
 
-// Whether the partner of this game's player, or of a guest on its map, dies or waits to be reborn:
-// no co-op battle starts meanwhile.
+// Blocks co-op battles while a partner here dies or waits to be reborn.
 bool CoopBattles::partnersDying(const PlaySession& play) const {
   std::vector<coop::PlayerId> here;
   for (const coop::PlayerId guest : referee_.guests()) {
@@ -579,7 +577,7 @@ coop::BattleBegin CoopBattles::beginOf(PlaySession& play, coop::PlayerId starter
 
 coop::BattleFrame CoopBattles::frameOf(const PlaySession& play, coop::PlayerId to) {
   const BattleScreen& screen = play.battleScreen();
-  // The guest's own partner's strip, bag, finisher and plate (the fighting one's when it has none).
+  // A helper shows the fighting partner's strip, bag, finisher and plate.
   const game::battle::Battle* battle = screen.battle();
   coop::BattleFrame frame =
       battle != nullptr
@@ -1008,9 +1006,8 @@ bool CoopBattles::handle(const ui::UiCommand& command) {
     item = *text;
   }
   if (*kind == coop::BattleActionKind::ThrowItem) {
-    // The item comes out of this player's own bag once the host throws it (followPurse); the
-    // host's lends one to throw, at the partner picked (its fighter's number + 1; 0 for this
-    // player's own or the fighting one).
+    // Paid from this player's bag once the host throws it (followPurse); the target is the
+    // fighter's number + 1, 0 for its own or the fighting one.
     const auto& frame = mirror_.frame();
     PlaySession* play = play_;
     if (play == nullptr || !frame || !frame->bagAvailable || !purse_.canAsk() ||
@@ -1033,7 +1030,6 @@ void CoopBattles::press(const input::InputState& input) {
   if (!mirror_.running() || !watching_) {
     return;
   }
-  // With its bag open over the HUD, the tab keys pick the partner this player's items fly to.
   if (hudBag_ && (input.wasPressed("tab_previous") || input.wasPressed("tab_next"))) {
     target_ =
         coopNextThrowTarget(*mirror_.running(), mirror_.role().value_or(coop::BattleRole::Helper),
@@ -1172,8 +1168,6 @@ void CoopBattles::publish(const PlaySession& play) {
       {.name = "coop_battle.item_count", .value = static_cast<double>(items.size())});
   screens::publish(*ui_, settings, CoopBattleRevisionSetting);
   publishHud(play);
-  // The battle document draws the fight (publishHud); this one the end box the starter closes and
-  // the others wait on.
   const bool endBox = frame && (frame->phase == coop::BattlePhase::End ||
                                 frame->phase == coop::BattlePhase::Closing);
   if (endBox && (!documentShown_ || !ui_->isVisible(CoopBattleDocument))) {
@@ -1209,7 +1203,6 @@ void CoopBattles::publishHud(const PlaySession& play) {
     hideHud();
     return;
   }
-  // The host's intro draws its banner over the HUD; a guest's shows the HUD under none.
   if (!hudShown_) {
     screens::publish(*ui_,
                      screens::settingsOf(screens::BattleIntroView{}, running->enemyNpcs.size()),
@@ -1227,8 +1220,7 @@ void CoopBattles::publishHud(const PlaySession& play) {
   }
 }
 
-// The foes' bars over them as the host's battle screen draws them (BattleScreen::publishHpBars):
-// every standing foe's in a Folder battle or with the option, else a while after its HP moved.
+// Mirrors BattleScreen::publishHpBars.
 void CoopBattles::publishHudBars(const PlaySession& play) {
   const auto& running = mirror_.running();
   std::vector<screens::EnemyHpBar> bars;
@@ -1301,8 +1293,6 @@ void CoopBattles::hideHud() {
   ui_->hide(BattleDocument);
 }
 
-// The battle document's commands on a guest: its strip orders this player's partner, the charge's
-// press cheers, and its bag throws from this player's own bag.
 bool CoopBattles::handleHud(const ui::UiCommand& command) {
   if (!hudShown_) {
     return false;
@@ -1321,8 +1311,7 @@ bool CoopBattles::handleHud(const ui::UiCommand& command) {
     ui_->hide(PartnerMenuDocument);
     return true;
   }
-  // The bag over the HUD is this player's battle bag, closed by the time its Use comes: the Use
-  // throws, never feeds on the field.
+  // The bag is closed by the time its Use comes: here the Use throws, never feeds.
   if (command.name == BattleThrowCommand || command.name == BagUseCommand) {
     session::InventoryAdapter* inventory = play_ != nullptr ? play_->coopInventory() : nullptr;
     const std::optional<std::size_t> slot = coopHudThrownSlot(command);

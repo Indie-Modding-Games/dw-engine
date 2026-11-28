@@ -78,9 +78,7 @@ public:
   void trace(bool on) { trace_ = on; }
   [[nodiscard]] bool tracing() const { return trace_; }
 
-  // What happened since the last call, one line each and stamped with the host's time and world
-  // tick: map changes, updates newly lost or late, divergences that turned persistent or ended,
-  // and while traced every report.
+  // Events since the last call, one line each stamped with the host's time and world tick.
   [[nodiscard]] std::vector<std::string> takeEvents();
   [[nodiscard]] std::vector<SyncDivergence> divergences() const;
   // Every guest reported since `since` and holds every player where the host has it.

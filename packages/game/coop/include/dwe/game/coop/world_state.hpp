@@ -30,8 +30,7 @@ enum class AskVerdict : std::uint8_t {
   WrongMap,
   // Nothing in it is the shared world's, or nothing it changes is new.
   Nothing,
-  // Everything in it was overtaken: a newer change of the same facts, or a new load of the map,
-  // came after what the guest had seen (a room reset while its edits travelled).
+  // Overtaken by a newer change of the same facts or a new map load (a room reset in flight).
   Overtaken,
 };
 
@@ -61,24 +60,21 @@ public:
     std::optional<WorldChange> change;
     // The edits left out as a player's own (its game keeps them; the world never takes them).
     std::vector<WorldEdit> refused;
-    // The facts a newer change overtook: the guest's game holds a value the world no longer has,
-    // so the host tells it the world's again.
+    // Facts a newer change overtook; the host tells the guest the world's values again.
     std::vector<WorldEdit> overtaken;
   };
   // Guest `from`'s ask on a session whose map is `worldMap`. `known`: the guest is in the session.
   // `changes(edit)`: whether the host's world would change by it (the app's values); edits that
   // change nothing are dropped. The ask's map edits count only on the session's map. Overtaken: a
-  // fact the world changed after the revision the guest had seen, and anything asked on a load of
-  // the session's map the host has since loaded again (a room reset).
+  // fact changed after the revision the guest saw, or asked on a load since replaced (a reset).
   [[nodiscard]] Taken accept(PlayerId from, const WorldAsk& ask, std::string_view worldMap,
                              bool known, const std::function<bool(const WorldEdit&)>& changes);
 
   // A guest left: a new one with its id starts its asks from scratch.
   void leave(PlayerId id) { asks_.erase(id); }
 
-  // The host's game loaded the session's map (a new map, or the same one again when a script's
-  // warp resets the room): the next revision marks the load, and what a guest did on that map
-  // before it saw the load is the old load's.
+  // A new map load (a script's warp reset included): what a guest did there before seeing it is
+  // the old load's.
   void newMapLoad() { mapLoad_ = ++revision_; }
 
 private:
@@ -109,8 +105,7 @@ public:
   // Whether to apply this sync part: any part of a sync at or past the newest revision taken.
   // Its last part makes its revision the newest.
   [[nodiscard]] bool take(const WorldSync& sync);
-  // The next ask, with this guest's edits, split so each message stays under MaxWorldEdits; each
-  // says the newest revision taken.
+  // Split so each message stays under MaxWorldEdits; each says the newest revision taken.
   [[nodiscard]] std::vector<WorldAsk> ask(std::string_view mapId, std::span<const WorldEdit> edits);
 
 private:

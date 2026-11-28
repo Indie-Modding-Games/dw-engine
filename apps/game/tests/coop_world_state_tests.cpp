@@ -417,7 +417,6 @@ TEST_CASE("a guest's step from before the host reset the room does not outlive t
   CHECK_FALSE(session.firstGame.trigger(Path));
   CHECK_FALSE(session.firstGame.trigger(NextPath));
   CHECK_FALSE(session.secondGame.trigger(NextPath));
-  // After the reset the guest's steps count again.
   REQUIRE(session.firstGame.story.setTrigger(NextPath, true));
   session.exchange();
   session.exchange();

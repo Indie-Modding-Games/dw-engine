@@ -139,14 +139,10 @@ private:
   std::uint32_t revision_ = 1;
 };
 
-// A remote player's transform as a viewer draws it (#354, #358): the states arrive with the
-// sender's sequence and clock; the track keeps the newest few in order and plays them back a little
-// behind the newest, so the motion between them is smooth whatever the network's jitter. A late
-// state still ahead of the playback fills its place; one already played, or repeated, is dropped.
-// Past the newest it goes on a short way and then holds; when states come again after a loss it
-// catches up from where it held within the delay instead of jumping. A step longer than the sender
-// could have moved in the time between two states (a warp, a script putting it somewhere, a
-// correction) is drawn as a jump, never a slide. It only draws: the authority never reads it.
+// A remote player's transform as a viewer draws it: played back a little behind the newest state
+// so motion is smooth through jitter. A late state still ahead fills its place; past the newest it
+// holds and catches up after a loss; a step faster than the sender could move is drawn as a jump.
+// It only draws: the authority never reads it.
 struct TrackedPose {
   float x = 0.0F;
   float y = 0.0F;

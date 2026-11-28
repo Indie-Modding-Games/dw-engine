@@ -7,11 +7,7 @@ import { MAX_SEATS } from "./seats.ts";
 
 /** An open room leaves the list with its room (5 minutes); this is only the fallback. */
 export const OPEN_MAX_AGE_MS = 5 * 60 * 1000;
-/**
- * A room past open lives this long after its host's last notice, then leaves by itself. Hosts
- * repeat their room's state every minute (ROOM_REFRESH_MS), so the room of a host that crashed or
- * lost its line leaves the list soon after.
- */
+/** A room past open leaves this long after its host's last notice (see ROOM_REFRESH_MS). */
 export const STATE_MAX_AGE_MS = 3 * 60 * 1000;
 /** How often a host repeats its room's state while the room lasts (the game's RoomSession). */
 export const ROOM_REFRESH_MS = 60 * 1000;
@@ -154,10 +150,7 @@ export class DirectoryObject {
     return new Response(null, { status: 204 });
   }
 
-  /**
-   * The host's notice: its token must be the room's. Connected, ready and playing update it (and
-   * keep it listed); closed removes it.
-   */
+  /** The token must be the room's; connected, ready and playing keep it listed, closed drops it. */
   async #notice(code: string, body: unknown): Promise<Response> {
     const { token, state } = (typeof body === "object" && body !== null ? body : {}) as {
       token?: unknown;

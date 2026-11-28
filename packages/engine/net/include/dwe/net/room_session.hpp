@@ -12,9 +12,8 @@
 
 namespace dwe::net {
 
-// How often a public room's host tells the directory its state again while the room lasts, so the
-// entry of a host that crashed or lost its line leaves the list a few minutes later
-// (apps/versus-signal/src/directory.ts, ROOM_REFRESH_MS and STATE_MAX_AGE_MS).
+// A public room's state is re-sent this often (apps/versus-signal/src/directory.ts,
+// ROOM_REFRESH_MS and STATE_MAX_AGE_MS), so a crashed host's entry leaves the list soon.
 inline constexpr Millis RoomRefreshEvery{60 * 1000};
 
 // A room's phase (docs/plan/online-rooms.md, "Room states"), the same the signaling server's
@@ -64,8 +63,7 @@ public:
   void close(std::string reason = {});
   // Moves the host's notices on.
   void poll();
-  // poll(), and once the guests are in, tells the directory the room's state again every
-  // RoomRefreshEvery.
+  // poll(), and once the guests are in, re-sends the room's state every RoomRefreshEvery.
   void poll(Millis now);
 
   [[nodiscard]] RoomPhase phase() const { return phase_; }

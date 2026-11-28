@@ -1,5 +1,4 @@
-// A guest's battle HUD over real links (coop-combat.md §7.1): the host's battle, sent as its begin
-// and frames, draws on the guest's battle document as the host's own HUD draws it.
+// A guest's battle HUD over real links (coop-combat.md §7.1).
 
 #include <dwe/assets/asset_id.hpp>
 #include <dwe/assets/digimon_table.hpp>
@@ -63,7 +62,6 @@ dwe::assets::DigimonTable speciesTable() {
   return table;
 }
 
-// The host's battle with guest 1's partner as its ally, whose techniques and finisher it orders.
 Battle allyBattle(BattleSystemId system) {
   using namespace battle_test;
   BattleSetup setup =
@@ -106,7 +104,6 @@ std::optional<T> receiveOf(coop::CoopLink& link) {
   return std::nullopt;
 }
 
-// Guest 1 of a room, whose mirror follows the host's battle as the game's does.
 struct GuestSide {
   coop::test::CoopRoom room{{.guests = 1}};
   coop::BattleMirror mirror{Guest};
@@ -122,7 +119,6 @@ struct GuestSide {
     mirror.receive(*received);
   }
 
-  // The host's frame for this guest, over the link, as its HUD draws it.
   BattleView see(const Battle& battle, FighterId own, const NameKeys& names,
                  std::optional<std::size_t> throwTarget = std::nullopt,
                  const std::function<void(coop::BattleFrame&)>& edit = {}) {
@@ -152,8 +148,6 @@ struct GuestSide {
   }
 };
 
-// The game pack's battle document and bag (the partner menu) at 1280x720, as a guest's game shows
-// them over the host's battle.
 struct BattleUi {
   dwe::assets::MemoryFileSystem memory;
   std::unique_ptr<dwe::assets::VirtualFileSystem> files;
@@ -307,7 +301,6 @@ TEST_CASE("a guest's battle HUD shows its partner's Folder plate as the host rea
   checkSameOrders(seen, host);
   checkSameGauge(seen, host);
 
-  // The waiting orders called off leave the plate's notice, and a stance shows on its row.
   REQUIRE(battle.cancelOrders(ally));
   REQUIRE(battle.setStance(dwe::game::battle::Stance::Guard));
   host = dwe::screens::battleViewOf(battle, names, ally);
@@ -400,11 +393,9 @@ TEST_CASE("a guest's bag opens over its battle HUD with the focus, as the host's
 
   hud.bagOpen = true;
   dwe::app::showCoopHudBag(*screen.ui, bagOfMeat(2), hud);
-  // The guest's own partner menu publishes the open bag again in the same tick
-  // (PartnerMenu::update).
+  // PartnerMenu::update publishes the open bag again in the same tick.
   dwe::screens::publish(*screen.ui, bagOfMeat(3), dwe::screens::BagRevisionSetting);
   screen.frames(3);
-  // The host's next frames redraw the HUD under the bag; the focus stays on the bag.
   for (int step = 0; step < 6; ++step) {
     battle.step();
   }
@@ -416,7 +407,6 @@ TEST_CASE("a guest's bag opens over its battle HUD with the focus, as the host's
   CHECK(screen.ui->focusedElementId(dwe::app::BattleDocument).empty());
   CHECK_FALSE(screen.ui->focusedElementId(dwe::app::PartnerMenuDocument).empty());
   CHECK(std::get<bool>(screen.ui->setting(dwe::screens::BagOpenSetting)));
-  // Q and E pick the partner its item flies to, and the picked ally's card lights up.
   CHECK(screen.ui->elementShown(dwe::app::PartnerMenuDocument, "throw-hint"));
   CHECK_FALSE(screen.ui->elementHasClass(dwe::app::BattleDocument, "ally-0", "throw-target"));
   BattleView picked = guest.see(battle, ally, names, dwe::game::battle::PartnerId);
@@ -485,7 +475,6 @@ TEST_CASE("a guest's ally rows name each partner's status as the host's rows do"
   REQUIRE(seen.allies.size() == 1);
   CHECK(seen.allies.front().statusKey.empty());
 
-  // The host's partner stunned: the frame names it, and the guest's row the host's key.
   seen = guest.see(battle, ally, names, std::nullopt, [](coop::BattleFrame& frame) {
     frame.fighters.at(dwe::game::battle::PartnerId).status =
         static_cast<std::uint8_t>(dwe::game::battle::StatusEffect::Stun);

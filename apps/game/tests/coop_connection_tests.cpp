@@ -57,8 +57,7 @@ private:
   dwe::net::PeerLink* peer_;
 };
 
-// A transport that closes its route when it goes, as a WebRTC link does: nothing still on its way
-// arrives after that.
+// Closes its route when it goes, as a WebRTC link does.
 class ClosingPeer final : public dwe::net::PeerLink {
 public:
   ClosingPeer(dwe::net::LoopbackNetwork& network, std::size_t side)
@@ -306,8 +305,7 @@ TEST_CASE("a host that leaves or closes its game is heard leaving, not as a drop
     REQUIRE(host.connected());
     REQUIRE(guest.connected());
   };
-  // Leaving the room over a lossy route: the transport stays until the goodbye went out, then
-  // closes.
+  // Over a lossy route the transport stays until the goodbye went out.
   {
     dwe::net::LoopbackNetwork network{{.latency = dwe::net::Millis{30}, .lossPercent = 50}, 3};
     CoopConnection host{roomDesc(

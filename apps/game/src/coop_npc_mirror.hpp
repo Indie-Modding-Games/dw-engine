@@ -12,12 +12,9 @@
 
 namespace dwe::app {
 
-// A guest's map NPCs as the host's snapshots show them (#419, docs/architecture/multiplayer.md
-// «The map's NPCs»): each one the host lists stands where the host's does, so a wild one walks,
-// chases and leaves the same way on every screen. One the host no longer lists is taken off once
-// it has been missing for GoneAfter while this game's map stands still, so nothing stays behind.
-// Without a snapshot of this map (another map, a map change, no link) they walk on their own;
-// during a battle of this game's own they are left to it.
+// Guest NPCs follow the host's snapshots (docs/architecture/multiplayer.md «The map's NPCs»).
+// One the host no longer lists goes after GoneAfter while this map stands still; without a
+// snapshot of this map they walk on their own, and a battle of this game's own keeps them.
 class CoopNpcMirror {
 public:
   static constexpr net::Millis GoneAfter{1000};

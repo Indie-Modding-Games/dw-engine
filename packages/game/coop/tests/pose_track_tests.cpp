@@ -1,5 +1,4 @@
-// How a viewer draws another player's states (#358): late and lost states, and the teleports that
-// must be drawn as jumps.
+// How a viewer draws another player's states: late and lost states, and teleports drawn as jumps.
 #include <dwe/game/coop/authority.hpp>
 
 #include <doctest/doctest.h>

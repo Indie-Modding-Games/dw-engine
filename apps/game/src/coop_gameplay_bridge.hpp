@@ -48,8 +48,7 @@ public:
   // The world's clock and who trains (#365, coop_training.hpp): the host's clock and everyone's
   // training on a guest, a guest's own training on the host, in order.
   [[nodiscard]] std::vector<game::coop::Message> takeTrainingMessages();
-  // Whose event holds which NPC (#417, coop_events.hpp): everyone's on a guest, a guest's own on
-  // the host, in order.
+  // Everyone's on a guest, a guest's own on the host (coop_events.hpp).
   [[nodiscard]] std::vector<game::coop::Message> takeEventMessages();
   // What reached this side of the other's numbered streams (#359): the host's snapshots on a
   // guest (by world tick), a guest's commands on the host (by sequence).

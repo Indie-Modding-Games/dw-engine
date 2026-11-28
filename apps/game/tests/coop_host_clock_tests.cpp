@@ -1,7 +1,4 @@
-// The world's clock while the co-op host's player is held (docs/architecture/coop-training.md,
-// tickets T7 and T9): a script or a screen of the host's own holds only the host. The world's
-// clock runs on for the guests, the host's partner stands and lives that time once let go. Alone
-// the clock stands as in the original; a guest's own holds are as before.
+// The world's clock while the co-op host is held (docs/architecture/coop-training.md T7, T9).
 #include <dwe/game/field/field.hpp>
 #include <dwe/game/save/storage.hpp>
 #include <dwe/scene/world.hpp>
@@ -36,8 +33,7 @@ constexpr Millis TickMillis{16};
 constexpr std::int64_t FramesPerMinute = 20;
 constexpr int MaxTicks = 600;
 
-// One game: a session on a field of its own, ticked as the game loop does (the field, then the
-// session).
+// Ticked as the game loop does: the field, then the session.
 struct Player {
   std::unique_ptr<GameSession> session;
   dwe::scene::World world;
@@ -62,7 +58,6 @@ struct Player {
     session->tick(TickSeconds);
   }
 
-  // Until the map's fade in is over and the player walks freely.
   void settle() {
     for (int step = 0; step < MaxTicks && !field.gameTimeRan(); ++step) {
       tick();
@@ -75,7 +70,6 @@ struct Player {
   [[nodiscard]] std::int32_t hours() const { return session->partner().state().evolution.hours; }
 };
 
-// A host and a guest over a CoopPair, the host telling its clock as the game does (CoopTraining).
 struct Pair {
   dwe::session::testing::TestPacks packs;
   dwe::game::save::MemorySaveStorage storage;
@@ -88,8 +82,7 @@ struct Pair {
   Player guest{packs, storage, ClockShare::Guest};
   CoopTraining hostTraining;
   CoopTraining guestTraining;
-  // A screen of the host's own runs instead of its field (a shop): the game loop ticks neither
-  // its field nor its session, only GameSession::tickHeldPlayer.
+  // A host screen (a shop): the loop ticks only GameSession::tickHeldPlayer.
   bool hostScreen = false;
 
   Pair() {
@@ -142,7 +135,6 @@ TEST_CASE("coop host clock: a script of the host's own runs the world's clock on
   CHECK(ran <= (30 * FramesPerMinute) + 3);
   CHECK(std::abs(pair.guest.frames() - pair.host.frames()) <= FramesPerMinute);
   CHECK(pair.host.session->worldTime().running);
-  // The host's partner lived none of it while held.
   CHECK(pair.host.food() == food);
   pair.host.field.holdForScript(false);
   pair.run(0.1);
@@ -236,8 +228,7 @@ TEST_CASE("coop host clock: the gym's menu is lived before the course; the cours
   CHECK(host.food() == afterMenu);
   host.session->holdForCourse(false);
   const std::int32_t afterCourse = host.food();
-  // The script goes on after the course and lets the player go: its own two minutes only, not the
-  // course's half hour again.
+  // Only the script's own two minutes after the course, not the course's half hour again.
   run(host, 2.0);
   host.field.holdForScript(false);
   host.tick();
