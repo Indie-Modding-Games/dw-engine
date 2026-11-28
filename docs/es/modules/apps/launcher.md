@@ -279,8 +279,9 @@ Vulkan 1.2 (apagado y conocido por ese juego) y el controlador por software del 
 de un juego anterior recibe el mensaje genérico, porque nunca lo devolvía a propósito. El 0xCFFFFFFF
 significa que Windows cerró el juego porque se colgó.
 El 114 significa que ninguna ruta de Vulkan de la tarjeta pudo crear el dispositivo ([rhi](../engine/rhi.md)). El
-diálogo muestra primero una frase sencilla y debajo el final del registro, con un botón «Copiar detalles» para un
-reporte; ningún código de Vulkan es el mensaje en sí.
+diálogo muestra una explicación sencilla; el final del registro queda bajo «Mostrar detalles técnicos», cerrado de
+entrada, y «Copiar detalles» lo copia igual para un reporte. Ningún código de Vulkan forma parte del mensaje; todo
+diálogo de salida con registro funciona así.
 
 **Pasos gráficos.** En el modo de arranque automático, un arranque que falla por los gráficos baja el siguiente un
 paso sin preguntar (`graphics_step.rs`): la tarjeta como la elige el juego (1.4 o 1.3), la tarjeta en 1.3

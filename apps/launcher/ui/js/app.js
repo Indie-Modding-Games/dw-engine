@@ -591,22 +591,19 @@ function exitText(exit) {
   if (exit.next_step) {
     const lost = exit.reason === "device-lost" || exit.reason === "windows-hang";
     const lines = [t(lost ? "gameLostEarlyBody" : "gameStartBody"), t("gameNextStep", { mode: t(STEP_MODES[exit.next_step]), where })];
-    if (exit.log.length > 0) lines.push(t("gameLogLines"));
     return [t(lost ? "gameLostTitle" : "gameStartTitle"), lines.join(" ")];
   }
   if (exit.reason === "graphics-start") {
     const lines = [t("gameStartBody"), t("gameStartLast")];
-    if (exit.log.length > 0) lines.push(t("gameLogLines"));
     return [t("gameStartTitle"), lines.join(" ")];
   }
   if (exit.reason === "device-lost") {
     const lines = [t("gameLostBody")];
     if (exit.offer_compatible) lines.push(t("gameLostCompatible", { mode: t("req.vulkan12Title"), where: path("nav.settings", "st.general", "req.title") }));
     if (exit.offer_software) lines.push(t("gameLostSoftware", { mode: t("s.launchModeSoftware"), where: path("nav.settings", "st.advanced", "s.launchTitle") }));
-    if (exit.log.length > 0) lines.push(t("gameLogLines"));
     return [t("gameLostTitle"), lines.join(" ")];
   }
-  if (exit.reason === "windows-hang") return [t("gameHangTitle"), exit.log.length > 0 ? `${t("gameHangBody")} ${t("gameLogLines")}` : t("gameHangBody")];
+  if (exit.reason === "windows-hang") return [t("gameHangTitle"), t("gameHangBody")];
   return [t("gameFailedTitle"), exit.code == null ? t("gameFailedSignal") : t("gameFailedBody", { code: exit.code })];
 }
 
@@ -616,6 +613,7 @@ async function copyText(text, node) {
   try {
     await navigator.clipboard.writeText(text);
   } catch {
+    $("messageDetails").open = true;
     const range = document.createRange();
     range.selectNodeContents(node);
     const selection = window.getSelection();
@@ -629,13 +627,13 @@ async function copyText(text, node) {
 function showMessage(title, body, log = null) {
   $("messageTitle").textContent = title;
   $("messageBody").textContent = body;
-  $("messageLog").hidden = !log;
+  $("messageDetails").hidden = !log;
+  $("messageDetails").open = false;
   $("messageLog").textContent = log ?? "";
   $("messageCopy").hidden = !log;
   $("messageCopy").textContent = t("copyDetails");
   const dialog = $("messageDialog");
   if (!dialog.open) dialog.showModal();
-  $("messageLog").scrollTop = $("messageLog").scrollHeight;
   $("messageDismiss").focus();
 }
 
@@ -1196,6 +1194,9 @@ function renderAll() {
 function wireControls() {
   $("aboutButton").addEventListener("click", showAbout);
   $("messageDismiss").addEventListener("click", () => $("messageDialog").close());
+  $("messageDetails").addEventListener("toggle", () => {
+    if ($("messageDetails").open) $("messageLog").scrollTop = $("messageLog").scrollHeight;
+  });
   $("messageCopy").addEventListener("click", () => copyText(`${$("messageTitle").textContent}\n${$("messageBody").textContent}\n\n${$("messageLog").textContent}`, $("messageLog")));
   $("stopButton").addEventListener("click", () => api.cancel());
   $("configureButton").addEventListener("click", () => togglePopup("configure"));

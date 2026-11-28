@@ -145,7 +145,10 @@
     <dialog class="dialog message" id="messageDialog" aria-labelledby="messageTitle">
       <h2 id="messageTitle"></h2>
       <p id="messageBody"></p>
-      <pre id="messageLog" hidden></pre>
+      <details class="message-details" id="messageDetails" hidden>
+        <summary data-text="showDetails"></summary>
+        <pre id="messageLog"></pre>
+      </details>
       <div class="dialog-actions">
         <button class="button" id="messageCopy" type="button" hidden data-text="copyDetails"></button>
         <button class="button primary" id="messageDismiss" type="button" data-text="dismiss"></button>

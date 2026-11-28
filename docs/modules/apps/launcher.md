@@ -277,8 +277,8 @@ graphics card stopped responding: it asks to update the driver and, when they ap
 known by that game) and the package's software driver (not used in that run). An older game's 113 gets the generic
 message, since it never returned it on purpose. Exit 0xCFFFFFFF means Windows closed the game because it hung.
 Exit 114 means no Vulkan path of the card could make the device ([rhi](../engine/rhi.md)). The dialog shows a plain
-sentence first and the log's end below it, with a "Copy details" button for a report; no Vulkan code is the message
-itself.
+explanation; the log's end sits under "Show technical details", closed by default, and "Copy details" copies it either
+way for a report. No Vulkan code is part of the message itself; every exit dialog with a log works this way.
 
 **Graphics steps.** In the automatic launch mode a start that fails on the graphics moves the next one down a step
 without asking (`graphics_step.rs`): the card as the game picks (1.4 or 1.3), the card on 1.3 (`--vulkan13`, only when
